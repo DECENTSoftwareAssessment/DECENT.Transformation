@@ -1,0 +1,88 @@
+pre {
+  //Some initialization
+  //More generic
+  "Running ETL".println();
+  var Model = new k3bPartialDecent!Model;
+  Model.artifactTypeHierarchy = new k3bPartialDecent!ArtifactTypeHierarchy;
+  //Model.projects = new List;
+  var BranchArtifactType = new k3bPartialDecent!ArtifactType;
+  BranchArtifactType.name = "Branch";
+  Model.artifactTypeHierarchy.types.add(BranchArtifactType);
+  var ClassArtifactType = new k3bPartialDecent!ArtifactType;
+  ClassArtifactType.name = "Class";
+  ClassArtifactType.containerTypes.add(BranchArtifactType);
+  Model.artifactTypeHierarchy.types.add(ClassArtifactType);
+  var MethodArtifactType = new k3bPartialDecent!ArtifactType;
+  MethodArtifactType.name = "Method";
+  MethodArtifactType.containerTypes.add(ClassArtifactType);
+  Model.artifactTypeHierarchy.types.add(MethodArtifactType);
+
+  
+  //instance specific  
+  var Project = new k3bPartialDecent!Project;
+  Project.name = "rekonq";
+  Model.projects.add(Project);
+  
+  var Location = new k3bPartialDecent!Location;
+  Location.name = "master";
+  Location.type = BranchArtifactType;
+  Project.location.add(Location);
+  
+  var RootArtifact = new k3bPartialDecent!Artifact;
+  RootArtifact.name = "/";
+  Location.rootArtifact = RootArtifact;
+  
+}
+
+rule Class2Artifact
+    //the first part needs to be the same as the loadModel name attribute!!! 
+    //in some cases it may work but to be safe keep it that way. 
+    //aliasing may help
+    //otherwise both in the ANT task and in the launch configuration attention should be paid
+    //(ANT configuration overrides the launch configuration)
+    //thus naming should be carefully enforced
+    transform c : k3bPartial!Class 
+    to ac : k3bPartialDecent!Artifact {
+    
+    ("Transforming class "+c.name).println();
+
+    ac.name = c.name;
+    ac.type = ClassArtifactType;
+    ac.parent = RootArtifact;
+
+    var acs = new k3bPartialDecent!State;
+    acs.name = "head";
+    //TODO: figure out casting or change type
+    //acs.ID = c.revisionId;
+    ac.states.add(acs);
+
+    for (attr in c.eClass().getEAllAttributes()) {
+        if ((attr.getName() == "NOM")) {
+            ("  Transforming attribute "+attr.getName()).println();
+            ("    value "+c.eGet(attr)).println();
+            
+            var acv = new k3bPartialDecent!Value;
+            //TODO: figure out casting or change type
+            //acv.content = c.eGet(attr);
+            acs.values.add(acv);
+        }
+    }
+    
+    
+    for (m in c.Method_OF_parentType) {
+        ("  Transforming method "+m.name).println();
+        var am : new k3bPartialDecent!Artifact;
+        am.name = m.name;
+        am.type = MethodArtifactType;
+        am.parent = ac;
+        
+        var ams = new k3bPartialDecent!State;
+        ams.name = "head";
+        //TODO: figure out casting
+        //ams.ID = BigInteger.valueOf(m.revisionId);
+        am.states.add(ams);
+        
+    }
+    
+    
+}

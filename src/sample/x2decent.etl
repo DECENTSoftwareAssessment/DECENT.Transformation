@@ -1,0 +1,292 @@
+pre {
+
+    //TODO: Split into mg2decent (1x), famix2decent, etc.
+
+  //Some initialization
+  //More generic (might be simplified)
+  "Running ETL".println();
+  
+  var Model = new DECENT!Model;
+  Model.artifactTypeHierarchy = new DECENT!ArtifactTypeHierarchy;
+  Model.agentPool = new DECENT!AgentPool;
+  Model.attributePool = new DECENT!AttributePool;
+  //Model.projects = new List;
+  
+  var BranchArtifactType = new DECENT!ArtifactType;
+  BranchArtifactType.name = "Branch";
+  Model.artifactTypeHierarchy.types.add(BranchArtifactType);
+  
+  var ClassArtifactType = new DECENT!ArtifactType;
+  ClassArtifactType.name = "Class";
+  ClassArtifactType.containerTypes.add(BranchArtifactType);
+  Model.artifactTypeHierarchy.types.add(ClassArtifactType);
+  
+  var MethodArtifactType = new DECENT!ArtifactType;
+  MethodArtifactType.name = "Method";
+  MethodArtifactType.containerTypes.add(ClassArtifactType);
+  Model.artifactTypeHierarchy.types.add(MethodArtifactType);
+
+  var FilePathAttribute = new DECENT!Attribute;
+  FilePathAttribute.name = "FilePath";
+  Model.attributePool.attributes.add(FilePathAttribute);
+
+  var FileAnchorAttribute = new DECENT!Attribute;
+  FileAnchorAttribute.name = "FileAnchor";
+  Model.attributePool.attributes.add(FileAnchorAttribute);
+
+  
+  //instance specific => generalized  
+  var Project = new DECENT!Project;
+  Project.name = MG!Model.allInstances().first().name;
+  Model.projects.add(Project);
+  
+  for (b in MG!Branch.allInstances()){
+      var Location = new DECENT!Location;
+      Location.name = b.name;
+      Location.type = BranchArtifactType;
+      Project.location.add(Location);
+      var RootArtifact = new DECENT!Artifact;
+      RootArtifact.name = "/";
+      Location.rootArtifact = RootArtifact;
+  }
+  
+  //TODO: handle all branches
+  var RootArtifact = Project.location.select(l|l.name = 'master').first().rootArtifact;
+
+  //TODO: SAMPLE for handling subsequent revisions of artifacts (may be slow)
+  var t = new DECENT!Artifact;
+  t.name = "test artifact 1";
+  t.parent = RootArtifact;
+  
+  var s = new DECENT!State;
+  s.name = "test state 1";
+  t.states.add(s);
+  
+  var t1 = new DECENT!Artifact;
+  t1.name = "test artifact 2";
+  t1.parent = t;
+  
+  var t2 = RootArtifact.children.select(a|a.name = "test artifact 1").first(); 
+  if (not t2.isDefined()) {
+	  t2 = new DECENT!Artifact;
+	  t2.name = "test artifact 1";
+	  t2.parent = RootArtifact;
+  }
+
+  var s2 = new DECENT!State;
+  s2.name = "test state 2";
+  t2.states.add(s2);
+  //END OF SAMPLE
+
+
+  //start preprocessing (building the artifact tree)
+  var MGRootArtifact = MG!File.allInstances().select(f|f.file_name = 'ROOT');
+  ("Pre processing "+MGRootArtifact.get(0).file_name+" : " + RootArtifact.name).println();
+  MGRootArtifact.get(0).traverseChildren(RootArtifact);
+}
+
+post {
+//some serious trickery, not particularly robust or efficient (or correct?) but does the job for the moment
+//TODO: revise
+  for (c in DECENT!Artifact.allInstances().select(x|x.type = ClassArtifactType)){
+    //var estimatedFilePath = c.states.get(0).values.get(0).stringContent.replaceExtension().replaceInclude();
+    var estimatedFilePath = c.states.get(0).values.get(0).stringContent;
+    ("Post processing Class "+c.name+" : "+estimatedFilePath).println();
+    //(" ... "+DECENT!Value.allInstances().select(x|x.stringContent = estimatedFilePath).first().inState.artifact).println();
+    var p = DECENT!Value.allInstances().select(x|x.stringContent = estimatedFilePath).first().inState.artifact;
+    if (c <> p) {
+        c.parent = p;
+    }
+  }
+  for (c in FAMIX!FileAnchor.allInstances()){
+    
+  }
+}
+
+rule People2Agents
+    transform p : MG!People 
+    to a : DECENT!Agent {
+    ("Transforming agent "+p.name).println();
+    
+    a.name = p.name;
+    a.eMail = p.email;
+    Model.agentPool.agents.add(a);
+    Model.projects.get(0).agents.add(a);
+}
+
+
+operation String replaceExtension() : String {
+    return self.replace('\\.h','.cpp');
+}
+
+operation String replaceInclude() : String {
+    return self.replace('include','src');
+}
+
+
+operation MG!File traverseChildren(parent : DECENT!Artifact) {
+    ("Transforming artifact "+self.file_name+" ("+self.file_type+")").println();
+
+     for (fcl in self.childrenLinks) {
+        ("  Linking child artifacts "+fcl.child.file_name+"").println();
+        var a : new DECENT!Artifact;
+        a.name = fcl.child.file_name;
+        a.parent = parent;
+        
+	    var artifactType = DECENT!ArtifactType.allInstances().
+	        select(at|at.name = fcl.child.file_type).first;
+	    if (not artifactType.isDefined()){
+	        ("  Artifact type not defined. Initializing "+artifactType+" ").println();
+	        artifactType = new DECENT!ArtifactType;
+	        artifactType.name = fcl.child.file_type;
+	        Model.artifactTypeHierarchy.types.add(artifactType);
+	        ("  Artifact type not defined. Initialized "+artifactType.name+" ").println();
+	    }
+	    a.type = artifactType;
+        
+        for (ax in MG!Action.allInstances().select(ax|ax.file = fcl.child)){
+            var s : new DECENT!State;
+            s.name = ax.revision.rev;
+            a.states.add(s);
+            var v : new DECENT!Value;
+            v.stringContent = ax.current_file_path;
+            s.values.add(v);
+            v.ofAttribute = FilePathAttribute;
+            a.attributes.add(FilePathAttribute);
+            FilePathAttribute.artifactTypes.add(a.type);
+            
+        }
+        
+        fcl.child.traverseChildren(a);
+     }
+}
+
+rule Class2Artifact
+    //the first part needs to be the same as the loadModel name attribute!!! 
+    //in some cases it may work but to be safe keep it that way. 
+    //aliasing may help
+    //otherwise both in the ANT task and in the launch configuration attention should be paid
+    //(ANT configuration overrides the launch configuration)
+    //thus naming should be carefully enforced
+    transform c : FAMIX!Class 
+    to ac : DECENT!Artifact {
+    
+    ("Transforming class "+c.name).println();
+
+    ac.name = c.name;
+    ac.type = ClassArtifactType;
+    ac.parent = RootArtifact;
+
+    ("  File Anchor at "+c.sourceAnchor_IN_FileAnchor.fileName).println();
+
+    var acs = new DECENT!State;
+    acs.name = "head";
+
+    var v : new DECENT!Value;
+    v.stringContent = c.sourceAnchor_IN_FileAnchor.fileName;
+
+    v.ofAttribute = FileAnchorAttribute;
+    ac.attributes.add(FileAnchorAttribute);
+    FileAnchorAttribute.artifactTypes.add(ClassArtifactType);
+
+    acs.values.add(v);
+    acs.ID = new Native("java.math.BigInteger")(c.revisionId.asString());
+    ac.states.add(acs);
+
+    for (attr in c.eClass().getEAllAttributes()) {
+        //("  Transforming attribute "+attr.getName()).println();
+        //("    type "+attr.getEAttributeType().getName()).println();
+        //("    value "+c.eGet(attr)).println();
+        
+        var attribute = DECENT!Attribute.allInstances().
+            select(a|a.name = attr.getName()).first;
+        if (not attribute.isDefined()){
+            //("  Attribute not defined. Initializing "+attribute+" ").println();
+            attribute = new DECENT!Attribute;
+            attribute.name = attr.getName();
+            
+            //if (not Model.attributePool.attributes.select(a|a.name = attr.getName()).first().isDefined()) {
+                Model.attributePool.attributes.add(attribute);
+            //}
+            
+            attribute.artifactTypes.add(ClassArtifactType);
+            //("  Attribute not defined. Initialized "+attribute.name+" ").println();
+        }
+        //TODO: needs to be checked when using multiple revisions to avoid adding multiple instances
+        //OR: try and see whether the "unique" takes care of that
+        ac.attributes.add(attribute);
+        
+        
+        if ((attr.getEAttributeType().getName() == "EDouble")) {
+            var acv = new DECENT!Value;
+    
+            acv.content = c.eGet(attr);
+            acv.ofAttribute = attribute;
+            //TODO: add attribute linking
+            
+            acs.values.add(acv);
+        }
+    }
+    
+    /************************* methods ****************************/
+    
+    for (m in c.Method_OF_parentType) {
+        ("  Transforming method "+m.name).println();
+        var am : new DECENT!Artifact;
+        am.name = m.name;
+        am.type = MethodArtifactType;
+        am.parent = ac;
+        
+        var ams = new DECENT!State;
+        ams.name = "head";
+
+        //TODO: quite a bit of redundancy with attribute handling, consider revision
+        var v : new DECENT!Value;
+	    v.stringContent = m.sourceAnchor_IN_FileAnchor.fileName;
+	    v.ofAttribute = FileAnchorAttribute;
+	    am.attributes.add(FileAnchorAttribute);
+	    FileAnchorAttribute.artifactTypes.add(MethodArtifactType);
+	    ams.values.add(v);
+        
+        ams.ID = new Native("java.math.BigInteger")(m.revisionId.asString());
+        am.states.add(ams);
+        
+        for (attr in m.eClass().getEAllAttributes()) {
+	        //("  Transforming attribute "+attr.getName()).println();
+	        //("    type "+attr.getEAttributeType().getName()).println();
+	        //("    value "+m.eGet(attr)).println();
+	        
+	        var attribute = DECENT!Attribute.allInstances().
+	            select(a|a.name = attr.getName()).first;
+	        if (not attribute.isDefined()){
+	            //("  Attribute not defined. Initializing "+attribute+" ").println();
+	            attribute = new DECENT!Attribute;
+	            attribute.name = attr.getName();
+
+		        //if (not Model.attributePool.attributes.select(a|a.name = attr.getName()).first().isDefined()) {
+	                Model.attributePool.attributes.add(attribute);
+	            //}
+	    
+	            attribute.artifactTypes.add(MethodArtifactType);
+	            //("  Attribute not defined. Initialized "+attribute.name+" ").println();
+	        }
+	        //TODO: needs to be checked when using multiple revisions to avoid adding multiple instances
+	        //OR: try and see whether the "unique" takes care of that
+            //if (not am.attributes.allInstances().select(a|a.name = attr.getName()).first().isDefined()) {
+	           am.attributes.add(attribute);
+            //}
+    
+	        
+	        if ((attr.getEAttributeType().getName() == "EDouble")) {
+	            var amv = new DECENT!Value;
+	            amv.content = m.eGet(attr);
+	            amv.ofAttribute = attribute;
+	            //TODO: add attribute linking
+	            
+	            ams.values.add(amv);
+	        }
+	    }
+    }
+    
+    
+}
