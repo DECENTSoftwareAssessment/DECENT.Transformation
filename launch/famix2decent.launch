@@ -2,6 +2,7 @@
 <launchConfiguration type="org.eclipse.ant.AntLaunchConfigurationType">
 <stringAttribute key="bad_container_name" value="/DECENT.Transformations/lau"/>
 <booleanAttribute key="org.eclipse.ant.ui.DEFAULT_VM_INSTALL" value="false"/>
+<stringAttribute key="org.eclipse.debug.core.ATTR_REFRESH_SCOPE" value="${project}"/>
 <listAttribute key="org.eclipse.debug.core.MAPPED_RESOURCE_PATHS">
 <listEntry value="/DECENT.Transformations/ant/famix2decent.launch.xml"/>
 </listAttribute>
