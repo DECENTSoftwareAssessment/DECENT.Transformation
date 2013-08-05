@@ -1,0 +1,19 @@
+post famixInitPost {
+  ("Initializing FAMIX definitions").println();
+  //This should only run once!!!
+  var ClassArtifactType = new DECENT!ArtifactType;
+  ClassArtifactType.name = "Class";
+  //TODO
+  //ClassArtifactType.containerTypes.add(DECENT!ArtifactType.allInstances().select(t|t.name = ""));
+  Model.artifactTypeHierarchy.types.add(ClassArtifactType);
+
+  var MethodArtifactType = new DECENT!ArtifactType;
+  MethodArtifactType.name = "Method";
+  MethodArtifactType.containerTypes.add(ClassArtifactType);
+  Model.artifactTypeHierarchy.types.add(MethodArtifactType);
+  
+  var FileAnchorAttribute = new DECENT!Attribute;
+  FileAnchorAttribute.name = "FileAnchor";
+  Model.attributePool.attributes.add(FileAnchorAttribute);
+
+}

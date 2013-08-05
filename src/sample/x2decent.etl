@@ -6,6 +6,8 @@ pre {
   //More generic (might be simplified)
   "Running ETL".println();
   
+  /********************************** INIT (1x) *******************************/
+  
   var Model = new DECENT!Model;
   Model.artifactTypeHierarchy = new DECENT!ArtifactTypeHierarchy;
   Model.agentPool = new DECENT!AgentPool;
@@ -15,7 +17,7 @@ pre {
   var BranchArtifactType = new DECENT!ArtifactType;
   BranchArtifactType.name = "Branch";
   Model.artifactTypeHierarchy.types.add(BranchArtifactType);
-  
+    
   var ClassArtifactType = new DECENT!ArtifactType;
   ClassArtifactType.name = "Class";
   ClassArtifactType.containerTypes.add(BranchArtifactType);

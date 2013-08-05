@@ -12,7 +12,7 @@
 		6) Click Run.
 -->
 
-<project default="main">
+<project default="main" >
 
  	<target name="loadModels">
  		<epsilon.emf.register file="../../DECENT/model/DECENTv2.ecore"/>
@@ -26,11 +26,42 @@
                                        read="true" store="true"/>
 
  		<epsilon.emf.loadModel name="FAMIX"
-                                       modelFile="../input/model.famix" 
+                                       modelFile="${model}" 
                                        metamodelUri="http://FAMIX/1.0" 
                                        read="true" store="false"/>
  	</target>
- 	
+	
+	
+	<target name="processAllInSequence">
+	    <taskdef resource="net/sf/antcontrib/antlib.xml"/>
+		<for param="i" begin="7" end="8">
+		   <sequential>
+		   	  <antcall target="processFAMIXModel">
+		   	    <param name="model" value="/home/philip-iii/TEMP/fmx/famix/@{i}/model.famix"/>
+		   	  </antcall>
+		   </sequential>
+		 </for> 
+	</target>
+	
+	<target name="processAll" description="Parses out all the files from the directory">
+		<taskdef resource="net/sf/antcontrib/antlib.xml"/>
+		<foreach target="processFAMIXModel" param="model">
+	        <path>
+        		<fileset dir="/home/philip-iii/TEMP/fmx/famix/" id="location">
+                <include name="**/model.famix"/>
+                </fileset>
+	        </path>
+        </foreach>
+    </target>
+    
+	<target name="processFAMIXModel" depends="loadModels" description="Builds a mxml file">
+	    <echo>"Using ${model}"</echo>
+		<epsilon.etl src="../src/sample/famix2decent.etl">
+            <model ref="FAMIX"/>
+            <model ref="DECENT"/>
+		</epsilon.etl>
+	</target> 
+	
 	<target name="main" depends="loadModels">		
 		<epsilon.etl src="../src/sample/famix2decent.etl">
 			<model ref="FAMIX"/>

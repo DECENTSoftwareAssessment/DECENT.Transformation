@@ -9,5 +9,10 @@ Bundle-Localization: plugin
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Require-Bundle: org.eclipse.core.runtime,
  org.eclipse.emf.ecore;visibility:=reexport,
- org.eclipse.emf.ecore.xmi
+ org.eclipse.emf.ecore.xmi,
+ org.eclipse.epsilon.common,
+ org.eclipse.epsilon.emc.emf,
+ org.eclipse.epsilon.eol.engine,
+ org.eclipse.epsilon.erl.engine,
+ org.eclipse.epsilon.etl.engine
 Bundle-ActivationPolicy: lazy

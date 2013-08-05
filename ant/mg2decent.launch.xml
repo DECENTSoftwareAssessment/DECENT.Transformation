@@ -17,23 +17,22 @@
  	<target name="loadModels">
  		<epsilon.emf.register file="../../DECENT/model/DECENTv2.ecore"/>
  		<epsilon.emf.register file="../../famix.m3/model/AbstractDECENTProvider.ecore"/>
- 		<epsilon.emf.register file="../../famix.m3/model/FAMIX.ecore"/>
-		<epsilon.emf.register file="../../MininGit.m1x/model/MGStandalone.ecore"/>
+ 		<epsilon.emf.register file="../../MininGit.m1x/model/MGStandalone.ecore"/>
+ 		 		
+ 		<epsilon.emf.loadModel name="MG"
+                                       modelFile="../input/model.mg"
+                                       metamodelUri="MGStandalone"
+                                       read="true" store="false"/>
 
  		<epsilon.emf.loadModel name="DECENT"
                                        modelFile="../output/MGGitWS.decent"
                                        metamodelUri="http://decent/2.0"
-                                       read="true" store="true"/>
-
- 		<epsilon.emf.loadModel name="FAMIX"
-                                       modelFile="../input/model.famix" 
-                                       metamodelUri="http://FAMIX/1.0" 
-                                       read="true" store="false"/>
+                                       read="false" store="true"/>
  	</target>
  	
 	<target name="main" depends="loadModels">		
-		<epsilon.etl src="../src/sample/famix2decent.etl">
-			<model ref="FAMIX"/>
+		<epsilon.etl src="../src/sample/mg2decent.etl">
+			<model ref="MG"/>
 			<model ref="DECENT"/>
 		</epsilon.etl>
 	</target>
