@@ -9,9 +9,19 @@ post famixInitPost {
 
   var MethodArtifactType = new DECENT!ArtifactType;
   MethodArtifactType.name = "Method";
-  MethodArtifactType.containerTypes.add(ClassArtifactType);
+  //TODO: not quite working as classes are defined within different files
+//  MethodArtifactType.containerTypes.add(ClassArtifactType);
   Model.artifactTypeHierarchy.types.add(MethodArtifactType);
   
+  var ModuleArtifactType = new DECENT!ArtifactType;
+  ModuleArtifactType.name = "Module";
+  Model.artifactTypeHierarchy.types.add(ModuleArtifactType);
+
+  var FunctionArtifactType = new DECENT!ArtifactType;
+  FunctionArtifactType.name = "Function";
+  Model.artifactTypeHierarchy.types.add(FunctionArtifactType);
+
+
   var FileAnchorAttribute = new DECENT!Attribute;
   FileAnchorAttribute.name = "FileAnchor";
   Model.attributePool.attributes.add(FileAnchorAttribute);

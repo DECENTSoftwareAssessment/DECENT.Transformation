@@ -6,6 +6,8 @@ pre {
   
   var ClassArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "Class").first();
   var MethodArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "Method").first();
+  var FunctionArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "Function").first();
+  var ModuleArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "Module").first();
   var FileAnchorAttribute = DECENT!Attribute.allInstances().select(t|t.name = "FileAnchor").first();
 }
 
@@ -23,6 +25,8 @@ operation DECENT!State addValue(attribute : DECENT!Attribute, content, stringCon
 }
 
 operation DECENT!State mapAnchoredElement(c : FAMIX!AnchoredElement, artifactType : DECENT!ArtifactType) {
+    ("Transforming "+artifactType.name+" " +c.name +" at revision "+c.revisionId).println();
+
     var fileName = c.sourceAnchor_IN_FileAnchor.fileName;
     ("  File Anchor at "+fileName).println();
     //TODO: add backout strategy in case content already exists
@@ -42,11 +46,27 @@ operation DECENT!State mapAnchoredElement(c : FAMIX!AnchoredElement, artifactTyp
         artifact.type = artifactType;
         artifact.parent = parent;
     }
+    
+    var lastState = null; //naive approach
+    if (artifact.states.size() > 0) {
+        lastState = artifact.states.last();
+    }
+
     self.name = candidateParentStates.first().name;
     self.ID = c.revisionId;
     artifact.states.add(self);
 
     self.addValue(FileAnchorAttribute, null, c.sourceAnchor_IN_FileAnchor.fileName+":"+c.sourceAnchor_IN_FileAnchor.startLine+":"+c.sourceAnchor_IN_FileAnchor.endLine);
+
+    //TODO: keep in mind the parent states may be more than one
+    var activity = new DECENT!Activity;
+    activity.state = lastState;            
+    activity.targetState = self;
+    //TODO: need to properly select corresponding parent activity, this is only the naive approach
+    var parentArtifactActivity = candidateParentStates.first().fromActivity.first();
+    activity.date = parentArtifactActivity.date;
+    activity.type = parentArtifactActivity.type;
+    activity.agent = parentArtifactActivity.agent;
     
     for (attr in c.eClass().getEAllAttributes()) {
         var attribute = DECENT!Attribute.allInstances().
@@ -68,9 +88,14 @@ operation DECENT!State mapAnchoredElement(c : FAMIX!AnchoredElement, artifactTyp
         
         if ((attr.getEAttributeType().getName() == "EDouble")) {
             self.addValue(attribute, c.eGet(attr),null);
-            //TODO: add activities and deltas
+            
+            //TODO: again naive approach
+            var d : new DECENT!Delta;
+            d.activity = activity;
+            d.onAttribute = attribute;
         }
     }
+    
 }
 
 rule Class2State
@@ -79,7 +104,7 @@ rule Class2State
     
     guard : c.sourceAnchor_IN_FileAnchor.fileName <> "_unknown_path" and DECENT!State.allInstances().select(s|s.ID = c.revisionId and s.values.get(0).stringContent = c.sourceAnchor_IN_FileAnchor.fileName).size() > 0
 
-    ("Transforming class "+c.name).println();
+    //("Transforming class "+c.name).println();
     
     s.mapAnchoredElement(c, ClassArtifactType);
 
@@ -144,6 +169,49 @@ rule Class2State
 */
 }
 
+rule Module2State 
+    transform m : FAMIX!Module 
+    to s : DECENT!State {
+    guard {
+        var parentPackageName = m.parentPackage_IN_Package.first().name;
+        var modulePath = m.name;
+        if (parentPackageName.length() > 0) {
+            modulePath = parentPackageName.substring(1)+"/"+m.name;
+        }
+        return m.name <> "_unknown_file" and DECENT!State.allInstances().select(s|s.ID = m.revisionId and s.values.get(0).stringContent = modulePath).size() > 0; 
+    }
+
+    //("Transforming module "+m.name).println();
+    //create a temparary anchor
+    var anchor : new FAMIX!FileAnchor;
+    anchor.revisionId = m.revisionId;
+
+    var parentPackageName = m.parentPackage_IN_Package.first().name;
+    var modulePath = m.name;
+    if (parentPackageName.length() > 0) {
+        modulePath = parentPackageName.substring(1)+"/"+m.name;
+    }
+
+    anchor.fileName = modulePath;
+    //TODO: add start and endlines from file
+    anchor.anchoredElement = m;
+    s.mapAnchoredElement(m, ModuleArtifactType);
+
+}
+
+
+rule Function2State 
+    transform f : FAMIX!Function 
+    to s : DECENT!State {
+    guard : f.sourceAnchor_IN_FileAnchor.fileName <> "_unknown_path" and DECENT!State.allInstances().select(s|s.ID = f.revisionId and s.values.get(0).stringContent = f.sourceAnchor_IN_FileAnchor.fileName).size() > 0
+
+    ("Transforming function "+f.name).println();
+    s.mapAnchoredElement(f, FunctionArtifactType);
+
+    //TODO: with regard to methods and functions, these need to be filtered based on whether they are affected by an activity 
+    //(via hunks/hits algorithm)
+}
+
 rule Method2State 
     transform m : FAMIX!Method 
     to s : DECENT!State {
@@ -162,7 +230,7 @@ rule Method2State
 
     guard : m.sourceAnchor_IN_FileAnchor.fileName <> "_unknown_path" and DECENT!State.allInstances().select(s|s.ID = m.revisionId and s.values.get(0).stringContent = m.sourceAnchor_IN_FileAnchor.fileName).size() > 0
 
-    ("Transforming method "+m.name).println();
+    //("Transforming method "+m.name).println();
     s.mapAnchoredElement(m, MethodArtifactType);
 
 
