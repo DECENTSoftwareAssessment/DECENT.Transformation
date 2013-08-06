@@ -33,6 +33,10 @@ pre mgInitPre {
   LinesRemovedAttribute.name = "LinesRemoved";
   Model.attributePool.attributes.add(LinesRemovedAttribute);
 
+  var BugFix = new DECENT!Attribute;
+  BugFix.name = "BugFix";
+  Model.attributePool.attributes.add(BugFix);
+
 
   //extension
   var FragmentCount = new DECENT!Attribute;
@@ -140,6 +144,8 @@ operation MG!File traverseChildren(parent : DECENT!Artifact) {
             a.states.add(s);
             s.addValue(FilePathAttribute, null, ax.current_file_path);
 
+            s.addValue(BugFix, ax.revision.is_bug_fix.asDouble(), null);
+            
             s.addValue(FragmentCount, ax.revision.lineBlames->select(l|l.file = fcl.child).size().asDouble(), null);
             
             //dealing with file copies
