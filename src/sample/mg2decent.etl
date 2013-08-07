@@ -33,9 +33,13 @@ pre mgInitPre {
   LinesRemovedAttribute.name = "LinesRemoved";
   Model.attributePool.attributes.add(LinesRemovedAttribute);
 
-  var BugFix = new DECENT!Attribute;
-  BugFix.name = "BugFix";
-  Model.attributePool.attributes.add(BugFix);
+  var IsBugFix = new DECENT!Attribute;
+  IsBugFix.name = "IsBugFix";
+  Model.attributePool.attributes.add(IsBugFix);
+
+  var BugFixCount = new DECENT!Attribute;
+  BugFixCount.name = "BugFixCount";
+  Model.attributePool.attributes.add(BugFixCount);
 
 
   //extension
@@ -144,7 +148,12 @@ operation MG!File traverseChildren(parent : DECENT!Artifact) {
             a.states.add(s);
             s.addValue(FilePathAttribute, null, ax.current_file_path);
 
-            s.addValue(BugFix, ax.revision.is_bug_fix.asDouble(), null);
+            var bugFixCount = 0.0;
+            if (lastState <> null) {
+                bugFixCount = lastState.values.select(v|v.ofAttribute = BugFixCount).first().content;
+            }
+
+            s.addValue(BugFixCount, bugFixCount+ax.revision.is_bug_fix.asDouble(), null);
             
             s.addValue(FragmentCount, ax.revision.lineBlames->select(l|l.file = fcl.child).size().asDouble(), null);
             
@@ -207,7 +216,10 @@ operation MG!File traverseChildren(parent : DECENT!Artifact) {
             fileSizeDelta.activity = activity;
             fileSizeDelta.onAttribute = FileSizeAttribute;
 
-            
+            var bugFixDelta : new DECENT!Delta;
+            bugFixDelta.activity = activity;
+            bugFixDelta.onAttribute = BugFixCount;
+
             var hc : new DECENT!ActivityValue;
             hc.activity = activity;
             hc.ofAttribute = HunkCount;
