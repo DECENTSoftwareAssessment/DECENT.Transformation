@@ -1,0 +1,26 @@
+
+var BugFixCount = DECENT!Attribute.allInstances().select(a|a.name = "BugFixCount").first();
+
+
+
+for (s in State.allInstances().select(x|x.artifact.name = "CommandLine.h")) {
+    ("State: "+s.ID + " of "+ s.artifact.name).println();
+    var v = s.values.select(v|v.ofAttribute = BugFixCount);
+    if (v.size() > 0){
+        ("  "+BugFixCount.name+" "+v.first().content).println();
+    }
+    if (v.size() > 0 and v.first().content > 0.0) {
+        for (v in s.values) {
+            ("    Attribute Values: "+v.ofAttribute.name+" = "+v.content).println();
+        }
+        for (c in s.artifact.children) {
+            ("  Child Artifact: "+ c.name).println();
+            var childState = c.states.select(cs|cs.ID = s.ID).first();
+            ("  State: "+childState.ID + " of "+ c.name).println();
+	        for (v in childState.values) {
+	            ("      Child Attribute Values: "+v.ofAttribute.name+" = "+v.content).println();
+	        }
+        }
+	}
+}
+

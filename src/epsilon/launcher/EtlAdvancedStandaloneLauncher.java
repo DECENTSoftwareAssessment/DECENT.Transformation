@@ -56,7 +56,7 @@ public class EtlAdvancedStandaloneLauncher extends EpsilonStandaloneLauncher {
 		EmfUtil.register(URI.createFileURI(new File("../famix.m3/model/AbstractDECENTProvider.ecore").getAbsolutePath()), EPackage.Registry.INSTANCE);
 		EmfUtil.register(URI.createFileURI(new File("../famix.m3/model/FAMIX.ecore").getAbsolutePath()), EPackage.Registry.INSTANCE);
 		
-		for (int i = 1; i <= 50; i++) {
+		for (int i = 1; i <= 2; i++) {
 			executeForCommitId(i);
 		}
 	}
