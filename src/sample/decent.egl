@@ -1,0 +1,12 @@
+[%
+for (a in Artifact.all){
+    for (s in a.states){
+        for (ax in s.activity){
+            for (d in ax.deltas){
+%]
+                [%=a.name+" "+s.ID+" "+ax.agent.name+" "+ax.date+" "+d.onAttribute.name+" "+d.change%]
+[%            
+            }
+        }
+    }
+}%]
