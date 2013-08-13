@@ -1,10 +1,44 @@
 
 var BugFixCount = DECENT!Attribute.allInstances().select(a|a.name = "BugFixCount").first();
+var ClassArtifact = DECENT!ArtifactType.allInstances().select(a|a.name = "code").first();
 
+//TODO: need some safety checks...
+for (a in Artifact.allInstances().select(x|x.type = ClassArtifact)) {
+    var header = "";
+    var h = false;
+    for (s in a.states) {
+        //(a.name+" at "+s.ID).println();
+        for (ax in s.activity) {
+            var output = "";
+            for (d in ax.deltas) {
+                //(d.onAttribute+" ").print();
+                header=header+', '+d.onAttribute.name+'(value), '+d.onAttribute.name+'(new value), '+d.onAttribute.name+'(delta)';
+                //(a.name+' '+s.ID+' '+ax.agent.name+' '+ax.date+' '+d.onAttribute.name+' '+d.value.content+' '+d.targetValue.content+' '+d.change).println();
+                output=output+', '+d.value.content+', '+d.targetValue.content+', '+d.change;
+            }
+            //("").println();
+            if (not h) {
+                ("Artifact, StateID, Agent, ActivityDate"+header).println();
+                h=true;
+            }
+            (a.name+', '+s.ID+', '+ax.agent.name+', '+ax.date+''+output).println();
+        }
+    }
+}
 
-
+/*
 for (s in State.allInstances().select(x|x.artifact.name = "CommandLine.h")) {
     ("State: "+s.ID + " of "+ s.artifact.name).println();
+    ("Next State (derived): "+s.derivedNext + " of "+ s.artifact.name).println();
+    //TODO: EOL/Epsilon doesn't seem to known how to deal with derived values, Acceleo to the rescue... (see related project)'
+    //NOTE: derivation seems to work in native launcher and ant launcher, but not in java launcher for some reason
+    //NOTE: also it refused to work for a while, until "derived volatile" was set in all (or at least one) "derived" attributes and properties
+    //      (not sure if that would make any difference)
+    //now only left to figure out the java launcher...
+    if (s.activity.first().isDefined()) {
+	    ("Deltas: "+s.activity.first().deltas.at(2).onAttribute.name + " change "+ s.activity.first().deltas.at(2).change).println();
+    }
+    
     var v = s.values.select(v|v.ofAttribute = BugFixCount);
     if (v.size() > 0){
         ("  "+BugFixCount.name+" "+v.first().content).println();
@@ -23,4 +57,4 @@ for (s in State.allInstances().select(x|x.artifact.name = "CommandLine.h")) {
         }
 	}
 }
-
+*/
