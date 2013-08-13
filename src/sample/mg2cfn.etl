@@ -1,0 +1,82 @@
+pre mgInitPre {
+
+  //Some initialization
+  //More generic (might be simplified)
+  "Running mg2cfn".println();
+  
+  /********************************** INIT (1x) *******************************/
+  var Network : new CFN!FixNetwork;
+  //TODO: rename to CauseEffectNetwork (more general term) 
+}
+
+post mgInitPost{
+    //TODO: Double check!
+    //TODO: integrate
+    //TODO: ownership?
+    ("Post processing... ").println();
+    for (n in Network.commitNodes){
+        var s = new Set;
+        for (f in n.fileNodes){
+            var b = new Set;
+            for (fc in f.fixCommitNodes) {
+                b.addAll(fc.fileNodes.select(fn|fn.name = f.name).first().bugCommitNodes);
+            }
+            if (b.size() > 0) {
+	            f.bugWeight = 1.asDouble()/b.size();
+            } else {
+                f.bugWeight = 0.asDouble(); 
+            }
+            s.addAll(f.fixCommitNodes);
+        }
+        if (s.size()>0) {
+            n.bugWeight = 1.asDouble()/s.size();
+        } else {
+            n.bugWeight = 0.asDouble();
+        }
+    }
+
+}
+
+
+rule BuildFixNetwork
+    transform r : MG!Revision 
+    to cn : CFN!CommitNode {
+    
+    guard : r.is_bug_fix <> 0 and r.commit_id < 100
+    ("Transforming "+ r.commit_id).println();
+    cn.bugFix = r.is_bug_fix;
+    cn.ID = r.commit_id;
+    cn.fixNetwork = Network;
+    
+    for (h in r.hunks){
+        var fnCurrent = cn.fileNodes.select(f|f.name = h.file.file_name).first();
+        if (fnCurrent.isUndefined()) {
+            fnCurrent = new CFN!FileNode;
+	        fnCurrent.name = h.file.file_name;
+            fnCurrent.commitNode = cn;
+        } else {
+            //TODO: add more weight for multiple changes?
+        }
+        for (hb in h.hunkBlame) {
+            var bc = hb.lastRevision.commit_id;
+            var cnLast = Network.commitNodes.select(c|c.ID = hb.lastRevision.commit_id).first();
+            ("  Bug Commit Node: "+cnLast).println();
+            if (cnLast.isUndefined()) {
+                cnLast = new CFN!CommitNode;
+                cnLast.ID = hb.lastRevision.commit_id;
+                cnLast.fixNetwork = Network;
+            }
+            var fnLast = cnLast.fileNodes.select(f|f.name = h.file.file_name).first();
+	        if (fnLast.isUndefined()) {
+	            fnLast = new CFN!FileNode;
+	            fnLast.name = h.file.file_name;
+	            fnLast.commitNode = cnLast;
+	        } else {
+	            //TODO: add more weight for multiple changes?
+	        }
+            fnCurrent.bugCommitNodes.add(cnLast);
+            fnLast.fixCommitNodes.add(cn);
+            ("    bug commit id "+bc+" of file "+h.file.file_name).println();
+        }
+    }
+}

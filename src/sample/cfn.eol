@@ -1,0 +1,14 @@
+
+var Network = CFN!FixNetwork.allInstances().first();
+
+for (c in Network.commitNodes) {
+    for (f in c.fileNodes) {
+        for (b in f.bugCommitNodes) {
+            var fb = b.fileNodes.select(fn|fn.name = f.name).first();
+            if (fb.isDefined) {
+	            (f.name+"("+c.ID+"),fixes("+fb.bugWeight+"),"+fb.name+"("+b.ID+"),"+fb.bugWeight).println();
+            }
+        }
+    
+    }
+}
