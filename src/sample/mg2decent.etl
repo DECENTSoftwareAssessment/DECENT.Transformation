@@ -155,6 +155,7 @@ operation MG!File traverseChildren(parent : DECENT!Artifact) {
 
             s.addValue(BugFixCount, bugFixCount+ax.revision.is_bug_fix.asDouble(), null);
             
+            //TODO: check if available
             s.addValue(FragmentCount, ax.revision.lineBlames->select(l|l.file = fcl.child).size().asDouble(), null);
             
             //dealing with file copies
@@ -176,28 +177,6 @@ operation MG!File traverseChildren(parent : DECENT!Artifact) {
                     
                 }
             }
-            
-            //dealing with filesize and base churn values
-            var patchLines = ax.revision.patchLines->select(l|l.file = fcl.child);
-            if (patchLines.size() > 0) {
-                //TODO: these look more like activity values
-                var linesAdded = s.addValue(LinesAddedAttribute, patchLines.asOrderedSet().first().added.asDouble(), null);
-                var linesRemoved = s.addValue(LinesRemovedAttribute, patchLines.asOrderedSet().first().removed.asDouble(), null);
-                
-                var fileSize = "0".asDouble();
-                var difference = linesAdded.content - linesRemoved.content;
-                if (lastState.isDefined()) {
-                    var lastFileSizeValueSet = lastState.values->select(v|v.ofAttribute = FileSizeAttribute);
-                    if (lastFileSizeValueSet.notEmpty()){
-                        fileSize = lastFileSizeValueSet.asOrderedSet().first().content + difference;
-                    } else {
-                        //no last file size value?
-                    }
-                } else {
-                    fileSize = difference;
-                }
-	            var size = s.addValue(FileSizeAttribute, fileSize, null);
-            }
 
             var activity = new DECENT!Activity;
             activity.targetState = s;
@@ -205,6 +184,38 @@ operation MG!File traverseChildren(parent : DECENT!Artifact) {
             activity.type = ax.type;
             activity.agent = Model.agentPool.agents.select(agent|agent.name = ax.revision.author.name).first();
             activity.state = lastState;            
+            
+            //dealing with filesize and base churn values
+            var linesAdded = "0".asDouble();
+            var linesRemoved = "0".asDouble();
+            var difference = "0".asDouble();
+            var fileSize = "0".asDouble();
+            
+            var patchLines = ax.revision.patchLines->select(l|l.file = fcl.child);
+            if (patchLines.size() > 0) {
+                //TODO: these look more like activity values
+                linesAdded = patchLines.asOrderedSet().first().added.asDouble();
+                linesRemoved = patchLines.asOrderedSet().first().removed.asDouble();
+                
+                difference = linesAdded - linesRemoved;
+            }
+            
+            if (lastState.isDefined()) {
+                var lastFileSizeValueSet = lastState.values->select(v|v.ofAttribute = FileSizeAttribute);
+                if (lastFileSizeValueSet.notEmpty()){
+                    ("*****   Last state "+lastState.ID).println();
+                    ("*****   Last size "+lastFileSizeValueSet.first().content).println();
+                    fileSize = lastFileSizeValueSet.asOrderedSet().first().content + difference;
+                } else {
+                    //no last file size value?
+                }
+            } else {
+                fileSize = difference;
+            }
+            ("***** File: " +a.name+" in "+s.ID+": added "+linesAdded+ " removed "+linesRemoved +" size "+fileSize + " difference " + difference + " last state "+lastState.isDefined()).println();
+
+            s.addValue(FileSizeAttribute, fileSize, null);
+            
             lastState = s;
 
             //TODO: separate transformation?
@@ -229,6 +240,17 @@ operation MG!File traverseChildren(parent : DECENT!Artifact) {
             message.activity = activity;
             message.ofAttribute = Message;
             message.stringContent = ax.revision.message;
+
+            var la : new DECENT!ActivityValue;
+            la.activity = activity;
+            la.ofAttribute = LinesAddedAttribute;
+            la.content = linesAdded;
+
+            var lr : new DECENT!ActivityValue;
+            lr.activity = activity;
+            lr.ofAttribute = LinesRemovedAttribute;
+            lr.content = linesRemoved;
+
             
         }
         
