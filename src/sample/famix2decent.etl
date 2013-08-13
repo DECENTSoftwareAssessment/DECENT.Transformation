@@ -35,9 +35,10 @@ operation DECENT!State mapAnchoredElement(c : FAMIX!AnchoredElement, artifactTyp
     //TODO: what if more than one?
     var parent = candidateParentStates.first().artifact;
     ("      Candidate Parent Artifact: "+parent.name).println();
-    var candidateArtifacts = parent.children.select(child|child.name = c.name);
+    var candidateArtifacts = parent.children.select(child|child.name = c.name and child.type = artifactType);
     var artifact = null;
     if (candidateArtifacts.size() > 0) {
+        ("      Candidate Artifacts: "+candidateArtifacts.size()).println();
         //TODO: what if more than one?
         artifact = candidateArtifacts.first();
     } else {
