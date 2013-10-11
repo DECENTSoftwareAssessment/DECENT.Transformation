@@ -14,6 +14,8 @@ package epsilon.launcher;
 import java.io.File;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 
 import org.eclipse.emf.common.util.URI;
@@ -47,17 +49,50 @@ public class EtlAdvancedStandaloneLauncher extends EpsilonStandaloneLauncher {
 
 	@Override
 	public void execute() throws Exception {
+		EmfUtil.register(URI.createFileURI(new File("../DECENT/model/DECENTv2.ecore").getAbsolutePath()), EPackage.Registry.INSTANCE);
+		EmfUtil.register(URI.createFileURI(new File("../DECENT/model/DECENTv3.ecore").getAbsolutePath()), EPackage.Registry.INSTANCE);
+		EmfUtil.register(URI.createFileURI(new File("../famix.m3/model/AbstractDECENTProvider.ecore").getAbsolutePath()), EPackage.Registry.INSTANCE);
+		EmfUtil.register(URI.createFileURI(new File("../famix.m3/model/FAMIX.ecore").getAbsolutePath()), EPackage.Registry.INSTANCE);
+
+		//executeDefault(); //default slower version (reloads decent model instance every time)
+		executeSeparate(); //reloads only famix model instances
+	}
+	
+	private void executeDefault() throws Exception {
 		//NOTE: a somewhat ugly workaround for the ANT based launcher that refuses to store changes for some reason when ran for 
 		//multiple revisions
 		//TODO: pending refinement (this will probably evolve into being the go-to launcher as ANT is a waste of time and its limits 
 		//are becoming more and more evident. It was good use to get started but ultimately with sufficient refinement a Java-based
 		//launcher can be equally simplistic
-		EmfUtil.register(URI.createFileURI(new File("../DECENT/model/DECENTv2.ecore").getAbsolutePath()), EPackage.Registry.INSTANCE);
-		EmfUtil.register(URI.createFileURI(new File("../famix.m3/model/AbstractDECENTProvider.ecore").getAbsolutePath()), EPackage.Registry.INSTANCE);
-		EmfUtil.register(URI.createFileURI(new File("../famix.m3/model/FAMIX.ecore").getAbsolutePath()), EPackage.Registry.INSTANCE);
 		
-		for (int i = 1; i <= 2; i++) {
-			executeForCommitId(i);
+//		for (int i = 1; i <= 50; i++) {
+//			executeForCommitId(i);
+//		}
+		
+		String famixResourceLocation = "/home/philip-iii/TEMP";
+		famixResourceLocation = "/media/DATA/Backup/Results/rekonq/fmx/famix/";
+
+		File ws = new File(famixResourceLocation);
+		String[] commits = ws.list();
+		Arrays.sort(commits, new Comparator<String>() {
+
+			@Override
+			public int compare(String o1, String o2) {
+				if (o1.equals(o2)) {
+					return 0;
+				} else if (Integer.parseInt(o1)>Integer.parseInt(o2)){
+					return 1;
+				} else {
+					return -1;
+				}
+			}
+		});
+		
+		for (String c : commits) {
+			if (Integer.parseInt(c)<50) {
+				System.out.println("Processing: "+c);
+				executeForCommitId(Integer.parseInt(c));
+			}
 		}
 	}
 
@@ -74,21 +109,90 @@ public class EtlAdvancedStandaloneLauncher extends EpsilonStandaloneLauncher {
 			System.exit(-1);
 		}
 
-		for (IModel model : getModels(commitId)) {
+		for (IModel model : getModelsForCommit(commitId)) {
 			module.getContext().getModelRepository().addModel(model);
 		}
 		
 		preProcess();
 		result = execute(module);
 		postProcess();
-		
+		//TODO: revamp to dispose only of the famix model and reload only a new famix model
 		module.getContext().getModelRepository().dispose();
 	}
 
-	public List<IModel> getModels(int commitId) throws Exception {
+	private void executeSeparate() throws Exception, URISyntaxException,
+			EolModelLoadingException, EolRuntimeException {
+		module = createModule();
+		module.parse(getFile(getSource()));
+
+		if (module.getParseProblems().size() > 0) {
+			System.err.println("Parse errors occured...");
+			for (ParseProblem problem : module.getParseProblems()) {
+				System.err.println(problem.toString());
+			}
+			System.exit(-1);
+		}
+
+		module.getContext().getModelRepository().addModel(getDecentModel());
+		
+		String famixResourceLocation = "/home/philip-iii/TEMP";
+		famixResourceLocation = "/media/DATA/Backup/Results/rekonq/fmx/famix/";
+
+		File ws = new File(famixResourceLocation);
+		String[] commits = ws.list();
+		Arrays.sort(commits, new Comparator<String>() {
+
+			@Override
+			public int compare(String o1, String o2) {
+				if (o1.equals(o2)) {
+					return 0;
+				} else if (Integer.parseInt(o1)>Integer.parseInt(o2)){
+					return 1;
+				} else {
+					return -1;
+				}
+			}
+		});
+		
+		for (String c : commits) {
+			if (Integer.parseInt(c)<5) {
+				System.out.println("Processing: "+c);
+				IModel famixModel = getFamixModel(Integer.parseInt(c));
+				module.getContext().getModelRepository().addModel(famixModel);
+				preProcess();
+				
+				result = execute(module);
+				postProcess();
+				//module.getContext().getModelRepository().getModelByName("FAMIX").dispose();
+				module.getContext().getModelRepository().removeModel(famixModel);
+			}
+		}
+		module.getContext().getModelRepository().dispose();
+	}
+	
+	public IModel getDecentModel() throws Exception {
+		String decentResourceLocation = "output/MGGitWS.decent";
+		decentResourceLocation = "output/rekonq.decent";
+		IModel model = createEmfModel("DECENT", decentResourceLocation, "../DECENT/model/DECENTv3.ecore", true, true);
+		return model;
+	}
+
+	public IModel getFamixModel(int commitId) throws Exception {
+		String famixResourceLocation = "/home/philip-iii/TEMP";
+		famixResourceLocation = "/media/DATA/Backup/Results/rekonq";
+		IModel model =  createEmfModel("FAMIX", famixResourceLocation + "/fmx/famix/"+commitId+"/model.famix", "../famix.m3/model/FAMIX.ecore", true, false);
+		return model;
+	}
+	
+	
+	public List<IModel> getModelsForCommit(int commitId) throws Exception {
 		List<IModel> models = new ArrayList<IModel>();
-		models.add(createEmfModel("DECENT", "output/MGGitWS.decent", "../DECENT/model/DECENTv2.ecore", true, true));
-		models.add(createEmfModel("FAMIX", "/home/philip-iii/TEMP/fmx/famix/"+commitId+"/model.famix", "../famix.m3/model/FAMIX.ecore", true, false));
+		String decentResourceLocation = "output/MGGitWS.decent";
+		decentResourceLocation = "output/rekonq.decent";
+		String famixResourceLocation = "/home/philip-iii/TEMP";
+		famixResourceLocation = "/media/DATA/Backup/Results/rekonq";
+		models.add(createEmfModel("DECENT", decentResourceLocation, "../DECENT/model/DECENTv3.ecore", true, true));
+		models.add(createEmfModel("FAMIX", famixResourceLocation + "/fmx/famix/"+commitId+"/model.famix", "../famix.m3/model/FAMIX.ecore", true, false));
 		
 		return models;
 	}
@@ -104,9 +208,11 @@ public class EtlAdvancedStandaloneLauncher extends EpsilonStandaloneLauncher {
 		return models;
 	}
 
+	//TODO: extract all parameters and configurations
 	@Override
 	public String getSource() throws Exception {
-		return "src/sample/famix2decent.etl";
+		//return "src/sample/famix2decent.etl";
+		return "src/sample/famix2decent3.etl";
 	}
 
 	@Override
