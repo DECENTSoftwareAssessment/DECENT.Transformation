@@ -1,0 +1,17 @@
+//Example splitting across multiple resources, exploit further with a viable splitting strategy
+
+var Model : new DECENT1!Model;
+Model.artifactTypeHierarchy = new DECENT1!ArtifactTypeHierarchy;
+Model.agentPool = new DECENT1!AgentPool;
+Model.attributePool = new DECENT1!AttributePool;
+
+var s1 : new DECENT1!State;
+s1.ID=1;
+
+var s2 : new DECENT1!State;
+s2.ID=2;
+s2.previous.add(s1);
+
+var s3 : new DECENT2!State;
+s3.ID=3;
+s3.previous.add(s2);
