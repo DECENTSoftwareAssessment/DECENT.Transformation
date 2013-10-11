@@ -1,0 +1,305 @@
+import "famix-init.etl";
+pre mgInitPre {
+
+  //Some initialization
+  //More generic (might be simplified)
+  "Running mg2decent v3".println();
+  
+  /********************************** INIT (1x) *******************************/
+  
+  var Model : new DECENT!Model;
+  Model.artifactTypeHierarchy = new DECENT!ArtifactTypeHierarchy;
+  Model.agentPool = new DECENT!AgentPool;
+  Model.attributePool = new DECENT!AttributePool;
+  //Model.projects = new List;
+  
+  var BranchArtifactType = new DECENT!ArtifactType;
+  BranchArtifactType.name = "Branch";
+  Model.artifactTypeHierarchy.types.add(BranchArtifactType);
+    
+  var FilePathAttribute = new DECENT!Attribute;
+  FilePathAttribute.name = "FilePath";
+  Model.attributePool.attributes.add(FilePathAttribute);
+
+  var BranchAttribute = new DECENT!Attribute;
+  BranchAttribute.name = "Branch";
+  Model.attributePool.attributes.add(BranchAttribute);
+
+
+  var FileSizeAttribute = new DECENT!Attribute;
+  FileSizeAttribute.name = "FileSize";
+  Model.attributePool.attributes.add(FileSizeAttribute);
+
+  var LinesAddedAttribute = new DECENT!Attribute;
+  LinesAddedAttribute.name = "LinesAdded";
+  Model.attributePool.attributes.add(LinesAddedAttribute);
+
+  var LinesRemovedAttribute = new DECENT!Attribute;
+  LinesRemovedAttribute.name = "LinesRemoved";
+  Model.attributePool.attributes.add(LinesRemovedAttribute);
+
+  var IsBugFix = new DECENT!Attribute;
+  IsBugFix.name = "IsBugFix";
+  Model.attributePool.attributes.add(IsBugFix);
+
+  var BugFixCount = new DECENT!Attribute;
+  BugFixCount.name = "BugFixCount";
+  Model.attributePool.attributes.add(BugFixCount);
+
+
+  //extension
+  var FragmentCount = new DECENT!Attribute;
+  FragmentCount.name = "FragmentCount";
+  Model.attributePool.attributes.add(FragmentCount);
+
+  var HunkCount = new DECENT!Attribute;
+  HunkCount.name = "HunkCount";
+  Model.attributePool.attributes.add(HunkCount);
+
+  var Message = new DECENT!Attribute;
+  Message.name = "Message";
+  Model.attributePool.attributes.add(Message);
+
+
+  var Project = new DECENT!Project;
+  Project.name = MG!Model.allInstances().first().name;
+  Model.projects.add(Project);
+  
+  for (p in MG!People.allInstances()){
+	("Transforming agent "+p.name).println();
+	var a = new DECENT!Agent;
+	a.name = p.name;
+	a.eMail = p.email;
+	Model.agentPool.agents.add(a);
+	Model.projects.get(0).agents.add(a);
+  }
+  
+  for (b in MG!Branch.allInstances()){
+	var Location = new DECENT!Location;
+	Location.name = b.name;
+	Location.type = BranchArtifactType;
+	Project.location.add(Location);
+	var RootArtifact = new DECENT!Artifact;
+	RootArtifact.name = "/";
+	Location.rootArtifact = RootArtifact;
+  }
+  
+  //TODO: handle all branches
+  var RootArtifact = Project.location.select(l|l.name = 'master').first().rootArtifact;
+
+  var artifactCount = MG!File.allInstances().size();
+  var processedCount = 0;
+
+  //start preprocessing (building the artifact tree)
+  var MGRootArtifact = MG!File.allInstances().select(f|f.file_name = 'ROOT');
+  ("Pre processing "+MGRootArtifact.get(0).file_name+" : " + RootArtifact.name).println();
+  MGRootArtifact.get(0).traverseChildren(RootArtifact);
+}
+
+post mgInitPost{
+  ("Post processing... ").println();
+
+    //TODO: adjust branching structure
+}
+
+operation String replaceExtension() : String {
+    return self.replace('\\.h','.cpp');
+}
+
+operation String replaceInclude() : String {
+    return self.replace('include','src');
+}
+
+//TODO: figure out type specification for content
+operation DECENT!State addValue(attribute : DECENT!Attribute, content, stringContent : String) : DECENT!Value {
+    var value : new DECENT!Value;
+    value.name = attribute.name;
+    value.content = content;
+    value.stringContent = stringContent;
+    self.values.add(value);
+    value.ofAttribute = attribute;
+    self.artifact.attributes.add(attribute);
+    attribute.artifactTypes.add(self.artifact.type);
+    return value;
+}
+
+operation DECENT!Activity addDelta(attribute : DECENT!Attribute) : DECENT!Delta {
+    return self.addDelta(attribute, self.targetState.values.select(v|v.ofAttribute = attribute).first());
+}
+
+
+operation DECENT!Activity addDelta(attribute : DECENT!Attribute, value : DECENT!Value) : DECENT!Delta {
+    var delta : new DECENT!Delta;
+    delta.onAttribute = attribute;
+    delta.targetValue = value;
+    if (self.state.isDefined()){
+	    delta.value = self.state.values.select(v|v.ofAttribute = attribute).first();
+        delta.change = delta.targetValue.content - delta.value.content;
+    } else {
+        delta.change = delta.targetValue.content;
+    }
+    self.deltas.add(delta);
+    return delta;
+}
+
+
+
+operation MG!File traverseChildren(parent : DECENT!Artifact) {
+    //NOTE: parent information refers to target artifact, thus "in" is "target" and not "container"
+    //TODO: counter is also off.. => need to check for duplicate artifacts and only create if new?
+    ("Transforming artifact "+self.file_name+" ("+self.file_type+") in "+parent.name+" ("+processedCount+"/"+artifactCount+" completed)").println();
+    
+    //processing children
+    for (fcl in self.childrenLinks) {
+        //("  Linking child artifact "+fcl.child.file_name+"").println();
+        var a = DECENT!Artifact.allInstances().select(a|a.name = fcl.child.file_name and a.parent = parent).first();
+        //TODO: what if size is > 1?
+        if (not a.isDefined()){
+	        a = new DECENT!Artifact;
+	        a.name = fcl.child.file_name;
+	        a.parent = parent; //this should probably be self really..
+		    processedCount = processedCount + 1;
+        }
+        
+        //setting type
+	    var artifactType = DECENT!ArtifactType.allInstances().
+	        select(at|at.name = fcl.child.file_type).first;
+	    if (not artifactType.isDefined()){
+	        //("  Artifact type not defined. Initializing "+fcl.child.file_type+" ").println();
+	        artifactType = new DECENT!ArtifactType;
+	        artifactType.name = fcl.child.file_type;
+	        Model.artifactTypeHierarchy.types.add(artifactType);
+	    }
+	    a.type = artifactType;
+        
+        //creating states and activities
+        //TODO: connect states
+        var lastState = null; //naive approach
+        
+        //TODO: revise using equivalent(s)
+        for (ax in MG!Action.allInstances().select(ax|ax.file = fcl.child)){
+            var s : new DECENT!State;
+            s.name = ax.revision.rev;
+            //s.ID = new Native("java.math.BigInteger")(ax.revision.commit_id.asString());
+            s.ID = ax.revision.commit_id;
+            a.states.add(s);
+            s.addValue(FilePathAttribute, null, ax.current_file_path);
+            s.addValue(BranchAttribute, null, ax.branch.name);
+
+            var bugFixCount = 0.0;
+            if (lastState <> null) {
+                bugFixCount = lastState.values.select(v|v.ofAttribute = BugFixCount).first().content;
+                s.previous.add(lastState);
+                
+            }
+
+            s.addValue(BugFixCount, bugFixCount+ax.revision.is_bug_fix.asDouble(), null);
+            
+            //TODO: check if available
+            s.addValue(FragmentCount, ax.revision.lineBlames->select(l|l.file = fcl.child).size().asDouble(), null);
+            
+            //dealing with file copies
+            //TODO: or move in a separate operatation (in post) - set previous state accordingly
+            if (ax.copy.isDefined()){
+                var fromFile = ax.copy.fromFile.file_name;
+                //("  Copy of " + fromFile + "").println();
+                var sharedStates = DECENT!State.allInstances().select(s|s.ID = ax.copy.fromRevision.commit_id);
+                for (ss in sharedStates){
+                    var filePathValue = ss.values.select(v|v.ofAttribute = FilePathAttribute).first();
+                    //check 
+                    if (ss.artifact.name = fromFile and ss <> s) {
+                        //("  Source Artifact: "+ ss.artifact.name).println();
+                        lastState = ss; //state itself or rather the previous?
+                        if (ss.fromActivity.notEmpty()) {
+                            lastState = ss.fromActivity.first().state;
+                        }
+                    }
+                    
+                }
+            }
+
+            var activity = new DECENT!Activity;
+            activity.targetState = s;
+            activity.date = ax.revision.author_date;
+            activity.type = ax.type;
+            activity.agent = Model.agentPool.agents.select(agent|agent.name = ax.revision.author.name).first();
+            activity.state = lastState;            
+            
+            //dealing with filesize and base churn values
+            var linesAdded = "0".asDouble();
+            var linesRemoved = "0".asDouble();
+            var difference = "0".asDouble();
+            var fileSize = "0".asDouble();
+            
+            var patchLines = ax.revision.patchLines->select(l|l.file = fcl.child);
+            if (patchLines.size() > 0) {
+                //TODO: these look more like activity values
+                linesAdded = patchLines.asOrderedSet().first().added.asDouble();
+                linesRemoved = patchLines.asOrderedSet().first().removed.asDouble();
+                
+                difference = linesAdded - linesRemoved;
+            }
+            
+            if (lastState.isDefined()) {
+                var lastFileSizeValueSet = lastState.values->select(v|v.ofAttribute = FileSizeAttribute);
+                if (lastFileSizeValueSet.notEmpty()){
+                    //("*****   Last state "+lastState.ID).println();
+                    //("*****   Last size "+lastFileSizeValueSet.first().content).println();
+                    fileSize = lastFileSizeValueSet.asOrderedSet().first().content + difference;
+                } else {
+                    //no last file size value?
+                }
+            } else {
+                fileSize = difference;
+            }
+            //("***** File: " +a.name+" in "+s.ID+": added "+linesAdded+ " removed "+linesRemoved +" size "+fileSize + " difference " + difference + " last state "+lastState.isDefined()).println();
+
+            s.addValue(FileSizeAttribute, fileSize, null);
+            
+            activity.addDelta(FragmentCount);
+            activity.addDelta(FileSizeAttribute);
+            activity.addDelta(BugFixCount);
+            
+            lastState = s;
+
+            //TODO: separate transformation?
+            /*
+            var fragmentCountDelta : new DECENT!Delta;
+            fragmentCountDelta.activity = activity;
+            fragmentCountDelta.onAttribute = FragmentCount;
+
+            var fileSizeDelta : new DECENT!Delta;
+            fileSizeDelta.activity = activity;
+            fileSizeDelta.onAttribute = FileSizeAttribute;
+
+            var bugFixDelta : new DECENT!Delta;
+            bugFixDelta.activity = activity;
+            bugFixDelta.onAttribute = BugFixCount;
+            */
+            var hc : new DECENT!ActivityValue;
+            hc.activity = activity;
+            hc.ofAttribute = HunkCount;
+            hc.content = ax.revision.hunks->select(h|h.file = fcl.child).size().asDouble();
+            
+            var message : new DECENT!ActivityValue;
+            message.activity = activity;
+            message.ofAttribute = Message;
+            message.stringContent = ax.revision.message;
+
+            var la : new DECENT!ActivityValue;
+            la.activity = activity;
+            la.ofAttribute = LinesAddedAttribute;
+            la.content = linesAdded;
+
+            var lr : new DECENT!ActivityValue;
+            lr.activity = activity;
+            lr.ofAttribute = LinesRemovedAttribute;
+            lr.content = linesRemoved;
+
+            
+        }
+        
+        fcl.child.traverseChildren(a);
+     }
+}
+
