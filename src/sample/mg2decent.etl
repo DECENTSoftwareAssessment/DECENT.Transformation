@@ -21,6 +21,11 @@ pre mgInitPre {
   FilePathAttribute.name = "FilePath";
   Model.attributePool.attributes.add(FilePathAttribute);
 
+  var BranchAttribute = new DECENT!Attribute;
+  BranchAttribute.name = "Branch";
+  Model.attributePool.attributes.add(BranchAttribute);
+
+
   var FileSizeAttribute = new DECENT!Attribute;
   FileSizeAttribute.name = "FileSize";
   Model.attributePool.attributes.add(FileSizeAttribute);
@@ -82,6 +87,9 @@ pre mgInitPre {
   //TODO: handle all branches
   var RootArtifact = Project.location.select(l|l.name = 'master').first().rootArtifact;
 
+  var artifactCount = MG!File.allInstances().size();
+  var processedCount = 0;
+
   //start preprocessing (building the artifact tree)
   var MGRootArtifact = MG!File.allInstances().select(f|f.file_name = 'ROOT');
   ("Pre processing "+MGRootArtifact.get(0).file_name+" : " + RootArtifact.name).println();
@@ -91,6 +99,7 @@ pre mgInitPre {
 post mgInitPost{
   ("Post processing... ").println();
 
+    //TODO: adjust branching structure
 }
 
 operation String replaceExtension() : String {
@@ -115,20 +124,27 @@ operation DECENT!State addValue(attribute : DECENT!Attribute, content, stringCon
 
 
 operation MG!File traverseChildren(parent : DECENT!Artifact) {
-    ("Transforming artifact "+self.file_name+" ("+self.file_type+") in "+parent.name+"").println();
-
+    //NOTE: parent information refers to target artifact, thus "in" is "target" and not "container"
+    //TODO: counter is also off.. => need to check for duplicate artifacts and only create if new?
+    ("Transforming artifact "+self.file_name+" ("+self.file_type+") in "+parent.name+" ("+processedCount+"/"+artifactCount+" completed)").println();
+    
     //processing children
     for (fcl in self.childrenLinks) {
-        ("  Linking child artifact "+fcl.child.file_name+"").println();
-        var a : new DECENT!Artifact;
-        a.name = fcl.child.file_name;
-        a.parent = parent;
+        //("  Linking child artifact "+fcl.child.file_name+"").println();
+        var a = DECENT!Artifact.allInstances().select(a|a.name = fcl.child.file_name and a.parent = parent).first();
+        //TODO: what if size is > 1?
+        if (not a.isDefined()){
+	        a = new DECENT!Artifact;
+	        a.name = fcl.child.file_name;
+	        a.parent = parent; //this should probably be self really..
+		    processedCount = processedCount + 1;
+        }
         
         //setting type
 	    var artifactType = DECENT!ArtifactType.allInstances().
 	        select(at|at.name = fcl.child.file_type).first;
 	    if (not artifactType.isDefined()){
-	        ("  Artifact type not defined. Initializing "+fcl.child.file_type+" ").println();
+	        //("  Artifact type not defined. Initializing "+fcl.child.file_type+" ").println();
 	        artifactType = new DECENT!ArtifactType;
 	        artifactType.name = fcl.child.file_type;
 	        Model.artifactTypeHierarchy.types.add(artifactType);
@@ -147,6 +163,7 @@ operation MG!File traverseChildren(parent : DECENT!Artifact) {
             s.ID = ax.revision.commit_id;
             a.states.add(s);
             s.addValue(FilePathAttribute, null, ax.current_file_path);
+            s.addValue(BranchAttribute, null, ax.branch.name);
 
             var bugFixCount = 0.0;
             if (lastState <> null) {
@@ -154,7 +171,7 @@ operation MG!File traverseChildren(parent : DECENT!Artifact) {
             }
 
             s.addValue(BugFixCount, bugFixCount+ax.revision.is_bug_fix.asDouble(), null);
-            
+          
             //TODO: check if available
             s.addValue(FragmentCount, ax.revision.lineBlames->select(l|l.file = fcl.child).size().asDouble(), null);
             
@@ -203,8 +220,8 @@ operation MG!File traverseChildren(parent : DECENT!Artifact) {
             if (lastState.isDefined()) {
                 var lastFileSizeValueSet = lastState.values->select(v|v.ofAttribute = FileSizeAttribute);
                 if (lastFileSizeValueSet.notEmpty()){
-                    ("*****   Last state "+lastState.ID).println();
-                    ("*****   Last size "+lastFileSizeValueSet.first().content).println();
+                    //("*****   Last state "+lastState.ID).println();
+                    //("*****   Last size "+lastFileSizeValueSet.first().content).println();
                     fileSize = lastFileSizeValueSet.asOrderedSet().first().content + difference;
                 } else {
                     //no last file size value?
@@ -212,9 +229,13 @@ operation MG!File traverseChildren(parent : DECENT!Artifact) {
             } else {
                 fileSize = difference;
             }
-            ("***** File: " +a.name+" in "+s.ID+": added "+linesAdded+ " removed "+linesRemoved +" size "+fileSize + " difference " + difference + " last state "+lastState.isDefined()).println();
+            //("***** File: " +a.name+" in "+s.ID+": added "+linesAdded+ " removed "+linesRemoved +" size "+fileSize + " difference " + difference + " last state "+lastState.isDefined()).println();
 
             s.addValue(FileSizeAttribute, fileSize, null);
+
+
+            
+
             
             lastState = s;
 
