@@ -14,6 +14,10 @@ post mgInitPost{
     //TODO: integrate
     //TODO: ownership?
     ("Post processing... ").println();
+
+//advanced
+
+//simple 
     for (n in Network.commitNodes){
         var s = new Set;
         for (f in n.fileNodes){
@@ -42,10 +46,10 @@ rule BuildFixNetwork
     transform r : MG!Revision 
     to cn : CFN!CommitNode {
     
-    guard : r.is_bug_fix <> 0 and r.commit_id < 100
-    ("Transforming "+ r.commit_id).println();
+    guard : /*r.is_bug_fix <> 0 and*/ r.commit_id < 100
+    ("Transforming "+ r.commit_id +" Fix: " +r.is_bug_fix).println();
     cn.bugFix = r.is_bug_fix;
-    cn.ID = r.commit_id;
+    cn.ID = r.commit_id; //commit_id
     cn.fixNetwork = Network;
     
     for (h in r.hunks){
