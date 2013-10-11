@@ -20,12 +20,12 @@
  		<epsilon.emf.register file="../../MininGit.m1x/model/MGStandalone.ecore"/>
  		 		
  		<epsilon.emf.loadModel name="MG"
-                                       modelFile="../input/model-rekonq-no-content-lineblames.mg"
+                                       modelFile="../input/model.mg"
                                        metamodelUri="MGStandalone"
                                        read="true" store="false"/>
 
  		<epsilon.emf.loadModel name="DECENT"
-                                       modelFile="../output/rekonq.decent"
+                                       modelFile="../output/MGGitWS.decent"
                                        metamodelUri="http://decent/2.0"
                                        read="false" store="true"/>
  	</target>

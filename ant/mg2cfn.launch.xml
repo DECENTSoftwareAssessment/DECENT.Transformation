@@ -15,7 +15,7 @@
 <project default="main">
 
  	<target name="loadModels">
- 		<epsilon.emf.register file="../../DECENT/model/DECENTv2.ecore"/>
+ 		<epsilon.emf.register file="../../DECENT/model/DECENTv3.ecore"/>
  		<epsilon.emf.register file="../../CommitFixNetwork/model/CommitFixNetwork.ecore"/>
  		<epsilon.emf.register file="../../MininGit.m1x/model/MGStandalone.ecore"/>
  		 		
@@ -29,9 +29,26 @@
                                        metamodelUri="CFN/1.0"
                                        read="false" store="true"/>
  	</target>
+    <target name="loadModels-test">
+        <epsilon.emf.register file="../../DECENT/model/DECENTv3.ecore"/>
+        <epsilon.emf.register file="../../CommitFixNetwork/model/CommitFixNetwork.ecore"/>
+        <epsilon.emf.register file="../../MininGit.m1x/model/MGStandalone.ecore"/>
+                
+        <epsilon.emf.loadModel name="MG"
+                                       modelFile="../input/model.mg"
+                                       metamodelUri="MGStandalone"
+                                       read="true" store="false"/>
+
+        <epsilon.emf.loadModel name="CFN"
+                                       modelFile="../output/model.cfn"
+                                       metamodelUri="CFN/1.0"
+                                       read="false" store="true"/>
+    </target>
+	
+	
  	
-	<target name="main" depends="loadModels">		
-		<epsilon.etl src="../src/sample/mg2cfn.etl">
+	<target name="main" depends="loadModels-test">		
+		<epsilon.etl src="../src/sample/mg2cfn-advanced.etl">
 			<model ref="MG"/>
 			<model ref="CFN"/>
 		</epsilon.etl>
