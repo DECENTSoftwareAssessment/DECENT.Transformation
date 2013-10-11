@@ -1,15 +1,15 @@
 
 var BugFixCount = DECENT!Attribute.allInstances().select(a|a.name = "BugFixCount").first();
-var ClassArtifact = DECENT!ArtifactType.allInstances().select(a|a.name = "Method").first();
+var Type = DECENT!ArtifactType.allInstances().select(a|a.name = "Class").first();
 
-//TODO: need some safety checks...
-var h = false;
-var separator = ",";
-for (a in Artifact.allInstances().select(x|x.type = ClassArtifact)) {
-    var header = "";
-    for (s in a.states) {
-        //(a.name+" at "+s.ID).println();
-        for (ax in s.activity) {
+iterateOverArtifacts(Type);
+
+operation iterateOverAgents (type:DECENT!ArtifactType) {
+    var h = false;
+    var separator = ",";
+    for (a in Agent.allInstances()) {
+        var header = "";
+        for (ax in a.activities.select(a|a.state.artifact.type = type)) {
             var output = "";
             for (d in ax.deltas) {
                 //(d.onAttribute+" ").print();
@@ -22,10 +22,40 @@ for (a in Artifact.allInstances().select(x|x.type = ClassArtifact)) {
                 ("Artifact, StateID, Agent, ActivityDate"+header).println();
                 h=true;
             }
-            (a.name+separator+s.ID+separator+ax.agent.name+separator+ax.date+''+output).println();
+            (ax.state.artifact.name+separator+ax.state.ID+separator+a.name+separator+ax.date+''+output).println();
+        
         }
     }
+
 }
+
+operation iterateOverArtifacts (type:DECENT!ArtifactType) {
+	//TODO: need some safety checks...
+	var h = false;
+	var separator = ",";
+	for (a in Artifact.allInstances().select(x|x.type = type)) {
+	    var header = "";
+	    for (s in a.states) {
+	        //(a.name+" at "+s.ID).println();
+	        for (ax in s.activity) {
+	            var output = "";
+	            for (d in ax.deltas) {
+	                //(d.onAttribute+" ").print();
+	                header=header+separator+d.onAttribute.name+'(value)'+separator+d.onAttribute.name+'(new value)'+separator+d.onAttribute.name+'(delta)';
+	                //(a.name+' '+s.ID+' '+ax.agent.name+' '+ax.date+' '+d.onAttribute.name+' '+d.value.content+' '+d.targetValue.content+' '+d.change).println();
+	                output=output+separator+d.value.content+separator+d.targetValue.content+separator+d.change;
+	            }
+	            //("").println();
+	            if (not h) {
+	                ("Artifact, StateID, Agent, ActivityDate"+header).println();
+	                h=true;
+	            }
+	            (a.name+separator+s.ID+separator+ax.agent.name+separator+ax.date+''+output).println();
+	        }
+	    }
+	}
+}
+
 
 /*
 for (s in State.allInstances().select(x|x.artifact.name = "CommandLine.h")) {
