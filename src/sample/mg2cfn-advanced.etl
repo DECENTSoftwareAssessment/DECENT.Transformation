@@ -1,0 +1,134 @@
+pre mgInitPre {
+
+  //Some initialization
+  //More generic (might be simplified)
+  "Running mg2cfn".println();
+  
+  /********************************** INIT (1x) *******************************/
+  var Network : new CFN!FixNetwork;
+  //TODO: rename to CauseEffectNetwork (more general term) 
+}
+
+post mgInitPost{
+    //TODO: Double check!
+    //TODO: integrate
+    //TODO: ownership?
+    ("Post processing... ").println();
+//simple 
+    for (n in Network.commitNodes){
+        var s = new Set;
+        for (f in n.fileNodes){
+            var b = new Set;
+            for (fc in f.fixCommitNodes) {
+                b.addAll(fc.fileNodes.select(fn|fn.name = f.name).first().bugCommitNodes);
+            }
+            if (b.size() > 0) {
+                f.bugWeight = 1.asDouble()/b.size();
+            } else {
+                f.bugWeight = 0.asDouble(); 
+            }
+            s.addAll(f.fixCommitNodes);
+        }
+        if (s.size()>0) {
+            n.bugWeight = 1.asDouble()/s.size();
+        } else {
+            n.bugWeight = 0.asDouble();
+        }
+    }
+
+//advanced
+
+}
+
+
+rule BuildFixNetwork
+    transform r : MG!Revision 
+    to cn : CFN!CommitNode {
+    
+    //guard : /*r.is_bug_fix <> 0 and*/ r.commit_id < 100
+    ("Transforming "+ r.commit_id +" Fix: " +r.is_bug_fix).println();
+    cn.bugFix = r.is_bug_fix;
+    cn.ID = r.commit_id; //commit_id
+    cn.fixNetwork = Network;
+    cn.inFactor=0.asDouble();
+    cn.hCount=r.hunks.size().asDouble();
+    
+    for (h in r.hunks){
+        var fnCurrent = cn.fileNodes.select(f|f.name = h.file.file_name).first();
+        if (fnCurrent.isUndefined()) {
+            fnCurrent = new CFN!FileNode;
+	        fnCurrent.name = h.file.file_name;
+            fnCurrent.commitNode = cn;
+            fnCurrent.hCount = 1.asDouble();
+            fnCurrent.hCountIn = 0.asDouble();
+        } else {
+            fnCurrent.hCount = fnCurrent.hCount + 1.asDouble();
+            //TODO: add more weight for multiple changes?
+        }
+        //TODO: copied over from simpler version, revise
+        for (hb in h.hunkBlame) {
+            var bc = hb.lastRevision.commit_id;
+            var cnLast = Network.commitNodes.select(c|c.ID = hb.lastRevision.commit_id).first();
+            ("  Bug Commit Node: "+cnLast).println();
+            if (cnLast.isUndefined()) {
+                cnLast = new CFN!CommitNode;
+                cnLast.ID = hb.lastRevision.commit_id;
+                cnLast.fixNetwork = Network;
+            }
+            var fnLast = cnLast.fileNodes.select(f|f.name = h.file.file_name).first();
+            if (fnLast.isUndefined()) {
+                fnLast = new CFN!FileNode;
+                fnLast.name = h.file.file_name;
+                fnLast.commitNode = cnLast;
+            } else {
+                //TODO: add more weight for multiple changes?
+            }
+            fnCurrent.bugCommitNodes.add(cnLast);
+            fnLast.fixCommitNodes.add(cn);
+            ("    bug commit id "+bc+" of file "+h.file.file_name).println();
+        }
+    }
+
+    //TODO: refine for files
+    for (hunkBlame in r.hunkBlames) {
+        var factor = hunkBlame.hunk.revision.is_bug_fix;        
+        var hCount = hunkBlame.hunk.revision.hunks.size().asDouble();
+        if (hCount > 0) {
+	        ("HB Hunk Count in blaming revision "+hCount + " factor "+factor + " / "+hunkBlame.hunk.revision.is_bug_fix).println();
+	        var hCountToCurrent = 0.asDouble();
+	        for (fixHunk in hunkBlame.hunk.revision.hunks) {
+	            var fixHunkBlameCount = fixHunk.hunkBlame.size().asDouble();
+	            if (fixHunkBlameCount > 0){
+    	            var fixHunkBlameCountToCurrent = fixHunk.hunkBlame.select(h|h.lastRevision = r).size().asDouble();
+    	            hCountToCurrent = hCountToCurrent + fixHunkBlameCountToCurrent/fixHunkBlameCount;
+                    
+	            } else {
+	               hCountToCurrent = hCountToCurrent + 0.asDouble(); 
+	            }
+	            
+	            /*
+	            //TODO: simplify or remove, very time consuming
+                var fnCurrent = cn.fileNodes.select(f|f.name = fixHunk.file.file_name).first();
+                if (fnCurrent.isDefined()) {
+                    var fileFixHunkBlameCountToCurrent = fixHunk.hunkBlame.select(h|h.lastRevision = r and h.hunk.file.file_name = fnCurrent.name).size().asDouble();
+                    fnCurrent.hCountIn = fnCurrent.hCountIn + fileFixHunkBlameCountToCurrent/fixHunkBlameCount;
+                }
+                */                    
+	        }
+            cn.inFactor=cn.inFactor+factor*(hCountToCurrent/hCount);
+        } else {
+            cn.inFactor=cn.inFactor+0.asDouble();
+        }
+        
+        //TODO: simplify or remove, very time consuming
+        for (fn in cn.fileNodes) {
+            if (hCount > 0) {
+	            fn.inFactor = fn.inFactor+factor*(fn.hCountIn/hCount);
+            } else {
+                fn.inFactor = fn.inFactor+0.asDouble();
+            }
+        }
+        
+        
+    }
+}
