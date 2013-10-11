@@ -1,11 +1,13 @@
 
 var Network = CFN!FixNetwork.allInstances().first();
 
+//TODO: create a manageable test set to investigate different implications
+
 for (c in Network.commitNodes) {
     for (f in c.fileNodes) {
         for (b in f.bugCommitNodes) {
             var fb = b.fileNodes.select(fn|fn.name = f.name).first();
-            if (fb.isDefined) {
+            if (fb.isDefined and b.inFactor > 0.0) {
 	            (f.name+"("+c.ID+"),fixes("+fb.bugWeight+"),"+fb.name+"("+b.ID+"),"+fb.bugWeight).println();
             }
         }
