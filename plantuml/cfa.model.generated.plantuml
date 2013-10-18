@@ -1,0 +1,89 @@
+@startuml
+skinparam classArrowColor #444488
+skinparam objectBorderColor #444444
+skinparam objectBackgroundColor #EDEDED
+skinparam classArrowFontStyle bold
+skinparam classArrowFontSize 16
+skinparam classArrowFontColor #AA4444
+
+object r2300
+r2300 : hunks = 0
+r2300 : fixesWeightFactor = 0.0
+r2300 : causes = r2306 (1/2,w=1.0)
+r2300 : causes = r2307 (1/2,w=0.5)
+r2300 : total cause weight = 1.5
+r2300 : average cause weight = 0.75
+object r2301
+r2301 : hunks = 0
+r2301 : fixesWeightFactor = 1.0
+r2300 - r2301
+r2301 : total cause weight = 0.0
+r2301 : average cause weight = NaN
+object r2302
+r2302 : hunks = 0
+r2302 : fixesWeightFactor = 0.0
+r2301 - r2302
+r2302 : total cause weight = 0.0
+r2302 : average cause weight = NaN
+object r2303
+r2303 : hunks = 0
+r2303 : fixesWeightFactor = 0.0
+r2302 - r2303
+r2303 : total cause weight = 0.0
+r2303 : average cause weight = NaN
+object r2304
+r2304 : hunks = 0
+r2304 : fixesWeightFactor = 1.0
+r2303 - r2304
+r2304 : total cause weight = 0.0
+r2304 : average cause weight = NaN
+object r2305
+r2305 : hunks = 0
+r2305 : fixesWeightFactor = 0.0
+r2304 - r2305
+r2305 : total cause weight = 0.0
+r2305 : average cause weight = NaN
+object r2306
+r2306 : hunks = 0
+r2306 : fixesWeightFactor = 1.0
+r2305 - r2306
+r2306 : fixes = r2300 (1/1)
+r2300 "r2306:1/2\n\n\n\n\n\n" <... "\n\n\nr2300:1/1\n\n\n\n\n\n" r2306 : weight: 1.0*1/1=1.0\n\n\n\n\n\n
+r2306 : causes = r2307 (1/2,w=0.5)
+r2306 : causes = r2310 (1/2,w=0.0)
+r2306 : total cause weight = 0.5
+r2306 : average cause weight = 0.25
+object r2307
+r2307 : hunks = 0
+r2307 : fixesWeightFactor = 1.0
+r2306 - r2307
+r2307 : fixes = r2306 (1/2)
+r2306 "r2307:1/2\n" <... "\n\n\nr2306:1/2\n" r2307 : weight: 1.0*1/2=0.5\n
+r2307 : fixes = r2300 (1/2)
+r2300 "r2307:1/2\n\n\n\n\n\n\n" <... "\n\n\n\nr2300:1/2\n\n\n\n\n\n\n" r2307 : weight: 1.0*1/2=0.5\n\n\n\n\n\n\n
+r2307 : causes = r2309 (1/1,w=0.0)
+r2307 : total cause weight = 0.0
+r2307 : average cause weight = 0.0
+object r2308
+r2308 : hunks = 0
+r2308 : fixesWeightFactor = 1.0
+r2307 - r2308
+r2308 : total cause weight = 0.0
+r2308 : average cause weight = NaN
+object r2309
+r2309 : hunks = 0
+r2309 : fixesWeightFactor = 0.0
+r2308 - r2309
+r2309 : fixes = r2307 (1/1)
+r2307 "r2309:1/1\n\n" <... "\n\n\nr2307:1/1\n\n" r2309 : weight: 0.0*1/1=0.0\n\n
+r2309 : total cause weight = 0.0
+r2309 : average cause weight = NaN
+object r2310
+r2310 : hunks = 0
+r2310 : fixesWeightFactor = 0.0
+r2309 - r2310
+r2310 : fixes = r2306 (1/1)
+r2306 "r2310:1/2\n\n\n\n" <... "\n\n\nr2306:1/1\n\n\n\n" r2310 : weight: 0.0*1/1=0.0\n\n\n\n
+r2310 : total cause weight = 0.0
+r2310 : average cause weight = NaN
+@enduml

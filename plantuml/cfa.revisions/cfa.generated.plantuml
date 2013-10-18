@@ -1,0 +1,234 @@
+@startuml
+skinparam classArrowColor #444488
+skinparam objectBorderColor #444444
+skinparam objectBackgroundColor #EDEDED
+skinparam classArrowFontStyle bold
+skinparam classArrowFontSize 16
+skinparam classArrowFontColor #AA4444
+
+object r1
+r1 : hunks = 1
+r1 : bug_fix = 0
+r1 -- README.md_r1
+object r2
+r1 - r2
+r2 : hunks = 5
+r2 : bug_fix = 0
+r2 -- CMakeLists.txt_r2
+CMakeLists.txt_r2 -- SSVJsonCpp_r2
+SSVJsonCpp_r2 -- SSVUtils_r2
+SSVUtils_r2 -- SSVUtilsJson_r2
+SSVUtilsJson_r2 -- main.cpp_r2
+object r3
+r2 - r3
+r3 : hunks = 0
+r3 : bug_fix = 0
+object r4
+r3 - r4
+r4 : hunks = 2
+r4 : bug_fix = 0
+r4 -- SSVUtils_r4
+SSVUtils_r4 -- SSVUtilsJson_r4
+object r5
+r4 - r5
+r5 : hunks = 1
+r5 : bug_fix = 0
+r5 -- SSVUtilsJson_r5
+object r6
+r5 - r6
+r6 : hunks = 23
+r6 : bug_fix = 0
+r6 -- main.cpp_r6
+object r7
+r6 - r7
+r7 : hunks = 27
+r7 : bug_fix = 0
+r7 -- main.cpp_r7
+object r8
+r7 - r8
+r8 : hunks = 18
+r8 : bug_fix = 0
+r8 -- CMakeLists.txt_r8
+CMakeLists.txt_r8 -- main.cpp_r8
+object r9
+r8 - r9
+r9 : hunks = 0
+r9 : bug_fix = 0
+object r10
+r9 - r10
+r10 : hunks = 2
+r10 : bug_fix = 0
+r10 -- SSVJsonCpp_r10
+SSVJsonCpp_r10 -- main.cpp_r10
+object r11
+r10 - r11
+r11 : hunks = 1
+r11 : bug_fix = 0
+r11 -- SSVUtilsJson_r11
+object r12
+r11 - r12
+r12 : hunks = 2
+r12 : bug_fix = 0
+r12 -- main.cpp_r12
+object r13
+r12 - r13
+r13 : hunks = 2
+r13 : bug_fix = 0
+r13 -- README.md_r13
+object r14
+r13 - r14
+r14 : hunks = 14
+r14 : bug_fix = 0
+r14 -- CMakeLists.txt_r14
+CMakeLists.txt_r14 -- main.cpp_r14
+main.cpp_r14 -- Arg.h_r14
+Arg.h_r14 -- ArgBase.h_r14
+ArgBase.h_r14 -- Cmd.h_r14
+Cmd.h_r14 -- CmdLine.h_r14
+CmdLine.h_r14 -- Flag.h_r14
+Flag.h_r14 -- Parser.h_r14
+Parser.h_r14 -- ArgBase.cpp_r14
+ArgBase.cpp_r14 -- Cmd.cpp_r14
+Cmd.cpp_r14 -- CmdLine.cpp_r14
+CmdLine.cpp_r14 -- Flag.cpp_r14
+Flag.cpp_r14 -- main.cpp_r14
+object r15
+r14 - r15
+r15 : hunks = 29
+r15 : bug_fix = 0
+r15 -- Cmd.h_r15
+Cmd.h_r15 -- Flag.h_r15
+Flag.h_r15 -- Cmd.cpp_r15
+Cmd.cpp_r15 -- Flag.cpp_r15
+Flag.cpp_r15 -- main.cpp_r15
+main.cpp_r15 -- CommandLine.h_r15
+object r16
+r15 - r16
+r16 : hunks = 4
+r16 : bug_fix = 0
+r16 -- main.cpp_r16
+object r17
+r16 - r17
+r17 : hunks = 1
+r17 : bug_fix = 1
+r17 -- .gitmodules_r17
+object r18
+r17 - r18
+r18 : hunks = 1
+r18 : bug_fix = 0
+r18 -- LICENSE_r18
+object r19
+r18 - r19
+r19 : hunks = 3
+r19 : bug_fix = 0
+r19 -- main.cpp_r19
+object r20
+r19 - r20
+r20 : hunks = 11
+r20 : bug_fix = 0
+r20 -- Arg.h_r20
+Arg.h_r20 -- ArgBase.h_r20
+ArgBase.h_r20 -- Cmd.h_r20
+Cmd.h_r20 -- CmdLine.h_r20
+CmdLine.h_r20 -- Flag.h_r20
+Flag.h_r20 -- Parser.h_r20
+Parser.h_r20 -- ArgBase.cpp_r20
+ArgBase.cpp_r20 -- Cmd.cpp_r20
+Cmd.cpp_r20 -- CmdLine.cpp_r20
+CmdLine.cpp_r20 -- Flag.cpp_r20
+Flag.cpp_r20 -- CommandLine.h_r20
+r1 : causes = r13 (1/1,w=1.0)
+r2 : causes = r14 (1/4,w=0.16666666666666666)
+r2 : causes = r8 (1/4,w=0.3333333333333333)
+r2 : causes = r7 (1/4,w=0.5)
+r2 : causes = r6 (1/4,w=1.0)
+r6 : fixes = r2 (1/1)
+r2 "r6:1/4\n\n\n\n\n" <... "r2:1/1\n\n\n\n\n" r6 : weight: 1.0*1/1=1.0\n\n\n\n
+r6 : causes = r14 (1/3,w=0.16666666666666666)
+r6 : causes = r8 (1/3,w=0.3333333333333333)
+r6 : causes = r7 (1/3,w=0.5)
+r7 : fixes = r6 (1/2)
+r6 "r7:1/3\n\n" <... "r6:1/2\n\n" r7 : weight: 1.0*1/2=0.5\n
+r7 : fixes = r2 (1/2)
+r2 "r7:1/4\n\n\n\n\n\n\n" <... "r2:1/2\n\n\n\n\n\n\n" r7 : weight: 1.0*1/2=0.5\n\n\n\n\n
+r7 : causes = r14 (1/2,w=0.16666666666666666)
+r7 : causes = r8 (1/2,w=0.3333333333333333)
+r8 : fixes = r7 (1/3)
+r7 "r8:1/2\n\n" <... "r7:1/3\n\n" r8 : weight: 1.0*1/3=0.3333333333333333\n
+r8 : fixes = r6 (1/3)
+r6 "r8:1/3\n\n\n\n" <... "r6:1/3\n\n\n\n" r8 : weight: 1.0*1/3=0.3333333333333333\n\n
+r8 : fixes = r2 (1/3)
+r2 "r8:1/4\n\n\n\n\n\n\n\n\n" <... "r2:1/3\n\n\n\n\n\n\n\n\n" r8 : weight: 1.0*1/3=0.3333333333333333\n\n\n\n\n\n
+r8 : causes = r14 (1/3,w=0.16666666666666666)
+r8 : causes = r10 (1/3,w=1.0)
+r8 : causes = r12 (1/3,w=1.0)
+r10 : fixes = r8 (1/1)
+r8 "r10:1/3\n\n\n" <... "r8:1/1\n\n\n" r10 : weight: 1.0*1/1=1.0\n\n
+r10 : causes = r14 (1/1,w=0.16666666666666666)
+r12 : fixes = r8 (1/1)
+r8 "r12:1/3\n\n\n\n\n" <... "r8:1/1\n\n\n\n\n" r12 : weight: 1.0*1/1=1.0\n\n\n\n
+r12 : causes = r14 (1/1,w=0.16666666666666666)
+r13 : fixes = r1 (1/1)
+r1 "r13:1/1\n\n\n\n\n\n\n\n\n\n\n\n\n" <... "r1:1/1\n\n\n\n\n\n\n\n\n\n\n\n\n" r13 : weight: 1.0*1/1=1.0\n\n\n\n\n\n\n\n\n\n\n\n
+r14 : fixes = r10 (1/6)
+r10 "r14:1/1\n\n\n\n\n" <... "r10:1/6\n\n\n\n\n" r14 : weight: 1.0*1/6=0.16666666666666666\n\n\n\n
+r14 : fixes = r8 (1/6)
+r8 "r14:1/3\n\n\n\n\n\n\n\n" <... "r8:1/6\n\n\n\n\n\n\n\n" r14 : weight: 1.0*1/6=0.16666666666666666\n\n\n\n\n\n
+r14 : fixes = r7 (1/6)
+r7 "r14:1/2\n\n\n\n\n\n\n\n\n\n" <... "r7:1/6\n\n\n\n\n\n\n\n\n\n" r14 : weight: 1.0*1/6=0.16666666666666666\n\n\n\n\n\n\n
+r14 : fixes = r6 (1/6)
+r6 "r14:1/3\n\n\n\n\n\n\n\n\n\n\n\n" <... "r6:1/6\n\n\n\n\n\n\n\n\n\n\n\n" r14 : weight: 1.0*1/6=0.16666666666666666\n\n\n\n\n\n\n\n
+r14 : fixes = r12 (1/6)
+r12 "r14:1/1\n\n\n\n\n\n\n" <... "r12:1/6\n\n\n\n\n\n\n" r14 : weight: 1.0*1/6=0.16666666666666666\n\n
+r14 : fixes = r2 (1/6)
+r2 "r14:1/4\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n" <... "r2:1/6\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n" r14 : weight: 1.0*1/6=0.16666666666666666\n\n\n\n\n\n\n\n\n\n\n\n
+r14 : causes = r15 (1/1,w=1.0)
+r15 : fixes = r14 (1/1)
+r14 "r15:1/1\n\n" <... "r14:1/1\n\n" r15 : weight: 1.0*1/1=1.0\n
+r15 : causes = r19 (1/2,w=1.0)
+r15 : causes = r16 (1/2,w=1.0)
+r16 : fixes = r15 (1/1)
+r15 "r16:1/2\n\n" <... "r15:1/1\n\n" r16 : weight: 1.0*1/1=1.0\n
+r19 : fixes = r15 (1/1)
+r15 "r19:1/2\n\n\n\n\n" <... "r15:1/1\n\n\n\n\n" r19 : weight: 1.0*1/1=1.0\n\n\n\n
+r1 : total bug weight = 1.0
+r1 : average weight = 1.0
+r2 : total bug weight = 2.0
+r2 : average weight = 0.5
+r3 : total bug weight = 0.0
+r3 : average weight = NaN
+r4 : total bug weight = 0.0
+r4 : average weight = NaN
+r5 : total bug weight = 0.0
+r5 : average weight = NaN
+r6 : total bug weight = 0.9999999999999999
+r6 : average weight = 0.3333333333333333
+r7 : total bug weight = 0.5
+r7 : average weight = 0.25
+r8 : total bug weight = 2.1666666666666665
+r8 : average weight = 0.7222222222222222
+r9 : total bug weight = 0.0
+r9 : average weight = NaN
+r10 : total bug weight = 0.16666666666666666
+r10 : average weight = 0.16666666666666666
+r11 : total bug weight = 0.0
+r11 : average weight = NaN
+r12 : total bug weight = 0.16666666666666666
+r12 : average weight = 0.16666666666666666
+r13 : total bug weight = 0.0
+r13 : average weight = NaN
+r14 : total bug weight = 1.0
+r14 : average weight = 1.0
+r15 : total bug weight = 2.0
+r15 : average weight = 1.0
+r16 : total bug weight = 0.0
+r16 : average weight = NaN
+r17 : total bug weight = 0.0
+r17 : average weight = NaN
+r18 : total bug weight = 0.0
+r18 : average weight = NaN
+r19 : total bug weight = 0.0
+r19 : average weight = NaN
+r20 : total bug weight = 0.0
+r20 : average weight = NaN
+@enduml
