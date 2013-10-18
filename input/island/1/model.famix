@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<AbstractDECENTProvider:Model xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:AbstractDECENTProvider="http://AbstractDECENTProvider/1.0" xmlns:FAMIX="http://FAMIX/1.0">
+  <elements xsi:type="FAMIX:CSourceLanguage" revisionId="1" GUID="_0NOMABvxEeOW65-_Yo-QQA_1_5844616"/>
+  <elements xsi:type="FAMIX:Package" revisionId="1" GUID="_0NOMARvxEeOW65-_Yo-QQA_1_6501788" id="5" name="_unknown_package_" Module_OF_parentPackage="//@elements.3" Class_OF_parentPackage="//@elements.5">
+    <water name="water" content="2123"/>
+    <water name="water" content="'blablab'"/>
+    <water name="isStub" content="'asfas'"/>
+    <water name="water" content="true"/>
+    <water name="water" content="false"/>
+    <water name="water">
+      <water name="idss" content="'22'"/>
+    </water>
+    <water name="something" content="200"/>
+  </elements>
+  <elements xsi:type="AbstractDECENTProvider:Water" revisionId="1" GUID="_0NOMAhvxEeOW65-_Yo-QQA_1_4706628" name="FAMIX.Something">
+    <water name="id:" content="2"/>
+  </elements>
+  <elements xsi:type="FAMIX:Module" revisionId="1" GUID="_0NOMAxvxEeOW65-_Yo-QQA_1_32558269" id="2" name="_unknown_file" parentPackage_IN_Package="//@elements.1"/>
+  <elements xsi:type="FAMIX:FileAnchor" revisionId="1" GUID="_0NOMBBvxEeOW65-_Yo-QQA_1_22328515" id="7" fileName="_unknown_path" anchoredElement="//@elements.5"/>
+  <elements xsi:type="FAMIX:Class" revisionId="1" GUID="_0NOMBRvxEeOW65-_Yo-QQA_1_19613740" id="3" name="_unknown_type" sourceAnchor_IN_FileAnchor="//@elements.4" isStub="true" container_IN_Namespace="//@elements.6" parentPackage_IN_Package="//@elements.1"/>
+  <elements xsi:type="FAMIX:Namespace" revisionId="1" GUID="_0NOMBhvxEeOW65-_Yo-QQA_1_23802833" name="unresolved_Namespace_xtextLink_::0.0.5::44::/38" Class_OF_container="//@elements.5"/>
+</AbstractDECENTProvider:Model>

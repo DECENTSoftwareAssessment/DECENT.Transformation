@@ -1,0 +1,36 @@
+(
+
+(FAMIX.CSourceLanguage)
+
+(FAMIX.Package (id: 5)
+	(name '_unknown_package_')
+    (water 2123)
+    (water 'blablab')
+    (isStub 'asfas')
+    (water true)
+    (water false)
+    (water (idss '22'))
+    (something 200)
+
+)
+
+(FAMIX.Something (id: 2))
+
+(FAMIX.Module (id: 2)
+	(parentPackage (ref: 5))
+	(name '_unknown_file')
+)
+
+(FAMIX.FileAnchor (id: 7)
+	(fileName '_unknown_path')
+)
+
+(FAMIX.Class (id: 3)
+	(sourceAnchor (ref: 7))
+	(isStub true)
+	(parentPackage (ref: 5))
+	(container (ref: 4))
+	(name '_unknown_type')
+)
+
+)
