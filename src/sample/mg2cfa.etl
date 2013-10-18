@@ -1,0 +1,116 @@
+pre mgInitPre {
+
+  //Some initialization
+  //More generic (might be simplified)
+  "Running mg2cfn".println();
+  
+  /********************************** INIT (1x) *******************************/
+  var lowerBound = 2300;
+  var upperBound = 2310;
+}
+
+post mgInitPost{
+    ("Post processing... ").println();
+    for (s in CFA!GlobalState.allInstances()) {
+        for (f in s.fixes) {
+            f.totalWeight = f.totalWeight + s.fixesWeightFactor * (1/s.fixes.size().asDouble());
+        }
+    }
+    for (s in CFA!GlobalState.allInstances()) {
+        s.averageWeight = s.totalWeight / s.causes.size();
+    }
+    
+    
+    //visualization
+    var filename = "/home/philip-iii/Dev/workspaces/emf/DECENT.Transformations/plantuml/cfa.model.generated.plantuml";
+    var file = new Native("java.io.File") (filename);
+    var writer = new Native("java.io.FileWriter") (file);
+
+    CFA!GlobalState.allInstances().select(s|s.ID <= upperBound and s.ID >= lowerBound).cfaToPlantUML();
+}
+
+operation Sequence cfaToPlantUML() {
+    ("visualizing..").println();
+	var output = "";
+	("@startuml").printlno();
+	("skinparam classArrowColor #444488").printlno();
+	("skinparam objectBorderColor #444444").printlno();
+	("skinparam objectBackgroundColor #EDEDED").printlno();
+	("skinparam classArrowFontStyle bold").printlno();
+	("skinparam classArrowFontSize 16").printlno();
+	("skinparam classArrowFontColor #AA4444").printlno();
+	("").printlno();
+	var lastState;
+	for (s in self) {
+        ("processing object "+s.name).println();
+        ("object "+s.name).printlno();
+        (s.name+" : hunks = "+s.hunks).printlno();
+        (s.name+" : fixesWeightFactor = "+s.fixesWeightFactor).printlno();
+        if (lastState.isDefined()) {
+            (lastState.name +" - "+s.name).printlno();
+        }
+        //files?
+        var offsetDistance = "\\n\\n";
+        
+        for (f in s.fixes){
+            offsetDistance = offsetDistance + "\\n";
+            
+            var distance = "";
+	        var d = 0;
+	        while (d < (s.ID - f.ID)) {
+	            distance = distance + "\\n";
+	            d = d+1;
+	        }
+            var label = "weight";
+            label = label + ": " + s.fixesWeightFactor + "*" + 1 + "/" + s.fixes.size();
+            label = label+"="+(s.fixesWeightFactor*(1/s.fixes.size().asDouble()));
+            label = label + distance;
+            
+            (s.name +" : fixes = "+f.name +" ("+1+"/"+s.fixes.size()+")").printlno();
+            (f.name + " \"" + s.name + ":" + 1 + "/" + f.causes.size() + distance + "\""
+                 + " <... "
+                 + "\"" + offsetDistance + f.name + ":" + 1 + "/" + s.fixes.size() + distance + "\" " + s.name
+                 + " : " + label).printlno();
+        }
+        for (c in s.causes) {
+            (s.name +" : causes = "+c.name +" ("+1+"/"+s.causes.size()+",w=" +(c.fixesWeightFactor*(1/c.fixes.size().asDouble()))+ ")").printlno();
+        }
+
+        (s.name+" : total cause weight = "+s.totalWeight).printlno();
+        (s.name+" : average cause weight = "+s.averageWeight).printlno();
+
+        lastState = s;
+	}
+	("@enduml").printlno();
+	("finishing..").println();
+	writer.close();
+}
+
+operation String printlno() {
+    writer.write(self + "\n");
+    writer.flush();
+}	
+
+
+rule Revisions
+    transform r : MG!Revision 
+    to s : CFA!GlobalState {
+    
+    guard : /*r.is_bug_fix <> 0 and*/ (r.commit_id <= upperBound and r.commit_id >= lowerBound )
+    ("Transforming "+ r.commit_id +" Fix: " +r.is_bug_fix).println();
+    s.revision = r;
+    s.ID = r.commit_id;
+    s.name = "r"+r.commit_id;
+    s.fixesWeightFactor = r.is_bug_fix.asDouble();
+    //s.fixesWeightFactor = 1.asDouble();
+    //...
+    for (h in r.hunks) {
+        for (hb in h.hunkBlame) {
+            if (hb.lastRevision.commit_id >= lowerBound) {
+	            var cause = hb.lastRevision.equivalent(); 
+	            s.fixes.add(cause);
+	            cause.causes.add(s);        
+            }
+        }
+    }        
+}
