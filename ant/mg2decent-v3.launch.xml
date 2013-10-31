@@ -15,13 +15,13 @@
 <project default="main">
 
  	<target name="loadModels">
- 		<epsilon.emf.register file="../../DECENT/model/DECENTv3.ecore"/>
- 		<epsilon.emf.register file="../../famix.m3/model/AbstractDECENTProvider.ecore"/>
- 		<epsilon.emf.register file="../../MininGit.m1x/model/MGStandalone.ecore"/>
+ 		<epsilon.emf.register file="../../DECENT.Meta/model/DECENTv3.ecore"/>
+ 		<epsilon.emf.register file="../../DECENT.Meta/model/AbstractDECENTProvider.ecore"/>
+ 		<epsilon.emf.register file="../../DECENT.Meta/model/MG.ecore"/>
  		 		
  		<epsilon.emf.loadModel name="MG"
                                        modelFile="../input/model-rekonq-no-content-lineblames.mg"
-                                       metamodelUri="MGStandalone"
+                                       metamodelUri="MG"
                                        read="true" store="false"/>
 
  		<epsilon.emf.loadModel name="DECENT"
