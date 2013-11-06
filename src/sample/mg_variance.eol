@@ -1,0 +1,166 @@
+
+
+var points = new Set;
+
+points.add(1);
+points.add(11);
+points.add(12);
+points.add(13);
+points.add(14);
+points.add(21);
+points.add(31);
+points.add(51);
+//points.add(71);
+
+("Variance = "+points.getMyVariance()).println();
+("Variance = "+points.getVariance()).println();
+("Variance = "+points.getNaiveVariance()).println();
+
+
+var revisions = MG!Revision.allInstances();
+var relativeTime = new Set;
+var absoluteTime = new Set;
+
+var last = null;
+var first = null;
+for (r in revisions) {
+	var distanceToLast = 0;
+	var distanceToFirst = 0;
+	if (last.isDefined()) {
+		distanceToLast = r.commit_date.getTime - last.commit_date.getTime;
+	} else {
+		first = r;
+	}
+	distanceToFirst = r.commit_date.getTime - first.commit_date.getTime;
+	("Date "+r.commit_date.getTime + ", Distance to last "+ distanceToLast + ", Distance to first "+distanceToFirst).println();
+	relativeTime.add(distanceToLast);
+	absoluteTime.add(distanceToFirst);
+	last = r;
+}
+
+("Absolute Time Variance = "+absoluteTime.getMyVariance()).println();
+("Relative Time Variance = "+relativeTime.getMyVariance()).println();
+
+var files = MG!File.allInstances();
+
+for (f in files) {
+	for (a in f.actions) { //TODO: add hunks normalization
+		var difference = 0;
+		//this may need to be revised, new lines need to be put in full context
+		//on the other hand the difference may need to be reviewed as well ignoring the context
+		//review and validate
+		for (h in f.hunks.select(h|h.revision = a.revision)) {
+			var o = h.old_start_line+":"+h.old_end_line+
+				"->"+h.new_start_line+":"+h.new_end_line;
+			(o).println;
+			
+			//split, potentially remove normalized
+			h.~old_start_line_normalized = h.old_start_line;
+			h.~old_end_line_normalized = h.old_end_line;
+			h.~new_start_line_normalized = h.new_start_line;
+			h.~new_end_line_normalized = h.new_end_line;
+			
+			if (h.old_start_line == 0 ){ //and h.new_start_line <> 1
+				h.~old_start_line_normalized = h.new_start_line - difference;
+			}
+			if (h.new_start_line == 0 ){ //and h.new_line <> 1
+				h.~new_start_line_normalized = h.old_start_line + difference;
+			}
+			if (h.old_end_line == 0 ){ //and h.new_start_line <> 1
+				h.~old_end_line_normalized = h.new_start_line - difference;
+			}
+			if (h.new_start_line == 0 ){ //and h.new_line <> 1
+				h.~new_end_line_normalized = h.old_start_line + difference;
+			}
+			
+			//split
+			var oldLines = h.old_end_line-h.old_start_line;
+			if (h.old_start_line<>0){
+				oldLines=oldLines + 1;
+			}
+			var newLines = h.new_end_line-h.new_start_line;
+			if (h.new_start_line <> 0){
+				newLines=newLines + 1;
+			}
+			var on = h.~old_start_line_normalized+":"+h.~old_end_line_normalized+
+				"->"+h.~new_start_line_normalized+":"+h.~new_end_line_normalized;
+			(on).println;
+			difference = difference + (newLines - oldLines);
+			
+			var p = f.patches.select(p|p.revision = a.revision).first();
+			(p.patch).println();
+			("Difference "+difference).println();
+			
+		}
+		
+		var linesPre = new Set;
+		var linesPost = new Set;
+		for (h in f.hunks.select(h|h.revision = a.revision)) {
+			var i = 0;
+			while (h.old_start_line+i <= h.old_end_line) {
+				linesPre.add(h.old_start_line+i);
+				i = i+1;
+			}
+			i = 0;
+			while (h.new_start_line+i <= h.new_end_line) {
+				linesPost.add(h.new_start_line+i);
+				i = i+1;
+			}
+			(f.file_name +" in "+a.revision.commit_id+" Old Spatial Index "+linesPre.getMyVariance()).println();
+			(f.file_name +" in "+a.revision.commit_id+" New Spatial Index "+linesPost.getMyVariance()).println();
+		}
+			
+	}
+}
+
+
+operation Set getMyVariance() : Real {
+    var n = 0.asReal();
+    var sum = 0.asReal();
+    for (x in self){
+        n = n + 1;
+        sum = sum + x;
+    }
+    
+    var sum2 = 0.asReal();
+    
+    for (x in self){
+		sum2 = sum2 + (x - sum/n)*(x - sum/n);	
+	}
+	var variance = sum2/(n-1).asReal();
+	return variance;
+}
+
+operation Set getNaiveVariance() : Real {
+    var n = 0.asReal();
+    var sum = 0.asReal();
+    var sum_sqr = 0.asReal();
+    for (x in self){
+        n = n + 1;
+        sum = sum + x;
+        sum_sqr = sum_sqr + x*x;
+    }
+ 
+    var variance = (sum_sqr - (sum*sum)/n)/(n - 1);
+    return variance;
+}
+
+operation Set getVariance() : Real {
+    var n = 0.asReal();
+    var sum1 = 0.asReal();
+    for (x in self){
+        n = n + 1;
+        sum1 = sum1 + x;
+    }
+    var mean = sum1/n;
+ 
+    var sum2 = 0.asReal();
+    var sum3 = 0.asReal();
+    for (x in self){
+        sum2 = sum2 + ((x - mean) * (x - mean));
+        sum3 = sum3 + (x - mean);
+    
+    }
+    var variance = (sum2 - (sum3*sum3)/n)/(n - 1);
+    return variance;
+}
