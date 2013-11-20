@@ -1,10 +1,10 @@
 
 var output = "";
-var filename = "/home/philip-iii/Dev/workspaces/emf/DECENT.Transformations/plantuml/cfa.generated.plantuml";
+var filename = "/Users/philip-iii/Dev/workspaces/emf/DECENT.Transformations/plantuml/cfa.generated1.plantuml";
 var file = new Native("java.io.File") (filename);
 var writer = new Native("java.io.FileWriter") (file);
 
-var revisions = MG!Revision.allInstances().select(r|r.commit_id <= 15 );
+var revisions = MG!Revision.allInstances().select(r| (r.commit_id <= 505 and r.commit_id >= 500) or r.commit_id=577);
 
 ("@startuml").printlno();
 ("skinparam classArrowColor #444488").printlno();
@@ -55,44 +55,47 @@ for (r in revisions) {
         for (hb in h.hunkBlame) {
             var causeId = hb.lastRevision.commit_id;
             
-            r.~fixes.add(hb.lastRevision);
-            hb.lastRevision.~causes.add(r);
+            if (revisions.includes(hb.lastRevision)) {
+	            r.~fixes.add(hb.lastRevision);
+	            hb.lastRevision.~causes.add(r);
             
-            var fixWeight = "";
-            fixWeight = 1+"/"+totalFixCount;
-
-            var causeWeight = "";
-            causeWeight = 1+"/"+hb.lastRevision.hunkBlames.size();
-            
-//            (id +" : fixes = "+"r"+causeId +" ("+fixWeight+")").printlno();
-//            ("r"+causeId +" : causes = "+""+id +" ("+causeWeight+")").printlno();
-
-            var label = "cause\\n" + r.patches.select(p|p.file = h.file).first().patch.replaceAll("\n","\\\\n") +"";
-            var factor = "";
-            factor = r.is_bug_fix;
-            factor = 1.0;
-            var weight = 0.0;
-            var distance = "";
-            var d = 0;
-            while (d < (r.commit_id - causeId)) {
-                distance = distance + "\\n";
-                d = d+1;
-            }
-            label = "weight";
-            label = label+": "+factor+"*"+fixWeight;
-            weight = factor*(1/totalFixCount.asDouble());
-            label = label+"="+weight;
-            label = label+distance;
-
-            hb.lastRevision.~totalWeight = hb.lastRevision.~totalWeight + weight;
-
+	            var fixWeight = "";
+	            fixWeight = 1+"/"+totalFixCount;
+	
+	            var causeWeight = "";
+	            causeWeight = 1+"/"+hb.lastRevision.hunkBlames.size();
+	            
+	//            (id +" : fixes = "+"r"+causeId +" ("+fixWeight+")").printlno();
+	//            ("r"+causeId +" : causes = "+""+id +" ("+causeWeight+")").printlno();
+	
+	            var label = "cause\\n" + r.patches.select(p|p.file = h.file).first().patch.replaceAll("\n","\\\\n") +"";
+	            var factor = "";
+	            factor = r.is_bug_fix;
+	            factor = 1.0;
+	            var weight = 0.0;
+	            var distance = "";
+	            var d = 0;
+	            while (d < (r.commit_id - causeId)) {
+	                distance = distance + "\\n";
+	                d = d+1;
+	            }
+	            label = "weight";
+	            label = label+": "+factor+"*"+fixWeight;
+	            weight = factor*(1/totalFixCount.asDouble());
+	            label = label+"="+weight;
+	            label = label+distance;
+	
+	            hb.lastRevision.~totalWeight = hb.lastRevision.~totalWeight + weight;
+	
 /*            
             ("r" + causeId + " \"" + id + ":" + causeWeight + distance + "\""
                  + " <... "
                  + "\"" + "r" + causeId + ":" + fixWeight + "\" " + id
                  + " : " + label).printlno();
 */        
+	            }
             }
+            
     }
 
     lastId = id;
