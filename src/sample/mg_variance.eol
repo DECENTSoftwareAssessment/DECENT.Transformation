@@ -1,22 +1,62 @@
 
+//changed lines
+// Before After	After After
+// 1  		1		1
+// 2*  	*	2*	*	2*
+// 3  		3		3
+//    	+	4+	-
+//    	+	5+	-
+//    	+	6+	-
+// 4  		7		4
+// 5  		8		5
+// 6*  	*	9*	*	6*
+// 7  		10		7
+
+
+// 1-  	-			1
+// 2*  	*	1*	*	2*
+// 3  		2		3
+//    	+	3+	-
+//    	+	4+	-
+//    	+	5+	-
+// 4  		6		4
+// 5  		7		5
+// 6*  	*	8*	*	6*
+// 7  		9		7
+
 
 var points = new Set;
 
 points.add(1);
-points.add(11);
-points.add(12);
-points.add(13);
-points.add(14);
-points.add(21);
-points.add(31);
-points.add(51);
+points.add(3);
+points.add(4);
+points.add(5);
+points.add(8);
 //points.add(71);
 
-("Variance = "+points.getMyVariance()).println();
-("Variance = "+points.getVariance()).println();
-("Variance = "+points.getNaiveVariance()).println();
+//("Variance After = "+points.getMyVariance()).println();
+//("Variance = "+points.getVariance()).println();
+//("Variance = "+points.getNaiveVariance()).println();
 
-getTimeVariane();
+var pointsBefore = new Set;
+
+pointsBefore.add(1);
+pointsBefore.add(2);
+pointsBefore.add(6);
+
+("Variance Before = "+pointsBefore.getMyVariance()).println();
+("Variance After = "+points.getMyVariance()).println();
+
+var pointsAA = new Set;
+
+pointsAA.add(2);
+pointsAA.add(6);
+
+("Variance After After = "+pointsAA.getMyVariance()).println();
+
+
+
+//getTimeVariane();
 //getSpatialIndex();
 
 operation getSpatialIndex() {
