@@ -49,20 +49,29 @@ pointsBefore.add(6);
 
 var pointsAA = new Set;
 
+pointsAA.add(1);
 pointsAA.add(2);
+pointsAA.add(3);
+pointsAA.add(4);
+pointsAA.add(5);
 pointsAA.add(6);
+pointsAA.add(7);
+pointsAA.add(8);
+pointsAA.add(9);
+pointsAA.add(10);
 
 ("Variance After After = "+pointsAA.getMyVariance()).println();
 
 
 
 //getTimeVariane();
-//getSpatialIndex();
+getSpatialIndex();
 
 operation getSpatialIndex() {
 	var files = MG!File.allInstances();
 
 	for (f in files) {
+	    (f.file_name).println();
 		for (a in f.actions) { //TODO: add hunks normalization
 			var difference = 0;
 			//this may need to be revised, new lines need to be put in full context
@@ -71,7 +80,7 @@ operation getSpatialIndex() {
 			for (h in f.hunks.select(h|h.revision = a.revision)) {
 				var o = h.old_start_line+":"+h.old_end_line+
 					"->"+h.new_start_line+":"+h.new_end_line;
-				(o).println;
+				("  Base:       "+o).println;
 				
 				//split, potentially remove normalized
 				h.~old_start_line_normalized = h.old_start_line;
@@ -103,31 +112,43 @@ operation getSpatialIndex() {
 				}
 				var on = h.~old_start_line_normalized+":"+h.~old_end_line_normalized+
 					"->"+h.~new_start_line_normalized+":"+h.~new_end_line_normalized;
-				(on).println;
+				("  Normalized: "+on).println;
 				difference = difference + (newLines - oldLines);
 				
 				var p = f.patches.select(p|p.revision = a.revision).first();
 				//(p.patch).println();
-				("Difference "+difference).println();
+				("    Difference "+difference).println();
 				
 			}
 			
 			var linesPre = new Set;
 			var linesPost = new Set;
 			for (h in f.hunks.select(h|h.revision = a.revision)) {
-				var i = 0;
-				while (h.old_start_line+i <= h.old_end_line) {
-					linesPre.add(h.old_start_line+i);
+			    //handle context of +/- 1 line 
+				var i = -1;
+				var j = 0;
+				if (h.old_start_line <> 0) {
+				    j = 1;
+				}
+				while (h.~old_start_line_normalized+i <= h.~old_end_line_normalized+j) {
+					linesPre.add(h.~old_start_line_normalized+i);
 					i = i+1;
 				}
-				i = 0;
-				while (h.new_start_line+i <= h.new_end_line) {
-					linesPost.add(h.new_start_line+i);
+				i = -1;
+				j = 0;
+                if (h.new_start_line <> 0) {
+                    j = 1;
+                }
+				while (h.~new_start_line_normalized+i <= h.~new_end_line_normalized+j) {
+					linesPost.add(h.~new_start_line_normalized+i);
 					i = i+1;
 				}
 			}
-			(f.file_name +" in "+a.revision.commit_id+" Old Spatial Index "+linesPre.getMyVariance()).println();
-			(f.file_name +" in "+a.revision.commit_id+" New Spatial Index "+linesPost.getMyVariance()).println();
+			//TODO: add separate values for normalized and contextualized calculations
+            ("      "+f.file_name +" in "+a.revision.commit_id+" Lines Before "+linesPre).println();
+			("      "+f.file_name +" in "+a.revision.commit_id+" Lines After  "+linesPost).println();
+			("      "+f.file_name +" in "+a.revision.commit_id+" Old Spatial Index "+linesPre.getMyVariance()).println();
+			("      "+f.file_name +" in "+a.revision.commit_id+" New Spatial Index "+linesPost.getMyVariance()).println();
 				
 		}
 	}
