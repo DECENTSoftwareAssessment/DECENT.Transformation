@@ -73,220 +73,204 @@ pointsAA.add(10);
 ("Variance After After = "+pointsAA.getMyVariance()).println();
 
 
+processHunks();
 
 //getTimeVariane();
-normalizeHunks();
-getSpatialIndex();
-
-sortHunks();
-
-operation sortHunks() {
-    var files = MG!File.allInstances();
-
-    for (f in files) {
-        (f.file_name).println();
-        for (a in f.actions) {
-            var difference = 0;
-            var hunks = f.hunks.select(h|h.revision = a.revision);
-            var insertions = hunks.select(h|h.old_start_line = 0);
-            var deletions = hunks.select(h|h.new_start_line = 0);
-            var modifications = hunks.select(h|h.old_start_line <> 0 and h.new_start_line <> 0);
-            
-            insertions = insertions.sortBy(h|h.new_start_line);
-            deletions = deletions.sortBy(h|h.old_start_line);
-            modifications = modifications.sortBy(h|h.new_start_line);
-            
-            hunks.clear;
-            var i;
-            var d;
-            
-            for (m in modifications) {
-                i = insertions.first();
-                if (i.isDefined()) {
-	                var oldLines = i.old_end_line-i.old_start_line;
-	                if (i.old_start_line<>0){
-	                    oldLines=oldLines + 1;
-	                }
-	                var newLines = i.new_end_line-i.new_start_line;
-	                if (i.new_start_line <> 0){
-	                    newLines=newLines + 1;
-	                }
-	                
-	                //TODO: may need to involve the difference at some point - check out corner cases
-	                //TODO: try to simplify this mess
-	                difference = difference + newLines - oldLines;
-                
-	                while (i.isDefined() and i.new_start_line < m.new_start_line) {
-	                    d = deletions.first();
-                        while (d.isDefined() and d.old_start_line < i.new_start_line) {
-                            hunks.add(d);
-                            ("  Adding d"+d).println();
-                            deletions.remove(d);
-                            d = deletions.first();
-                        }
-	                    
-	                    hunks.add(i);
-	                    ("  Adding i"+i).println();
-	                    insertions.remove(i);
-	                    i = insertions.first();
-	                }
-
-                    d = deletions.first();
-                    while (d.isDefined() and d.old_start_line < m.old_start_line) {
-                        hunks.add(d);
-                        ("  Adding d"+d).println();
-                        deletions.remove(d);
-                        d = deletions.first();
-                    }
+//getSpatialIndex();
 
 
-                }
-                
-                
-                hunks.add(m);
-                ("  Adding m"+m).println();    
+operation OrderedSet sortHunks() {
+    var difference = 0;
+    var insertions = self.select(h|h.old_start_line = 0);
+    var deletions = self.select(h|h.new_start_line = 0);
+    var modifications = self.select(h|h.old_start_line <> 0 and h.new_start_line <> 0);
+    
+    insertions = insertions.sortBy(h|h.new_start_line);
+    deletions = deletions.sortBy(h|h.old_start_line);
+    modifications = modifications.sortBy(h|h.new_start_line);
+    
+    self.clear;
+    var i;
+    var d;
+    
+    for (m in modifications) {
+        i = insertions.first();
+        if (i.isDefined()) {
+            var oldLines = i.old_end_line-i.old_start_line;
+            if (i.old_start_line<>0){
+                oldLines=oldLines + 1;
+            }
+            var newLines = i.new_end_line-i.new_start_line;
+            if (i.new_start_line <> 0){
+                newLines=newLines + 1;
             }
             
-            i = insertions.first();
-            while (i.isDefined()) {
+            //TODO: may need to involve the difference at some point - check out corner cases
+            //TODO: try to simplify this mess
+            difference = difference + newLines - oldLines;
+        
+            while (i.isDefined() and i.new_start_line < m.new_start_line) {
                 d = deletions.first();
                 while (d.isDefined() and d.old_start_line < i.new_start_line) {
-                    hunks.add(d);
-                    ("  Adding d"+d).println();
+                    self.add(d);
+//                    ("  Adding d"+d).println();
                     deletions.remove(d);
                     d = deletions.first();
                 }
                 
-                hunks.add(i);
-                ("  Adding i"+i).println();
+                self.add(i);
+//                ("  Adding i"+i).println();
                 insertions.remove(i);
                 i = insertions.first();
             }
-            
+
             d = deletions.first();
-            while (d.isDefined()) {
-                hunks.add(d);
-                ("  Adding d"+d).println();
+            while (d.isDefined() and d.old_start_line < m.old_start_line) {
+                self.add(d);
+//                ("  Adding d"+d).println();
                 deletions.remove(d);
                 d = deletions.first();
             }
-            
-            for (h in hunks) {
-	            ("    "+h.old_start_line+":"+h.old_end_line+"->"+h.new_start_line+":"+h.new_end_line).println();
-            }
-       }
+        }
+        
+        self.add(m);
+//        ("  Adding m"+m).println();    
     }
+    
+    i = insertions.first();
+    while (i.isDefined()) {
+        d = deletions.first();
+        while (d.isDefined() and d.old_start_line < i.new_start_line) {
+            self.add(d);
+//            ("  Adding d"+d).println();
+            deletions.remove(d);
+            d = deletions.first();
+        }
+        
+        self.add(i);
+//        ("  Adding i"+i).println();
+        insertions.remove(i);
+        i = insertions.first();
+    }
+    
+    d = deletions.first();
+    while (d.isDefined()) {
+        self.add(d);
+//        ("  Adding d"+d).println();
+        deletions.remove(d);
+        d = deletions.first();
+    }
+    
+//    for (h in self) {
+//        ("    "+h.old_start_line+":"+h.old_end_line+"->"+h.new_start_line+":"+h.new_end_line).println();
+//    }
 }
 
-operation normalizeHunks() {
+
+operation processHunks() {
     var files = MG!File.allInstances();
 
     for (f in files) {
         (f.file_name).println();
         for (a in f.actions) {
-            var difference = 0;
-            //TODO: need to adjust normalization ordering, currently inserted lines are processed first
-            var hunks = f.hunks.select(h|h.revision = a.revision);
-            hunks = hunks.sortBy(h|h.new_start_line);
-            for (h in hunks) {
-                h.~old_start_line_normalized = h.old_start_line;
-                h.~old_end_line_normalized = h.old_end_line;
-                h.~new_start_line_normalized = h.new_start_line;
-                h.~new_end_line_normalized = h.new_end_line;
-                
-                if (h.old_start_line == 0 ){ //and h.new_start_line <> 1
-                    h.~old_start_line_normalized = h.new_start_line - difference;
-                }
-                if (h.new_start_line == 0 ){ //and h.new_line <> 1
-                    h.~new_start_line_normalized = h.old_start_line + difference;
-                }
-                if (h.old_end_line == 0 ){ //and h.new_start_line <> 1
-                    h.~old_end_line_normalized = h.new_start_line - difference;
-                }
-                if (h.new_start_line == 0 ){ //and h.new_line <> 1
-                    h.~new_end_line_normalized = h.old_start_line + difference;
-                }
-                
-                //split
-                var oldLines = h.old_end_line-h.old_start_line;
-                if (h.old_start_line<>0){
-                    oldLines=oldLines + 1;
-                }
-                var newLines = h.new_end_line-h.new_start_line;
-                if (h.new_start_line <> 0){
-                    newLines=newLines + 1;
-                }
-                h.~difference = newLines - oldLines;
-                difference = difference + h.~difference;
-                                
-            }
-        }
+       		var hunks = f.hunks.select(h|h.revision = a.revision);
+       		hunks.sortHunks();
+       		hunks.normalizeHunks();
+       		hunks.getSpatialIndex();
+       }
     }
 }
 
-operation getSpatialIndex() {
-	var files = MG!File.allInstances();
+operation OrderedSet normalizeHunks() {
+    var difference = 0;
+    for (h in self) {
+        h.~old_start_line_normalized = h.old_start_line;
+        h.~old_end_line_normalized = h.old_end_line;
+        h.~new_start_line_normalized = h.new_start_line;
+        h.~new_end_line_normalized = h.new_end_line;
+        
+        if (h.old_start_line == 0 ){ //and h.new_start_line <> 1
+            h.~old_start_line_normalized = h.new_start_line - difference;
+        }
+        if (h.new_start_line == 0 ){ //and h.new_line <> 1
+            h.~new_start_line_normalized = h.old_start_line + difference;
+        }
+        if (h.old_end_line == 0 ){ //and h.new_start_line <> 1
+            h.~old_end_line_normalized = h.new_start_line - difference;
+        }
+        if (h.new_start_line == 0 ){ //and h.new_line <> 1
+            h.~new_end_line_normalized = h.old_start_line + difference;
+        }
+        
+        //split
+        var oldLines = h.old_end_line-h.old_start_line;
+        if (h.old_start_line<>0){
+            oldLines=oldLines + 1;
+        }
+        var newLines = h.new_end_line-h.new_start_line;
+        if (h.new_start_line <> 0){
+            newLines=newLines + 1;
+        }
+        h.~difference = newLines - oldLines;
+        difference = difference + h.~difference;
+                        
+    }
+}
 
-	for (f in files) {
-	    (f.file_name).println();
-		for (a in f.actions) {
-			var difference = 0;
-			//this may need to be revised, new lines need to be put in full context
-			//on the other hand the difference may need to be reviewed as well ignoring the context
-			//review and validate
-			var linesPre = new Set;
-			var linesPost = new Set;
-			var linesMerged = new Set;
-			var difference = 0;
-			var hunks = f.hunks.select(h|h.revision = a.revision);
-			hunks = hunks.sortBy(h|h.new_start_line);
-			for (h in hunks) {
-				var o = h.old_start_line+":"+h.old_end_line+
-					"->"+h.new_start_line+":"+h.new_end_line;
-				("  Base:       "+o).println;
-				
-				//split, potentially remove normalized
-				var on = h.~old_start_line_normalized+":"+h.~old_end_line_normalized+
-					"->"+h.~new_start_line_normalized+":"+h.~new_end_line_normalized;
-				("  Normalized: "+on).println;
+operation OrderedSet getSpatialIndex() {
+	var difference = 0;
+	//this may need to be revised, new lines need to be put in full context
+	//on the other hand the difference may need to be reviewed as well ignoring the context
+	//review and validate
+	var linesPre = new OrderedSet;
+	var linesPost = new OrderedSet;
+	var linesMerged = new OrderedSet;
+	var difference = 0;
+	for (h in self) {
+		var o = h.old_start_line+":"+h.old_end_line+
+			"->"+h.new_start_line+":"+h.new_end_line;
+		("  Base:       "+o).println;
+		
+		//split, potentially remove normalized
+		var on = h.~old_start_line_normalized+":"+h.~old_end_line_normalized+
+			"->"+h.~new_start_line_normalized+":"+h.~new_end_line_normalized;
+		("  Normalized: "+on).println;
 
-			    //handle context of +/- 1 line 
-				var i = -1;
-				var j = 0;
-				if (h.old_start_line <> 0) {
-				    j = 1;
-				}
-				while (h.~old_start_line_normalized+i <= h.~old_end_line_normalized+j) {
-					linesPre.add(h.~old_start_line_normalized+i);
-					if (h.~difference < 0) {
-					   linesMerged.add(h.~old_start_line_normalized+i);
-					}
-					("  Pre: "+(h.~old_start_line_normalized+i)).println;
-					i = i+1;
-				}
-				i = -1;
-				j = 0;
-                if (h.new_start_line <> 0) {
-                    j = 1;
-                }
-				while (h.~new_start_line_normalized+i <= h.~new_end_line_normalized+j) {
-					linesPost.add(h.~new_start_line_normalized+i);
-			        linesMerged.add(h.~new_start_line_normalized+i);
-					i = i+1;
-				}
+	    //handle context of +/- 1 line 
+		var i = -1;
+		var j = 0;
+		if (h.old_start_line <> 0) {
+		    j = 1;
+		}
+		while (h.~old_start_line_normalized+i <= h.~old_end_line_normalized+j) {
+			linesPre.add(h.~old_start_line_normalized+i);
+			if (h.~difference < 0) {
+			   linesMerged.add(h.~old_start_line_normalized+i);
 			}
-			//TODO: add separate values for normalized and contextualized calculations
-            ("      "+f.file_name +" in "+a.revision.commit_id+" Lines Before "+linesPre).println();
-			("      "+f.file_name +" in "+a.revision.commit_id+" Lines After  "+linesPost).println();
-	        ("      "+f.file_name +" in "+a.revision.commit_id+" Lines Merged "+linesMerged).println();
-			
-			("      "+f.file_name +" in "+a.revision.commit_id+" Old Spatial Index "+linesPre.getMyVariance()).println();
-			("      "+f.file_name +" in "+a.revision.commit_id+" New Spatial Index "+linesPost.getMyVariance()).println();
-				
+			("  Pre: "+(h.~old_start_line_normalized+i)).println;
+			i = i+1;
+		}
+		i = -1;
+		j = 0;
+        if (h.new_start_line <> 0) {
+            j = 1;
+        }
+		while (h.~new_start_line_normalized+i <= h.~new_end_line_normalized+j) {
+			linesPost.add(h.~new_start_line_normalized+i);
+	        linesMerged.add(h.~new_start_line_normalized+i);
+			i = i+1;
 		}
 	}
-
-
+	var h = self.first;
+	//TODO: add separate values for normalized and contextualized calculations
+    ("      "+h.file.file_name +" in "+h.revision.commit_id+" Lines Before "+linesPre).println();
+	("      "+h.file.file_name +" in "+h.revision.commit_id+" Lines After  "+linesPost).println();
+    ("      "+h.file.file_name +" in "+h.revision.commit_id+" Lines Merged "+linesMerged).println();
+	
+	("      "+h.file.file_name +" in "+h.revision.commit_id+" Old Spatial Index "+linesPre.getMyVariance()).println();
+	("      "+h.file.file_name +" in "+h.revision.commit_id+" New Spatial Index "+linesPost.getMyVariance()).println();
+	("      "+h.file.file_name +" in "+h.revision.commit_id+" Merged Spatial Index "+linesMerged.getMyVariance()).println();
+		
 }
 
 operation getTimeVariane() {
