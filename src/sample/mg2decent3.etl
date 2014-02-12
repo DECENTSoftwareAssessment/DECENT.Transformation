@@ -111,17 +111,39 @@ operation String replaceInclude() : String {
 }
 
 //TODO: figure out type specification for content
-operation DECENT!State addValue(attribute : DECENT!Attribute, content, stringContent : String) : DECENT!Value {
-    var value : new DECENT!Value;
+operation DECENT!State addStringValue(attribute : DECENT!Attribute, content) : DECENT!Value {
+    var value : new DECENT!StringValue;
     value.name = attribute.name;
     value.content = content;
-    value.stringContent = stringContent;
     self.values.add(value);
     value.ofAttribute = attribute;
     self.artifact.attributes.add(attribute);
     attribute.artifactTypes.add(self.artifact.type);
     return value;
 }
+
+operation DECENT!State addDoubleValue(attribute : DECENT!Attribute, content) : DECENT!Value {
+    var value : new DECENT!DoubleValue;
+    value.name = attribute.name;
+    value.content = content;
+    self.values.add(value);
+    value.ofAttribute = attribute;
+    self.artifact.attributes.add(attribute);
+    attribute.artifactTypes.add(self.artifact.type);
+    return value;
+}
+
+operation DECENT!State addStringListValue(attribute : DECENT!Attribute, content) : DECENT!Value {
+    var value : new DECENT!StringListValue;
+    value.name = attribute.name;
+    value.content = content;
+    self.values.add(value);
+    value.ofAttribute = attribute;
+    self.artifact.attributes.add(attribute);
+    attribute.artifactTypes.add(self.artifact.type);
+    return value;
+}
+
 
 operation DECENT!Activity addDelta(attribute : DECENT!Attribute) : DECENT!Delta {
     return self.addDelta(attribute, self.targetState.values.select(v|v.ofAttribute = attribute).first());
@@ -177,14 +199,18 @@ operation MG!File traverseChildren(parent : DECENT!Artifact) {
         var lastState = null; //naive approach
         
         //TODO: revise using equivalent(s)
+        var rIDs = new OrderedSet;
+        
         for (ax in MG!Action.allInstances().select(ax|ax.file = fcl.child)){
             var s : new DECENT!State;
             s.name = ax.revision.rev;
+            rIDs.add(s.name);
             //s.ID = new Native("java.math.BigInteger")(ax.revision.commit_id.asString());
             s.ID = ax.revision.commit_id;
             a.states.add(s);
-            s.addValue(FilePathAttribute, null, ax.current_file_path);
-            s.addValue(BranchAttribute, null, ax.branch.name);
+            s.addStringValue(FilePathAttribute, ax.current_file_path);
+            s.addStringValue(BranchAttribute, ax.branch.name);
+            s.addStringListValue(BranchAttribute, rIDs);
 
             var bugFixCount = 0.0;
             if (lastState <> null) {
@@ -193,10 +219,10 @@ operation MG!File traverseChildren(parent : DECENT!Artifact) {
                 
             }
 
-            s.addValue(BugFixCount, bugFixCount+ax.revision.is_bug_fix.asDouble(), null);
+            s.addDoubleValue(BugFixCount, bugFixCount+ax.revision.is_bug_fix.asDouble());
             
             //TODO: check if available
-            s.addValue(FragmentCount, ax.revision.lineBlames->select(l|l.file = fcl.child).size().asDouble(), null);
+            s.addDoubleValue(FragmentCount, ax.revision.lineBlames->select(l|l.file = fcl.child).size().asDouble());
             
             //dealing with file copies
             //TODO: or move in a separate operatation (in post) - set previous state accordingly
@@ -254,7 +280,7 @@ operation MG!File traverseChildren(parent : DECENT!Artifact) {
             }
             //("***** File: " +a.name+" in "+s.ID+": added "+linesAdded+ " removed "+linesRemoved +" size "+fileSize + " difference " + difference + " last state "+lastState.isDefined()).println();
 
-            s.addValue(FileSizeAttribute, fileSize, null);
+            s.addDoubleValue(FileSizeAttribute, fileSize);
             
             activity.addDelta(FragmentCount);
             activity.addDelta(FileSizeAttribute);
