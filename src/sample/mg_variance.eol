@@ -1,3 +1,5 @@
+import "../mg/mg_hunks.eol";
+
 
 //changed lines
 // Before After	After After
@@ -73,98 +75,32 @@ pointsAA.add(10);
 ("Variance After After = "+pointsAA.getMyVariance()).println();
 
 
-processHunks();
+var pointsRelative = new Set;
+
+pointsRelative.add(1);
+pointsRelative.add(2);
+pointsRelative.add(7);
+pointsRelative.add(9);
+
+("Variance Relative = "+pointsRelative.getMyVariance()).println();
+
+var pointsAbsolute = new Set;
+
+var offset = 100;
+
+for (r in pointsRelative) {
+	pointsAbsolute.add(r+offset);
+}
+
+
+("Variance Absolute = "+pointsAbsolute.getMyVariance()).println();
+
+
+
+//processHunks();
 
 //getTimeVariane();
 //getSpatialIndex();
-
-
-operation OrderedSet sortHunks() {
-    var difference = 0;
-    var insertions = self.select(h|h.old_start_line = 0);
-    var deletions = self.select(h|h.new_start_line = 0);
-    var modifications = self.select(h|h.old_start_line <> 0 and h.new_start_line <> 0);
-    
-    insertions = insertions.sortBy(h|h.new_start_line);
-    deletions = deletions.sortBy(h|h.old_start_line);
-    modifications = modifications.sortBy(h|h.new_start_line);
-    
-    self.clear;
-    var i;
-    var d;
-    
-    for (m in modifications) {
-        i = insertions.first();
-        if (i.isDefined()) {
-            var oldLines = i.old_end_line-i.old_start_line;
-            if (i.old_start_line<>0){
-                oldLines=oldLines + 1;
-            }
-            var newLines = i.new_end_line-i.new_start_line;
-            if (i.new_start_line <> 0){
-                newLines=newLines + 1;
-            }
-            
-            //TODO: may need to involve the difference at some point - check out corner cases
-            //TODO: try to simplify this mess
-            difference = difference + newLines - oldLines;
-        
-            while (i.isDefined() and i.new_start_line < m.new_start_line) {
-                d = deletions.first();
-                while (d.isDefined() and d.old_start_line < i.new_start_line) {
-                    self.add(d);
-//                    ("  Adding d"+d).println();
-                    deletions.remove(d);
-                    d = deletions.first();
-                }
-                
-                self.add(i);
-//                ("  Adding i"+i).println();
-                insertions.remove(i);
-                i = insertions.first();
-            }
-
-            d = deletions.first();
-            while (d.isDefined() and d.old_start_line < m.old_start_line) {
-                self.add(d);
-//                ("  Adding d"+d).println();
-                deletions.remove(d);
-                d = deletions.first();
-            }
-        }
-        
-        self.add(m);
-//        ("  Adding m"+m).println();    
-    }
-    
-    i = insertions.first();
-    while (i.isDefined()) {
-        d = deletions.first();
-        while (d.isDefined() and d.old_start_line < i.new_start_line) {
-            self.add(d);
-//            ("  Adding d"+d).println();
-            deletions.remove(d);
-            d = deletions.first();
-        }
-        
-        self.add(i);
-//        ("  Adding i"+i).println();
-        insertions.remove(i);
-        i = insertions.first();
-    }
-    
-    d = deletions.first();
-    while (d.isDefined()) {
-        self.add(d);
-//        ("  Adding d"+d).println();
-        deletions.remove(d);
-        d = deletions.first();
-    }
-    
-//    for (h in self) {
-//        ("    "+h.old_start_line+":"+h.old_end_line+"->"+h.new_start_line+":"+h.new_end_line).println();
-//    }
-}
 
 
 operation processHunks() {
@@ -178,42 +114,6 @@ operation processHunks() {
        		hunks.normalizeHunks();
        		hunks.getSpatialIndex();
        }
-    }
-}
-
-operation OrderedSet normalizeHunks() {
-    var difference = 0;
-    for (h in self) {
-        h.~old_start_line_normalized = h.old_start_line;
-        h.~old_end_line_normalized = h.old_end_line;
-        h.~new_start_line_normalized = h.new_start_line;
-        h.~new_end_line_normalized = h.new_end_line;
-        
-        if (h.old_start_line == 0 ){ //and h.new_start_line <> 1
-            h.~old_start_line_normalized = h.new_start_line - difference;
-        }
-        if (h.new_start_line == 0 ){ //and h.new_line <> 1
-            h.~new_start_line_normalized = h.old_start_line + difference;
-        }
-        if (h.old_end_line == 0 ){ //and h.new_start_line <> 1
-            h.~old_end_line_normalized = h.new_start_line - difference;
-        }
-        if (h.new_start_line == 0 ){ //and h.new_line <> 1
-            h.~new_end_line_normalized = h.old_start_line + difference;
-        }
-        
-        //split
-        var oldLines = h.old_end_line-h.old_start_line;
-        if (h.old_start_line<>0){
-            oldLines=oldLines + 1;
-        }
-        var newLines = h.new_end_line-h.new_start_line;
-        if (h.new_start_line <> 0){
-            newLines=newLines + 1;
-        }
-        h.~difference = newLines - oldLines;
-        difference = difference + h.~difference;
-                        
     }
 }
 
