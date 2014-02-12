@@ -1,0 +1,30 @@
+import "mg_hunks.eol";
+
+pre {
+    var files = MG!File.allInstances();
+
+    for (f in files) {
+        (f.file_name).println();
+        for (a in f.actions) {
+       		var hunks = f.hunks.select(h|h.revision = a.revision);
+       		hunks.sortHunks();
+       		hunks.normalizeHunks();
+       }
+    }
+}
+
+rule hunks2hunksExtended 
+    transform s : MG!Hunk 
+    to t : MGx!HunkNormalized {
+    t.bug_introducing = s.bug_introducing;
+    t.old_start_line = s.old_start_line;
+    t.old_end_line = s.old_end_line;
+    t.new_start_line = s.new_start_line;
+    t.new_end_line = s.new_end_line;
+    t.old_start_line_normalized = s.~old_start_line_normalized;
+    t.old_end_line_normalized = s.~old_end_line_normalized;
+    t.new_start_line_normalized = s.~new_start_line_normalized;
+    t.new_end_line_normalized = s.~new_end_line_normalized;
+    t.difference = s.~difference;
+    t.hunk = s;
+}

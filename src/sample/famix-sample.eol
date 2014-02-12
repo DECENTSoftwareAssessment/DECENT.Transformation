@@ -1,0 +1,23 @@
+
+iterateOverMethods();
+
+operation iterateOverMethods () {
+	var output = "";
+	var count = 0;
+	for (m in FAMIX!Method.allInstances()) {
+		var f = m.sourceAnchor_IN_FileAnchor;
+		output = output + "FileAnchor.fileName="+f.fileName+"\tMethod.name="+m.name+"\tstartLine="+f.startLine+"\tendline="+f.endLine;
+		for (attr in m.eClass().getEAllAttributes()) {	        
+	        if ((attr.getEAttributeType().getName() == "EDouble")) {
+	            output = output + "\t" + attr.getName()+"="+m.eGet(attr);
+            }
+		}
+		output.println();
+		
+		output = "";
+		count=count+1;
+		if (count > 10)	{
+			break;
+		}
+	}
+}
