@@ -110,37 +110,39 @@ operation String replaceInclude() : String {
     return self.replace('include','src');
 }
 
+
 //TODO: figure out type specification for content
-operation DECENT!State addStringValue(attribute : DECENT!Attribute, content) : DECENT!Value {
+operation Any addStringValue(attribute : DECENT!Attribute, content) : DECENT!Value {
     var value : new DECENT!StringValue;
     value.name = attribute.name;
     value.content = content;
     self.values.add(value);
     value.ofAttribute = attribute;
-    self.artifact.attributes.add(attribute);
-    attribute.artifactTypes.add(self.artifact.type);
+    //TODO: outsource these
+//    self.artifact.attributes.add(attribute);
+//    attribute.artifactTypes.add(self.artifact.type);
     return value;
 }
 
-operation DECENT!State addDoubleValue(attribute : DECENT!Attribute, content) : DECENT!Value {
+operation Any addDoubleValue(attribute : DECENT!Attribute, content) : DECENT!Value {
     var value : new DECENT!DoubleValue;
     value.name = attribute.name;
     value.content = content;
     self.values.add(value);
     value.ofAttribute = attribute;
-    self.artifact.attributes.add(attribute);
-    attribute.artifactTypes.add(self.artifact.type);
+//    self.artifact.attributes.add(attribute);
+//    attribute.artifactTypes.add(self.artifact.type);
     return value;
 }
 
-operation DECENT!State addStringListValue(attribute : DECENT!Attribute, content) : DECENT!Value {
+operation Any addStringListValue(attribute : DECENT!Attribute, content) : DECENT!Value {
     var value : new DECENT!StringListValue;
     value.name = attribute.name;
     value.content = content;
     self.values.add(value);
     value.ofAttribute = attribute;
-    self.artifact.attributes.add(attribute);
-    attribute.artifactTypes.add(self.artifact.type);
+//    self.artifact.attributes.add(attribute);
+//    attribute.artifactTypes.add(self.artifact.type);
     return value;
 }
 
@@ -155,8 +157,8 @@ operation DECENT!Activity addDelta(attribute : DECENT!Attribute, value : DECENT!
     delta.onAttribute = attribute;
     delta.targetValue = value;
     if (self.state.isDefined()){
-	    delta.value = self.state.values.select(v|v.ofAttribute = attribute).first();
-        delta.change = delta.targetValue.content - delta.value.content;
+	    delta.sourceValue = self.state.values.select(v|v.ofAttribute = attribute).first();
+        delta.change = delta.targetValue.content - delta.sourceValue.content;
     } else {
         delta.change = delta.targetValue.content;
     }
@@ -302,25 +304,11 @@ operation MG!File traverseChildren(parent : DECENT!Artifact) {
             bugFixDelta.activity = activity;
             bugFixDelta.onAttribute = BugFixCount;
             */
-            var hc : new DECENT!ActivityValue;
-            hc.activity = activity;
-            hc.ofAttribute = HunkCount;
-            hc.content = ax.revision.hunks->select(h|h.file = fcl.child).size().asDouble();
             
-            var message : new DECENT!ActivityValue;
-            message.activity = activity;
-            message.ofAttribute = Message;
-            message.stringContent = ax.revision.message;
-
-            var la : new DECENT!ActivityValue;
-            la.activity = activity;
-            la.ofAttribute = LinesAddedAttribute;
-            la.content = linesAdded;
-
-            var lr : new DECENT!ActivityValue;
-            lr.activity = activity;
-            lr.ofAttribute = LinesRemovedAttribute;
-            lr.content = linesRemoved;
+            activity.addDoubleValue(HunkCount, ax.revision.hunks->select(h|h.file = fcl.child).size().asDouble());
+			activity.addStringValue(Message, ax.revision.message);
+            activity.addDoubleValue(LinesAddedAttribute, linesAdded);
+            activity.addDoubleValue(LinesRemovedAttribute, linesRemoved);
 
             
         }
