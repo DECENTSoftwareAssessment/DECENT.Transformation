@@ -288,27 +288,12 @@ operation MG!File traverseChildren(parent : DECENT!Artifact) {
             activity.addDelta(FileSizeAttribute);
             activity.addDelta(BugFixCount);
             
-            lastState = s;
-
-            //TODO: separate transformation?
-            /*
-            var fragmentCountDelta : new DECENT!Delta;
-            fragmentCountDelta.activity = activity;
-            fragmentCountDelta.onAttribute = FragmentCount;
-
-            var fileSizeDelta : new DECENT!Delta;
-            fileSizeDelta.activity = activity;
-            fileSizeDelta.onAttribute = FileSizeAttribute;
-
-            var bugFixDelta : new DECENT!Delta;
-            bugFixDelta.activity = activity;
-            bugFixDelta.onAttribute = BugFixCount;
-            */
             
             activity.addDoubleValue(HunkCount, ax.revision.hunks->select(h|h.file = fcl.child).size().asDouble());
 			activity.addStringValue(Message, ax.revision.message);
             activity.addDoubleValue(LinesAddedAttribute, linesAdded);
             activity.addDoubleValue(LinesRemovedAttribute, linesRemoved);
+
 
             
         }
