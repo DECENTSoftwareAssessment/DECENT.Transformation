@@ -90,15 +90,26 @@ pre mgInitPre {
   var artifactCount = MG!File.allInstances().size();
   var processedCount = 0;
 
-  //start preprocessing (building the artifact tree)
-  var MGRootArtifact = MG!File.allInstances().select(f|f.file_name = 'ROOT');
-  ("Pre processing "+MGRootArtifact.get(0).file_name+" : " + RootArtifact.name).println();
-  MGRootArtifact.get(0).traverseChildren(RootArtifact);
+  var ruleBased = false;
+
+  if (not ruleBased) {
+	  //start preprocessing (building the artifact tree)
+	  var MGRootArtifact = MG!File.allInstances().select(f|f.file_name = 'ROOT');
+	  ("Pre processing "+MGRootArtifact.get(0).file_name+" : " + RootArtifact.name).println();
+	  MGRootArtifact.get(0).traverseChildren(RootArtifact);
+  }
 }
 
 post mgInitPost{
   ("Post processing... ").println();
-
+  for (a in DECENT!Artifact.allInstances()) {
+  	(""+a.name).println();
+  	for (s in a.states) {
+  		for (v in s.values.select(v|v.ofAttribute = FileSizeAttribute)) {
+  			("  " + a.name + " in " + s.ID + " : " + v.ofAttribute.name + " = " + v.content).println();
+  		}
+  	}
+  }
     //TODO: adjust branching structure
 }
 
@@ -111,8 +122,7 @@ operation String replaceInclude() : String {
 }
 
 
-//TODO: figure out type specification for content
-operation Any addStringValue(attribute : DECENT!Attribute, content) : DECENT!Value {
+operation Any addValue(attribute : DECENT!Attribute, content : String) : DECENT!Value {
     var value : new DECENT!StringValue;
     value.name = attribute.name;
     value.content = content;
@@ -124,7 +134,7 @@ operation Any addStringValue(attribute : DECENT!Attribute, content) : DECENT!Val
     return value;
 }
 
-operation Any addDoubleValue(attribute : DECENT!Attribute, content) : DECENT!Value {
+operation Any addValue(attribute : DECENT!Attribute, content : Real) : DECENT!Value {
     var value : new DECENT!DoubleValue;
     value.name = attribute.name;
     value.content = content;
@@ -135,7 +145,7 @@ operation Any addDoubleValue(attribute : DECENT!Attribute, content) : DECENT!Val
     return value;
 }
 
-operation Any addStringListValue(attribute : DECENT!Attribute, content) : DECENT!Value {
+operation Any addValue(attribute : DECENT!Attribute, content : Collection(String)) : DECENT!Value {
     var value : new DECENT!StringListValue;
     value.name = attribute.name;
     value.content = content;
@@ -166,8 +176,39 @@ operation DECENT!Activity addDelta(attribute : DECENT!Attribute, value : DECENT!
     return delta;
 }
 
+operation DECENT!Artifact setArtifactType(fileType : String) {
+    var artifactType = DECENT!ArtifactType.allInstances().
+        select(at|at.name = fileType).first;
+    if (not artifactType.isDefined()){
+        //("  Artifact type not defined. Initializing "+fcl.child.file_type+" ").println();
+        artifactType = new DECENT!ArtifactType;
+        artifactType.name = fileType;
+        Model.artifactTypeHierarchy.types.add(artifactType);
+    }
+    self.type = artifactType;
+
+}
+
+//rule-based
+rule File2Artifact 
+    transform f : MG!File 
+    to a : DECENT!Artifact {
+    guard : ruleBased
+    
+    a.name = f.file_name;
+    var parentName = "/";
+    if (f.parentLinks.size()>0) {
+    	("Adding parents... "+f.parentLinks.size()).println();
+	    a.parent = f.parentLinks.get(0).parent.equivalent();
+	    parentName = a.parent.name;
+    }
+    ("Transforming artifact "+f.file_name+" ("+f.file_type+") in "+parentName+" ("+processedCount+"/"+artifactCount+" completed)").println();
+    
+	processedCount = processedCount + 1;
+}
 
 
+//pre-processing based
 operation MG!File traverseChildren(parent : DECENT!Artifact) {
     //NOTE: parent information refers to target artifact, thus "in" is "target" and not "container"
     //TODO: counter is also off.. => need to check for duplicate artifacts and only create if new?
@@ -185,16 +226,7 @@ operation MG!File traverseChildren(parent : DECENT!Artifact) {
 		    processedCount = processedCount + 1;
         }
         
-        //setting type
-	    var artifactType = DECENT!ArtifactType.allInstances().
-	        select(at|at.name = fcl.child.file_type).first;
-	    if (not artifactType.isDefined()){
-	        //("  Artifact type not defined. Initializing "+fcl.child.file_type+" ").println();
-	        artifactType = new DECENT!ArtifactType;
-	        artifactType.name = fcl.child.file_type;
-	        Model.artifactTypeHierarchy.types.add(artifactType);
-	    }
-	    a.type = artifactType;
+	    a.setArtifactType(fcl.child.file_type);
         
         //creating states and activities
         //TODO: connect states
@@ -210,9 +242,9 @@ operation MG!File traverseChildren(parent : DECENT!Artifact) {
             //s.ID = new Native("java.math.BigInteger")(ax.revision.commit_id.asString());
             s.ID = ax.revision.commit_id;
             a.states.add(s);
-            s.addStringValue(FilePathAttribute, ax.current_file_path);
-            s.addStringValue(BranchAttribute, ax.branch.name);
-            s.addStringListValue(BranchAttribute, rIDs);
+            s.addValue(FilePathAttribute, ax.current_file_path);
+            s.addValue(BranchAttribute, ax.branch.name);
+            s.addValue(BranchAttribute, rIDs);
 
             var bugFixCount = 0.0;
             if (lastState <> null) {
@@ -221,10 +253,10 @@ operation MG!File traverseChildren(parent : DECENT!Artifact) {
                 
             }
 
-            s.addDoubleValue(BugFixCount, bugFixCount+ax.revision.is_bug_fix.asDouble());
+            s.addValue(BugFixCount, bugFixCount+ax.revision.is_bug_fix.asDouble());
             
             //TODO: check if available
-            s.addDoubleValue(FragmentCount, ax.revision.lineBlames->select(l|l.file = fcl.child).size().asDouble());
+            s.addValue(FragmentCount, ax.revision.lineBlames->select(l|l.file = fcl.child).size().asDouble());
             
             //dealing with file copies
             //TODO: or move in a separate operatation (in post) - set previous state accordingly
@@ -280,24 +312,23 @@ operation MG!File traverseChildren(parent : DECENT!Artifact) {
             } else {
                 fileSize = difference;
             }
-            //("***** File: " +a.name+" in "+s.ID+": added "+linesAdded+ " removed "+linesRemoved +" size "+fileSize + " difference " + difference + " last state "+lastState.isDefined()).println();
-
-            s.addDoubleValue(FileSizeAttribute, fileSize);
+            ("***** File: " +a.name+" in "+s.ID+": added "+linesAdded+ " removed "+linesRemoved +" size "+fileSize + " difference " + difference + " last state "+lastState.isDefined()).println();
+			fileSize = processedCount.asDouble;
+            s.addValue(FileSizeAttribute, fileSize);
             
             activity.addDelta(FragmentCount);
             activity.addDelta(FileSizeAttribute);
             activity.addDelta(BugFixCount);
             
             
-            activity.addDoubleValue(HunkCount, ax.revision.hunks->select(h|h.file = fcl.child).size().asDouble());
-			activity.addStringValue(Message, ax.revision.message);
-            activity.addDoubleValue(LinesAddedAttribute, linesAdded);
-            activity.addDoubleValue(LinesRemovedAttribute, linesRemoved);
+            activity.addValue(HunkCount, ax.revision.hunks->select(h|h.file = fcl.child).size().asDouble());
+			activity.addValue(Message, ax.revision.message);
+            activity.addValue(LinesAddedAttribute, linesAdded);
+            activity.addValue(LinesRemovedAttribute, linesRemoved);
 
 
             
         }
-        
         fcl.child.traverseChildren(a);
      }
 }
