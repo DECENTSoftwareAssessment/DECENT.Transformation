@@ -30,6 +30,10 @@ pre mgInitPre {
   FileSizeAttribute.name = "FileSize";
   Model.attributePool.attributes.add(FileSizeAttribute);
 
+  var LOCAttribute = new DECENT!Attribute;
+  LOCAttribute.name = "LOC";
+  Model.attributePool.attributes.add(LOCAttribute);
+
   var LinesAddedAttribute = new DECENT!Attribute;
   LinesAddedAttribute.name = "LinesAdded";
   Model.attributePool.attributes.add(LinesAddedAttribute);
@@ -64,24 +68,15 @@ pre mgInitPre {
   var Project = new DECENT!Project;
   Project.name = MG!Model.allInstances().first().name;
   Model.projects.add(Project);
-  
-  for (p in MG!People.allInstances()){
-	("Transforming agent "+p.name).println();
-	var a = new DECENT!Agent;
-	a.name = p.name;
-	a.eMail = p.email;
-	Model.agentPool.agents.add(a);
-	Model.projects.get(0).agents.add(a);
-  }
-  
+    
   for (b in MG!Branch.allInstances()){
 	var Location = new DECENT!Location;
 	Location.name = b.name;
 	Location.type = BranchArtifactType;
 	Project.location.add(Location);
-	var RootArtifact = new DECENT!Artifact;
-	RootArtifact.name = "/";
-	Location.rootArtifact = RootArtifact;
+//	var RootArtifact = new DECENT!Artifact;
+//	RootArtifact.name = "/";
+//	Location.rootArtifact = RootArtifact;
   }
   
   //TODO: handle all branches
@@ -90,9 +85,19 @@ pre mgInitPre {
   var artifactCount = MG!File.allInstances().size();
   var processedCount = 0;
 
-  var ruleBased = false;
+  var ruleBased = true;
 
   if (not ruleBased) {
+
+	  for (p in MG!People.allInstances()){
+		("Transforming agent "+p.name).println();
+		var a = new DECENT!Agent;
+		a.name = p.name;
+		a.eMail = p.email;
+		Model.agentPool.agents.add(a);
+		Model.projects.get(0).agents.add(a);
+	  }
+
 	  //start preprocessing (building the artifact tree)
 	  var MGRootArtifact = MG!File.allInstances().select(f|f.file_name = 'ROOT');
 	  ("Pre processing "+MGRootArtifact.get(0).file_name+" : " + RootArtifact.name).println();
@@ -108,8 +113,13 @@ post mgInitPost{
   		for (v in s.values.select(v|v.ofAttribute = FileSizeAttribute)) {
   			("  " + a.name + " in " + s.ID + " : " + v.ofAttribute.name + " = " + v.content).println();
   		}
+  		
+  		for (p in s.previous) {
+  			("  " +p.ID + " ("+p.artifact.name+")" + " -> " +s.ID +" ("+s.artifact.name+")").println();
+  		}
   	}
   }
+  
     //TODO: adjust branching structure
 }
 
@@ -121,6 +131,18 @@ operation String replaceInclude() : String {
     return self.replace('include','src');
 }
 
+operation dumpFileCopies() {
+  for (f in MG!File.allInstances()) {
+    (""+f.file_name).println();
+  
+  	for (a in f.actions) {
+  		("  " +a.type + " "+a.revision.commit_id + " " + a.revision.message.trim()).println();
+  		if (a.copy.isDefined()) {
+  			("  "+a.copy.fromRevision.commit_id +" ("+a.copy.fromFile.file_name+")" + " -> "+ a.revision.commit_id+ " ("+f.file_name+")").println();
+  		}
+  	}
+  }
+}
 
 operation Any addValue(attribute : DECENT!Attribute, content : String) : DECENT!Value {
     var value : new DECENT!StringValue;
@@ -189,6 +211,18 @@ operation DECENT!Artifact setArtifactType(fileType : String) {
 
 }
 
+rule People2Agent 
+    transform p : MG!People 
+    to a : DECENT!Agent {
+    guard : ruleBased
+    
+	a.name = p.name;
+    ("Transforming agent "+a.name).println();
+	a.eMail = p.email;
+	Model.agentPool.agents.add(a);
+	Model.projects.get(0).agents.add(a);
+}
+
 //rule-based
 rule File2Artifact 
     transform f : MG!File 
@@ -196,17 +230,85 @@ rule File2Artifact
     guard : ruleBased
     
     a.name = f.file_name;
-    var parentName = "/";
+   	a.setArtifactType(f.file_type);
+    var parentName = "ROOT";
     if (f.parentLinks.size()>0) {
-    	("Adding parents... "+f.parentLinks.size()).println();
+    	//("Adding parents... "+f.parentLinks.size()).println();
 	    a.parent = f.parentLinks.get(0).parent.equivalent();
 	    parentName = a.parent.name;
+    } else {
+    	//TODO: handle branches properly
+    	DECENT!Location.allInstances.select(l|l.name = "master").first().rootArtifact=a;
     }
     ("Transforming artifact "+f.file_name+" ("+f.file_type+") in "+parentName+" ("+processedCount+"/"+artifactCount+" completed)").println();
     
 	processedCount = processedCount + 1;
 }
 
+rule Action2State 
+    transform a : MG!Action
+    to s : DECENT!State {
+    guard : ruleBased
+
+	s.name = a.revision.rev;
+    ("Transforming action "+ a.revision.commit_id + " for " + a.file.file_name).println();
+	s.ID = a.revision.commit_id;
+	s.artifact = a.file.equivalent();
+	s.addValue(FilePathAttribute, a.current_file_path);
+	s.addValue(BranchAttribute, a.branch.name);
+	
+	var lastState = null;
+	var aIndex = a.file.actions.indexOf(a);
+	if (aIndex > 0) {
+		//("  Previous Action "+a.file.actions.at(aIndex-1).revision.commit_id + " mapped to " + a.file.actions.at(aIndex-1).equivalent()).println();
+		lastState = a.file.actions.at(aIndex-1).equivalent();
+		s.previous.add(lastState);
+	}
+	
+    //dealing with file copies
+    //DONE: see notes on this
+    //if (a.copy.isDefined()){
+    //	var copySourceState = a.copy.fromRevision.actions.select(af|af.file = a.copy.fromFile).first().equivalent();
+    //	("  Copy from "+ a.copy.fromFile.equivalent() + " in state " + copySourceState).println();
+    //	s.previous.add(copySourceState);
+    //}
+    
+    //dealing with file moves
+    //TODO: peform a small study similar to file copies
+
+    var content = a.revision.content.select(c|c.file = a.file).first();
+	if (content.isDefined()){
+		s.addValue(FileSizeAttribute, a.revision.content.select(c|c.file = a.file).first().size.asDouble());
+		s.addValue(LOCAttribute, a.revision.content.select(c|c.file = a.file).first().loc.asDouble());
+	}
+
+    s.addValue(FragmentCount, a.revision.lineBlames->select(l|l.file = a.file).size().asDouble());
+	
+	//TODO: handle activities and deltas (as a post step?)
+    var activity = new DECENT!Activity;
+    activity.targetState = s;
+    activity.state = lastState;            
+    activity.date = a.revision.author_date;
+    activity.type = a.type;
+    activity.agent = a.revision.author.equivalent();
+	
+    
+    var linesAdded = "0".asDouble();
+    var linesRemoved = "0".asDouble();
+    var difference = "0".asDouble();
+    var patchLines = a.revision.patchLines->select(l|l.file = a.file);
+    if (patchLines.size() > 0) {
+        linesAdded = patchLines.asOrderedSet().first().added.asDouble();
+        linesRemoved = patchLines.asOrderedSet().first().removed.asDouble();
+        difference = linesAdded - linesRemoved;
+    }
+
+    activity.addValue(HunkCount, a.revision.hunks->select(h|h.file = a.file).size().asDouble());
+	activity.addValue(Message, a.revision.message);
+    activity.addValue(LinesAddedAttribute, linesAdded);
+    activity.addValue(LinesRemovedAttribute, linesRemoved);
+
+}
 
 //pre-processing based
 operation MG!File traverseChildren(parent : DECENT!Artifact) {
@@ -244,7 +346,7 @@ operation MG!File traverseChildren(parent : DECENT!Artifact) {
             a.states.add(s);
             s.addValue(FilePathAttribute, ax.current_file_path);
             s.addValue(BranchAttribute, ax.branch.name);
-            s.addValue(BranchAttribute, rIDs);
+            //s.addValue(BranchAttribute, rIDs); //test for list values
 
             var bugFixCount = 0.0;
             if (lastState <> null) {
