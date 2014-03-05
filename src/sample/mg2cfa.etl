@@ -9,7 +9,7 @@ pre mgInitPre {
   /********************************** INIT (1x) *******************************/
   var lowerBound = 0;
   var upperBound = 2310;
-  upperBound = 6;
+  upperBound = 600;
 }
 
 post mgInitPost{
@@ -42,7 +42,7 @@ post mgInitPost{
     var projectName = MG!Model.allInstances().first().name;
     var filename = "/Users/philip-iii/Dev/workspaces/emf/DECENT.Transformations/plantuml/cfa.model.generated."+projectName+"-"+lowerBound+"-"+upperBound+".plantuml";
 	var writer;
-    CFA!GlobalState.allInstances().select(s|s.ID <= upperBound and s.ID >= lowerBound).cfaToPlantUMLFile(filename);    
+    //CFA!GlobalState.allInstances().select(s|s.ID <= upperBound and s.ID >= lowerBound).cfaToPlantUMLFile(filename);    
 }
 
 
@@ -95,6 +95,9 @@ rule Actions
     transform a : MG!Action 
     to s : CFA!ArtifactState {
     //TODO: investigate causes for missing links (copy, rename, other?), try branch filtering, etc...
+    //-> keep in mind potential odd issues with svn-bridges and such 
+    //-> use different projects for the time being (yakuake?)
+    //-> disregard these problems for the time being
     guard : /*r.is_bug_fix <> 0 and*/ (a.revision.commit_id <= upperBound and a.revision.commit_id >= lowerBound )
     //("Transforming "+ a.file.file_name+"_Mr"+a.revision.commit_id+" Fix: " +a.revision.is_bug_fix).println();
     s.file = a.file;
