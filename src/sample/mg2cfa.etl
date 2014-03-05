@@ -1,3 +1,5 @@
+import "cfa2plantuml.eol";
+
 pre mgInitPre {
 
   //Some initialization
@@ -7,7 +9,7 @@ pre mgInitPre {
   /********************************** INIT (1x) *******************************/
   var lowerBound = 0;
   var upperBound = 2310;
-  upperBound = 600;
+  upperBound = 6;
 }
 
 post mgInitPost{
@@ -39,125 +41,10 @@ post mgInitPost{
     //visualization
     var projectName = MG!Model.allInstances().first().name;
     var filename = "/Users/philip-iii/Dev/workspaces/emf/DECENT.Transformations/plantuml/cfa.model.generated."+projectName+"-"+lowerBound+"-"+upperBound+".plantuml";
-    var file = new Native("java.io.File") (filename);
-    var writer = new Native("java.io.FileWriter") (file);
-
-    //CFA!GlobalState.allInstances().select(s|s.ID <= upperBound and s.ID >= lowerBound).cfaToPlantUML();
-    
-    writer.close();
-    
+	var writer;
+    CFA!GlobalState.allInstances().select(s|s.ID <= upperBound and s.ID >= lowerBound).cfaToPlantUMLFile(filename);    
 }
 
-operation Sequence cfaToPlantUML() {
-    ("visualizing..").println();
-	var output = "";
-	("@startuml").printlno();
-	("skinparam classArrowColor #444488").printlno();
-	("skinparam objectBorderColor #444444").printlno();
-	("skinparam objectBackgroundColor #EDEDED").printlno();
-	("skinparam classArrowFontStyle bold").printlno();
-	("skinparam classArrowFontSize 16").printlno();
-	("skinparam classArrowFontColor #AA4444").printlno();
-	("").printlno();
-	var lastState;
-	for (s in self) {
-        ("processing object "+s.name).println();
-        ("object "+s.name).printlno();
-        (s.name+" : hunks = "+s.hunks).printlno();
-        (s.name+" : weight factor (bug fix) = "+s.weightFactor).printlno();
-        if (lastState.isDefined()) {
-            (lastState.name +" - "+s.name).printlno();
-        }
-        //files?
-        var offsetDistance = "\\n\\n";
-        
-        for (f in s.fixes){
-            offsetDistance = offsetDistance + "\\n";
-            
-            var distance = "";
-	        var d = 0;
-	        while (d < (s.ID - f.ID)) {
-	            distance = distance + "\\n";
-	            d = d+1;
-	        }
-            var label = "weight";
-            label = label + ": " + s.weightFactor + "*" + 1 + "/" + s.fixes.size();
-            label = label+"="+(s.weightFactor*(1/s.fixes.size().asDouble()));
-            label = label + distance;
-            
-            (s.name +" : fixes = "+f.name +" ("+1+"/"+s.fixes.size()+")").printlno();
-/*            (f.name + " \"" + s.name + ":" + 1 + "/" + f.causes.size() + distance + "\""
-                 + " <... "
-                 + "\"" + offsetDistance + f.name + ":" + 1 + "/" + s.fixes.size() + distance + "\" " + s.name
-                 + " : " + label).printlno();
-*/                 
-            var notename = f.name+"_"+s.name;
-			("note \""+s.name + ":" + 1 + "/" + f.causes.size()+" -> "+f.name + ":" + 1 + "/" + s.fixes.size()+"\\n"+label+"\" as " + notename).printlno();
-			(f.name + " <..down.. " + notename).printlno();
-			(notename + " ..down.. " + s.name).printlno();
-    
-        }
-        for (c in s.causes) {
-            (s.name +" : causes = "+c.name +" ("+1+"/"+s.causes.size()+",w=" +(c.weightFactor*(1/c.fixes.size().asDouble()))+ ")").printlno();
-        }
-
-        (s.name+" : total cause weight = "+s.totalWeight).printlno();
-        (s.name+" : average cause weight = "+s.averageWeight).printlno();
-        (s.name+" : total bug cause weight = "+s.totalBugWeight).printlno();
-        (s.name+" : average bug cause weight = "+s.averageBugWeight).printlno();
-
-		//essentially duplicated from above...
-        for (a in s.artifactStates) {
-	        //("object "+a.name).printlno();
-        	(a.name+" : hunks = "+a.hunks).printlno();
-        	(a.name+" : weight factor (bug fix) = "+a.weightFactor).printlno();
-        	
-        	(s.name+" --down-- "+a.name).printlno();
-        	for (f in a.fixes) {
-	            offsetDistance = offsetDistance + "\\n";
-	            
-	            var distance = "";
-		        var d = 0;
-		        while (d < (a.ID - f.ID)) {
-		            distance = distance + "\\n";
-		            d = d+1;
-		        }
-	            var label = "weight";
-	            label = label + ": " + a.weightFactor + "*" + 1 + "/" + a.fixes.size();
-	            label = label+"="+(a.weightFactor*(1/a.fixes.size().asDouble()));
-	            //label = label + distance;
-	            
-	            (a.name +" : fixes = "+f.name +" ("+1+"/"+a.fixes.size()+")").printlno();
-/*	            (f.name + " \"" + a.name + ":" + 1 + "/" + f.causes.size() + distance + "\""
-	                 + " <.left.. "
-	                 + "\"" + offsetDistance + f.name + ":" + 1 + "/" + a.fixes.size() + distance + "\" " + a.name
-	                 + " : " + label).printlno();
-*/	            var notename = f.name+"_"+a.name;
-				("note \""+a.name + ":" + 1 + "/" + f.causes.size()+" -> "+f.name + ":" + 1 + "/" + a.fixes.size()+"\\n"+label+"\" as " + notename).printlno();
-				(f.name + " <..up.. " + notename).printlno();
-				(notename + " ..up.. " + a.name).printlno();
-        	}
-	        for (c in a.causes) {
-	            (a.name +" : causes = "+c.name +" ("+1+"/"+a.causes.size()+",w=" +(c.weightFactor*(1/c.fixes.size().asDouble()))+ ")").printlno();
-	        }
-
-	        (a.name+" : total cause weight = "+a.totalWeight).printlno();
-	        (a.name+" : average cause weight = "+a.averageWeight).printlno();
-	        (a.name+" : total bug cause weight = "+a.totalBugWeight).printlno();
-	        (a.name+" : average bug cause weight = "+a.averageBugWeight).printlno();
-        }
-
-
-        lastState = s;
-	}
-	("@enduml").printlno();
-	("finishing..").println();
-}
-
-operation String printlno() {
-    writer.write(self.replaceAll("(?:[\\w\\d])-(?:[\\w\\d])", "\\.") + "\n");
-    writer.flush();
-}	
 
 rule Models
     transform s : MG!Model 
