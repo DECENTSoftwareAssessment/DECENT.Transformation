@@ -26,12 +26,17 @@ operation Sequence cfaToPlantUML() {
         (s.name+" : hunks = "+s.hunks).printlno();
         (s.name+" : weight factor (bug fix) = "+s.weightFactor).printlno();
         if (lastState.isDefined()) {
-            (lastState.name +" - "+s.name).printlno();
+            (lastState.name +" -right- "+s.name).printlno();
         }
         //files?
         var offsetDistance = "\\n\\n";
         
         for (f in s.fixes){
+            (s.name +" : fixes = "+f.name +" ("+1+"/"+s.fixes.size()+")").printlno();
+    		if (f.ID < lowerBound) {
+        		continue;
+    		}
+        	
             offsetDistance = offsetDistance + "\\n";
             
             var distance = "";
@@ -43,9 +48,10 @@ operation Sequence cfaToPlantUML() {
             var label = "weight";
             label = label + ": " + s.weightFactor + "*" + 1 + "/" + s.fixes.size();
             label = label+"="+(s.weightFactor*(1/s.fixes.size().asDouble()));
-            label = label + distance;
+            label = label + "\\nfull weight: " + 1 + "/" + s.fixes.size();
+            label = label+"="+((1/s.fixes.size().asDouble()));
+            //label = label + distance;
             
-            (s.name +" : fixes = "+f.name +" ("+1+"/"+s.fixes.size()+")").printlno();
 /*            (f.name + " \"" + s.name + ":" + 1 + "/" + f.causes.size() + distance + "\""
                  + " <... "
                  + "\"" + offsetDistance + f.name + ":" + 1 + "/" + s.fixes.size() + distance + "\" " + s.name
@@ -58,7 +64,7 @@ operation Sequence cfaToPlantUML() {
     
         }
         for (c in s.causes) {
-            (s.name +" : causes = "+c.name +" ("+1+"/"+s.causes.size()+",w=" +(c.weightFactor*(1/c.fixes.size().asDouble()))+ ")").printlno();
+            (s.name +" : causes = "+c.name +" (c="+1+"/"+s.causes.size()+",f="+1+"/"+c.fixes.size()+",w=" +(c.weightFactor*(1/c.fixes.size().asDouble()))+",fw=" +((1/c.fixes.size().asDouble()))+ ")").printlno();
         }
 
         (s.name+" : total cause weight = "+s.totalWeight).printlno();
@@ -74,6 +80,11 @@ operation Sequence cfaToPlantUML() {
         	
         	(s.name+" --down-- "+a.name).printlno();
         	for (f in a.fixes) {
+	            (a.name +" : fixes = "+f.name +" ("+1+"/"+a.fixes.size()+")").printlno();
+        		if (f.ID < lowerBound) {
+	        		continue;
+        		}
+
 	            offsetDistance = offsetDistance + "\\n";
 	            
 	            var distance = "";
@@ -85,20 +96,22 @@ operation Sequence cfaToPlantUML() {
 	            var label = "weight";
 	            label = label + ": " + a.weightFactor + "*" + 1 + "/" + a.fixes.size();
 	            label = label+"="+(a.weightFactor*(1/a.fixes.size().asDouble()));
+	            label = label + "\\nfull weight: " + 1 + "/" + a.fixes.size();
+	            label = label+"="+((1/a.fixes.size().asDouble()));
 	            //label = label + distance;
 	            
-	            (a.name +" : fixes = "+f.name +" ("+1+"/"+a.fixes.size()+")").printlno();
 /*	            (f.name + " \"" + a.name + ":" + 1 + "/" + f.causes.size() + distance + "\""
 	                 + " <.left.. "
 	                 + "\"" + offsetDistance + f.name + ":" + 1 + "/" + a.fixes.size() + distance + "\" " + a.name
 	                 + " : " + label).printlno();
-*/	            var notename = f.name+"_"+a.name;
+*/	            
+				var notename = f.name+"_"+a.name;
 				("note \""+a.name + ":" + 1 + "/" + f.causes.size()+" -> "+f.name + ":" + 1 + "/" + a.fixes.size()+"\\n"+label+"\" as " + notename).printlno();
 				(f.name + " <..up.. " + notename).printlno();
 				(notename + " ..up.. " + a.name).printlno();
         	}
 	        for (c in a.causes) {
-	            (a.name +" : causes = "+c.name +" ("+1+"/"+a.causes.size()+",w=" +(c.weightFactor*(1/c.fixes.size().asDouble()))+ ")").printlno();
+	            (a.name +" : causes = "+c.name +" (c="+1+"/"+a.causes.size()+",f="+1+"/"+c.fixes.size()+",w=" +(c.weightFactor*(1/c.fixes.size().asDouble()))+",fw=" +((1/c.fixes.size().asDouble()))+ ")").printlno();
 	        }
 
 	        (a.name+" : total cause weight = "+a.totalWeight).printlno();
@@ -115,6 +128,6 @@ operation Sequence cfaToPlantUML() {
 }
 
 operation String printlno() {
-    writer.write(self.replaceAll("(?:[\\w\\d])-(?:[\\w\\d])", "\\.") + "\n");
+    writer.write(self.replaceAll("(?:[\\w\\d])-(?:[\\w\\d])", "_") + "\n");
     writer.flush();
 }	
