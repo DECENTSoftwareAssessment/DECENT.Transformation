@@ -4,7 +4,11 @@ var filename = "/Users/philip-iii/Dev/workspaces/emf/DECENT.Transformations/plan
 var file = new Native("java.io.File") (filename);
 var writer = new Native("java.io.FileWriter") (file);
 
-var revisions = MG!Revision.allInstances().select(r| (r.commit_id <= 505 and r.commit_id >= 500) or r.commit_id=577);
+var upperbound = 2000;
+var lowerbound = -1;
+var fixed = -1;
+
+var revisions = MG!Revision.allInstances().select(r| (r.commit_id <= upperbound and r.commit_id >= lowerbound) or r.commit_id=fixed);
 
 ("@startuml").printlno();
 ("skinparam classArrowColor #444488").printlno();
@@ -58,6 +62,8 @@ for (r in revisions) {
             if (revisions.includes(hb.lastRevision)) {
 	            r.~fixes.add(hb.lastRevision);
 	            hb.lastRevision.~causes.add(r);
+            
+            	(h.file.file_name+"_r"+hb.lastRevision.commit_id + " <.left. " + h.file.file_name+"_r"+h.revision.commit_id+"").replaceAll("(?:[\\w\\d])-(?:[\\w\\d])", "\\.").printlno();
             
 	            var fixWeight = "";
 	            fixWeight = 1+"/"+totalFixCount;
