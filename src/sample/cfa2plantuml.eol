@@ -22,7 +22,12 @@ operation Sequence cfaToPlantUML() {
 	var lastState;
 	for (s in self) {
         ("processing object "+s.name).println();
-        ("object "+s.name).printlno();
+        var color = "";
+        if (s.totalBugWeight > 0) {
+        	color = " #FFAAAA";
+        }
+        ("object "+s.name + color).printlno();
+        
         (s.name+" : hunks = "+s.hunks).printlno();
         (s.name+" : weight factor (bug fix) = "+s.weightFactor).printlno();
         if (lastState.isDefined()) {
@@ -45,10 +50,10 @@ operation Sequence cfaToPlantUML() {
 	            distance = distance + "\\n";
 	            d = d+1;
 	        }
-            var label = "weight";
+            var label = "bug cause weight";
             label = label + ": " + s.weightFactor + "*" + 1 + "/" + s.fixes.size();
             label = label+"="+(s.weightFactor*(1/s.fixes.size().asDouble()));
-            label = label + "\\nfull weight: " + 1 + "/" + s.fixes.size();
+            label = label + "\\nfull cause weight: " + 1 + "/" + s.fixes.size();
             label = label+"="+((1/s.fixes.size().asDouble()));
             //label = label + distance;
             
@@ -64,7 +69,7 @@ operation Sequence cfaToPlantUML() {
     
         }
         for (c in s.causes) {
-            (s.name +" : causes = "+c.name +" (c="+1+"/"+s.causes.size()+",f="+1+"/"+c.fixes.size()+",w=" +(c.weightFactor*(1/c.fixes.size().asDouble()))+",fw=" +((1/c.fixes.size().asDouble()))+ ")").printlno();
+            (s.name +" : causes = "+c.name +" (c="+1+"/"+s.causes.size()+",f="+1+"/"+c.fixes.size()+",bcw=" +(c.weightFactor*(1/c.fixes.size().asDouble()))+",fcw=" +((1/c.fixes.size().asDouble()))+ ")").printlno();
         }
 
         (s.name+" : total cause weight = "+s.totalWeight).printlno();
@@ -72,9 +77,17 @@ operation Sequence cfaToPlantUML() {
         (s.name+" : total bug cause weight = "+s.totalBugWeight).printlno();
         (s.name+" : average bug cause weight = "+s.averageBugWeight).printlno();
 
+
 		//essentially duplicated from above...
         for (a in s.artifactStates) {
+        	a.name = a.name.replaceAll("\\.", "_");
 	        //("object "+a.name).printlno();
+	        var color = "";
+	        if (a.totalBugWeight > 0) {
+	        	color = " #FFAAAA";
+	        }
+	        ("object "+a.name + color).printlno();
+	        
         	(a.name+" : hunks = "+a.hunks).printlno();
         	(a.name+" : weight factor (bug fix) = "+a.weightFactor).printlno();
         	
@@ -93,10 +106,10 @@ operation Sequence cfaToPlantUML() {
 		            distance = distance + "\\n";
 		            d = d+1;
 		        }
-	            var label = "weight";
+	            var label = "bug cause weight";
 	            label = label + ": " + a.weightFactor + "*" + 1 + "/" + a.fixes.size();
 	            label = label+"="+(a.weightFactor*(1/a.fixes.size().asDouble()));
-	            label = label + "\\nfull weight: " + 1 + "/" + a.fixes.size();
+	            label = label + "\\nfull cause weight: " + 1 + "/" + a.fixes.size();
 	            label = label+"="+((1/a.fixes.size().asDouble()));
 	            //label = label + distance;
 	            
@@ -111,7 +124,7 @@ operation Sequence cfaToPlantUML() {
 				(notename + " ..up.. " + a.name).printlno();
         	}
 	        for (c in a.causes) {
-	            (a.name +" : causes = "+c.name +" (c="+1+"/"+a.causes.size()+",f="+1+"/"+c.fixes.size()+",w=" +(c.weightFactor*(1/c.fixes.size().asDouble()))+",fw=" +((1/c.fixes.size().asDouble()))+ ")").printlno();
+	            (a.name +" : causes = "+c.name +" (c="+1+"/"+a.causes.size()+",f="+1+"/"+c.fixes.size()+",bcw=" +(c.weightFactor*(1/c.fixes.size().asDouble()))+",fcw=" +((1/c.fixes.size().asDouble()))+ ")").printlno();
 	        }
 
 	        (a.name+" : total cause weight = "+a.totalWeight).printlno();
