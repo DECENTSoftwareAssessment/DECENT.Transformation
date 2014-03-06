@@ -1,0 +1,24 @@
+
+var dbConf = new Configuration!Setting;
+dbConf.name = "dbConf";
+
+var dbName = new Configuration!Setting;
+dbName.name = "dbName";
+dbName.value = "mg_cfa2";
+dbName.container = dbConf;
+var dbUser = new Configuration!Setting;
+dbUser.name = "dbUser";
+dbUser.value = "root";
+dbUser.container = dbConf;
+var dbPass = new Configuration!Setting;
+dbPass.name = "dbPass";
+dbPass.value = "root";
+dbPass.container = dbConf;
+var dbPort = new Configuration!Setting;
+dbPort.name = "dbPort";
+dbPort.value = "3306";
+dbPort.container = dbConf;
+var dbServer = new Configuration!Setting;
+dbServer.name = "dbServer";
+dbServer.value = "localhost";
+dbServer.container = dbConf;
