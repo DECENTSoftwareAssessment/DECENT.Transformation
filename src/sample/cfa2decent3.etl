@@ -1,0 +1,113 @@
+//import "cfa-init.etl";
+
+pre {
+  //Some initialization
+  "Running cfa2decent3".println();
+  ("DECENT States: "+DECENT!State.allInstances().size()).println();
+  var Model = DECENT!Model.allInstances().first();
+
+
+  ("Initializing CFA definitions").println();
+  //This should only run once!!!
+  
+  var attributes = new OrderedSet;
+  attributes.add("BugFix");
+  attributes.add("WeightFactor");
+  attributes.add("TotalWeight");
+  attributes.add("AverageWeight");
+  attributes.add("TotalBugWeight");
+  attributes.add("AverageBugWeight");
+  attributes.add("CausesCount");
+  attributes.add("FixesCount");
+  attributes.add("GlobalBugFix");
+  attributes.add("GlobalWeightFactor");
+  attributes.add("GlobalTotalWeight");
+  attributes.add("GlobalAverageWeight");
+  attributes.add("GlobalTotalBugWeight");
+  attributes.add("GlobalAverageBugWeight");
+  attributes.add("GlobalCausesCount");
+  attributes.add("GlobalFixesCount");
+
+  for (a in attributes) {
+	  var Attribute = new DECENT!Attribute;
+	  Attribute.name = a;
+      if (Model.attributePool.attributes.select(a|a.name = Attribute.name).size() = 0) {
+	    Model.attributePool.attributes.add(Attribute);
+      }
+  }
+
+
+  
+  var BugFixAttribute = DECENT!Attribute.allInstances().select(a|a.name = "BugFix").first();
+  var WeightFactorAttribute = DECENT!Attribute.allInstances().select(a|a.name = "WeightFactor").first();
+  var TotalWeightAttribute = DECENT!Attribute.allInstances().select(a|a.name = "TotalWeight").first();
+  var AverageWeightAttribute = DECENT!Attribute.allInstances().select(a|a.name = "AverageWeight").first();
+  var TotalBugWeightAttribute = DECENT!Attribute.allInstances().select(a|a.name = "TotalBugWeight").first();
+  var AverageBugWeightAttribute = DECENT!Attribute.allInstances().select(a|a.name = "AverageBugWeight").first();
+  var CausesCountAttribute = DECENT!Attribute.allInstances().select(a|a.name = "CausesCount").first();
+  var FixesCountAttribute = DECENT!Attribute.allInstances().select(a|a.name = "FixesCount").first();
+
+  var GlobalBugFixAttribute = DECENT!Attribute.allInstances().select(a|a.name = "GlobalBugFix").first();
+  var GlobalWeightFactorAttribute = DECENT!Attribute.allInstances().select(a|a.name = "GlobalWeightFactor").first();
+  var GlobalTotalWeightAttribute = DECENT!Attribute.allInstances().select(a|a.name = "GlobalTotalWeight").first();
+  var GlobalAverageWeightAttribute = DECENT!Attribute.allInstances().select(a|a.name = "GlobalAverageWeight").first();
+  var GlobalTotalBugWeightAttribute = DECENT!Attribute.allInstances().select(a|a.name = "GlobalTotalBugWeight").first();
+  var GlobalAverageBugWeightAttribute = DECENT!Attribute.allInstances().select(a|a.name = "GlobalAverageBugWeight").first();
+  var GlobalCausesCountAttribute = DECENT!Attribute.allInstances().select(a|a.name = "GlobalCausesCount").first();
+  var GlobalFixesCountAttribute = DECENT!Attribute.allInstances().select(a|a.name = "GlobalFixesCount").first();
+
+
+  //TODO: need to accumulate a value? i.e. keep a balance of sorts? bug cause adds, bug fix removes
+  // - or do we focus only on the states that introduce a bug and the activities that lead to them??
+  //   in which case it would make sense to report the target state instead of the source state
+  //   which would also prompt the use of a balance for all the weights in order to have a meaningful
+  //   delta, or alternatively these could become activity values, although the intuition behind that 
+  //   may be unclear 
+  //TODO: also investigate the reasons behind those off-the-charts values in the preliminary report
+  //TODO: need to investigate the failed assignments too, see the log for details
+  //TODO: add ratios, e.g. averageBugWeight/averageWeight, also for totals, define interpretation
+  var artifacts = DECENT!Artifact.allInstances();
+  for (s in CFA!ArtifactState.allInstances()) {
+  	var fileName = s.file.file_name;
+  	("@"+fileName+" -> "+s.ID).println();
+  	for (a in artifacts.select(a|a.name = fileName)) {
+  		var candidateStates = a.states.select(x|x.ID = s.ID);
+  		if (candidateStates.size()<>1) {
+  			//TODO: investigate why this is the case and optimise in general
+  			("  Artifact "+a.name+" : "+candidateStates.size()+" states found, expecting 1").println();
+  		} else {
+  			var state = candidateStates.first();
+  			state.addValue(BugFixAttribute, s.bugFix);
+  			state.addValue(WeightFactorAttribute, s.weightFactor);
+  			state.addValue(TotalWeightAttribute, s.totalWeight);
+  			state.addValue(TotalBugWeightAttribute, s.totalBugWeight);
+  			state.addValue(AverageWeightAttribute, s.averageWeight);
+  			state.addValue(AverageBugWeightAttribute, s.averageBugWeight);
+  			state.addValue(CausesCountAttribute, s.causes.size().asDouble());
+  			state.addValue(FixesCountAttribute, s.fixes.size().asDouble());
+
+  			state.addValue(GlobalBugFixAttribute, s.globalState.bugFix);
+  			state.addValue(GlobalWeightFactorAttribute, s.globalState.weightFactor);
+  			state.addValue(GlobalTotalWeightAttribute, s.globalState.totalWeight);
+  			state.addValue(GlobalTotalBugWeightAttribute, s.globalState.totalBugWeight);
+  			state.addValue(GlobalAverageWeightAttribute, s.globalState.averageWeight);
+  			state.addValue(GlobalAverageBugWeightAttribute, s.globalState.averageBugWeight);
+  			state.addValue(GlobalCausesCountAttribute, s.globalState.causes.size().asDouble());
+  			state.addValue(GlobalFixesCountAttribute, s.globalState.fixes.size().asDouble());
+  		}
+  	}
+  	
+  }
+}
+
+//TODO: duplicated from mg2decent3 -> factor out
+operation Any addValue(attribute : DECENT!Attribute, content : Real) : DECENT!Value {
+    var value : new DECENT!DoubleValue;
+    value.name = attribute.name;
+    value.content = content;
+    self.values.add(value);
+    value.ofAttribute = attribute;
+//    self.artifact.attributes.add(attribute);
+//    attribute.artifactTypes.add(self.artifact.type);
+    return value;
+}
