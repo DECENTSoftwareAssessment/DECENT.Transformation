@@ -1,0 +1,32 @@
+import "mg2decent3.etl";
+
+pre mg_bzInit {
+	var BugCommentsAttribute = new DECENT!Attribute;
+  	BugCommentsAttribute.name = "BugComments";
+  	Model.attributePool.attributes.add(BugCommentsAttribute);
+	var BugEventsAttribute = new DECENT!Attribute;
+  	BugEventsAttribute.name = "BugEvents";
+  	Model.attributePool.attributes.add(BugEventsAttribute);
+	var BugResolutionsAttribute = new DECENT!Attribute;
+  	BugResolutionsAttribute.name = "BugResolutions";
+  	Model.attributePool.attributes.add(BugResolutionsAttribute);
+	
+}
+
+post mg_bzPost {
+	for (s in DECENT!State.allInstances()) {
+		var commentCount = 0.asDouble();
+		var eventCount = 0.asDouble();
+		var resolutionsCount = 0.asDouble();
+		for (t in TRACE!Trace.allInstances().select(x|x.target.commit_id = s.ID)) {
+			commentCount = t.source.comments.size().asDouble();
+			eventCount = t.source.events.size().asDouble();
+			resolutionsCount = t.source.events.select(x|x.newValue = "FIXED").size().asDouble();
+			("  State "+s.ID+ " : "+resolutionsCount + " / " + eventCount + " / "+commentCount).println();
+		}
+		s.addValue(BugCommentsAttribute, commentCount);
+		s.addValue(BugEventsAttribute, eventCount);
+		s.addValue(BugResolutionsAttribute, resolutionsCount);
+	}
+	
+}
