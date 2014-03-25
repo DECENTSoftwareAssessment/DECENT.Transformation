@@ -1,8 +1,32 @@
 
 var BugFixCount = DECENT!Attribute.allInstances().select(a|a.name = "BugFixCount").first();
-var Type = DECENT!ArtifactType.allInstances().select(a|a.name = "Class").first();
+var Type = DECENT!ArtifactType.allInstances().select(a|a.name = "code").first();
+
+var projectName = DECENT!Project.allInstances().first().name.split("\\.")[0];
+var filename = "/Users/philip-iii/Dev/workspaces/emf/DECENT.Data/input/"+projectName+"/result.csv";
+var writer;
+var file = new Native("java.io.File") (filename);
+writer = new Native("java.io.FileWriter") (file);
+
+
+for (a in Artifact.allInstances().select(x|x.name = "terminal_splitter.cpp")) {
+    for (s in a.states.sortBy(x|x.ID)) {
+    	s.println();
+    }
+	
+}
 
 iterateOverArtifacts(Type);
+
+writer.close();
+
+
+operation String printlno() {
+	self.println();
+    writer.write(self+"\n");
+    writer.flush();
+}	
+
 
 operation iterateOverAgents (type:DECENT!ArtifactType) {
     var h = false;
@@ -19,10 +43,10 @@ operation iterateOverAgents (type:DECENT!ArtifactType) {
             }
             //("").println();
             if (not h) {
-                ("Artifact, StateID, Agent, ActivityDate"+header).println();
+                ("Artifact"+separator+"StateID"+separator+"Agent"+separator+"ActivityDate"+header).printlno();
                 h=true;
             }
-            (ax.state.artifact.name+separator+ax.state.ID+separator+a.name+separator+ax.date+''+output).println();
+            (ax.state.artifact.name+separator+ax.state.ID+separator+a.name+separator+ax.date+''+output).printlno();
         
         }
     }
@@ -32,11 +56,13 @@ operation iterateOverAgents (type:DECENT!ArtifactType) {
 operation iterateOverArtifacts (type:DECENT!ArtifactType) {
 	//TODO: need some safety checks...
 	var h = false;
-	var separator = ",";
-	for (a in Artifact.allInstances().select(x|x.type = type)) {
+	var separator = "\t";
+	for (a in Artifact.allInstances().select(x|x.type = type).sortBy(x|x.name)) {
 	    var header = "";
-	    for (s in a.states) {
+	    for (s in a.states.sortBy(x|x.ID)) {
 	        //(a.name+" at "+s.ID).println();
+	        //TODO: note that because of this the last state is not shown!
+	        // - workaround this or show target state values
 	        for (ax in s.activity) {
 	            var output = "";
 	            for (d in ax.deltas) {
@@ -45,12 +71,19 @@ operation iterateOverArtifacts (type:DECENT!ArtifactType) {
 	                //(a.name+' '+s.ID+' '+ax.agent.name+' '+ax.date+' '+d.onAttribute.name+' '+d.value.content+' '+d.targetValue.content+' '+d.change).println();
 	                output=output+separator+d.value.content+separator+d.targetValue.content+separator+d.change;
 	            }
+                for (v in ax.state.values) {
+	                //(d.onAttribute+" ").print();
+	                header=header+separator+v.ofAttribute.name+'(value)';
+	                //(a.name+' '+s.ID+' '+ax.agent.name+' '+ax.date+' '+d.onAttribute.name+' '+d.value.content+' '+d.targetValue.content+' '+d.change).println();
+	                output=output+separator+v.content;
+	            }
+	            
 	            //("").println();
 	            if (not h) {
-	                ("Artifact, StateID, Agent, ActivityDate"+header).println();
+	                ("Artifact"+separator+"StateID"+separator+"Agent"+separator+"ActivityDate"+header).printlno();
 	                h=true;
 	            }
-	            (a.name+separator+s.ID+separator+ax.agent.name+separator+ax.date+''+output).println();
+	            (a.name+separator+s.ID+separator+ax.agent.name+separator+ax.date+''+output).printlno();
 	        }
 	    }
 	}
