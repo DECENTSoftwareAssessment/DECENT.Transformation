@@ -14,34 +14,27 @@ pre mgInitPre {
 
 post mgInitPost{
     ("Post processing... ").println();
-    for (s in CFA!GlobalState.allInstances()) {
+    for (s in CFA!State.allInstances()) {
         for (f in s.fixes) {
             f.totalWeight = f.totalWeight + (1/s.fixes.size().asDouble());
             f.totalBugWeight = f.totalBugWeight + s.weightFactor * (1/s.fixes.size().asDouble());
         }
     }
-    for (s in CFA!GlobalState.allInstances()) {
-        s.averageWeight = s.totalWeight / s.causes.size();
-        s.averageBugWeight = s.totalBugWeight / s.causes.size();
+    for (s in CFA!State.allInstances()) {
+    	var causes = s.causes.size();
+    	if (causes = 0) {
+    		causes = 1.asDouble();
+    	}
+        s.averageWeight = s.totalWeight / causes;
+        s.averageBugWeight = s.totalBugWeight / causes;
     }
-    
-	//essentially duplicated from above
-    for (s in CFA!ArtifactState.allInstances()) {
-        for (f in s.fixes) {
-            f.totalWeight = f.totalWeight + (1/s.fixes.size().asDouble());
-            f.totalBugWeight = f.totalBugWeight + s.weightFactor * (1/s.fixes.size().asDouble());
-        }
-    }
-    for (s in CFA!ArtifactState.allInstances()) {
-        s.averageWeight = s.totalWeight / s.causes.size();
-        s.averageBugWeight = s.totalBugWeight / s.causes.size();
-    }
-
     
     //visualization
     var projectName = MG!Model.allInstances().first().name;
     var filename = "/Users/philip-iii/Dev/workspaces/emf/DECENT.Transformations/plantuml/cfa.model.generated."+projectName+"-"+lowerBound+"-"+upperBound+".plantuml";
 	var writer;
+    upperBound = 0;
+	//CFA!GlobalState.allInstances().select(s|s.ID = 65 or s.ID = 72).cfaToPlantUMLFile(filename);
     //CFA!GlobalState.allInstances().select(s|s.ID <= upperBound and s.ID >= lowerBound).cfaToPlantUMLFile(filename);    
 }
 
@@ -62,7 +55,7 @@ rule Revisions
     s.cfn = r.repository.equivalent();
     s.revision = r;
     s.ID = r.commit_id;
-    s.name = "Mr"+r.commit_id;
+    s.name = ""+r.commit_id;
     s.hunks = r.hunks.size();
     s.bugFix = r.is_bug_fix.asDouble();
     s.weightFactor = r.is_bug_fix.asDouble();
@@ -102,7 +95,8 @@ rule Actions
     //("Transforming "+ a.file.file_name+"_Mr"+a.revision.commit_id+" Fix: " +a.revision.is_bug_fix).println();
     s.file = a.file;
     s.action = a;
-    s.name = a.file.file_name+"_Mr"+a.revision.commit_id;
+    //s.name = a.file.file_name+"_Mr"+a.revision.commit_id;
+    s.name = a.current_file_path;
     s.ID = a.revision.commit_id;
     
     var hunks = a.revision.hunks.select(h|h.file = a.file);
