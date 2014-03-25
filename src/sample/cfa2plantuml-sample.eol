@@ -2,8 +2,9 @@
 import "cfa2plantuml.eol";
 
 var lowerBound = 20;
+lowerBound = 5;
 var upperBound = 2310;
-upperBound = 30;
+upperBound = 15;
 
     //visualization
 var projectName = CFA!CFN.allInstances().first().name;
