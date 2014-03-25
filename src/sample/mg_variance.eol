@@ -238,6 +238,11 @@ operation Set getNaiveVariance() : Real {
 }
 
 operation Set getVariance() : Real {
+	if (self.size = 1) {
+	    //variance for a set of 1 elememts shall be 0
+		return 0.asReal();
+	}
+	
     var n = 0.asReal();
     var sum1 = 0.asReal();
     for (x in self){
