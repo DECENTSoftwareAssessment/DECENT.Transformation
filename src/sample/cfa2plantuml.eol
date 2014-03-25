@@ -21,23 +21,26 @@ operation Sequence cfaToPlantUML() {
 	("").printlno();
 	var lastState;
 	for (s in self) {
-        ("processing object "+s.name).println();
+		s.~uniqueName = "Mr"+s.ID;
+        ("processing object "+s.~uniqueName).println();
         var color = "";
         if (s.totalBugWeight > 0) {
         	color = " #FFAAAA";
         }
-        ("object "+s.name + color).printlno();
+        ("object "+s.~uniqueName + color).printlno();
         
-        (s.name+" : hunks = "+s.hunks).printlno();
-        (s.name+" : weight factor (bug fix) = "+s.weightFactor).printlno();
+        (s.~uniqueName+" : hunks = "+s.hunks).printlno();
+        (s.~uniqueName+" : weight factor (bug fix) = "+s.weightFactor).printlno();
         if (lastState.isDefined()) {
-            (lastState.name +" -right- "+s.name).printlno();
+            (lastState.~uniqueName +" -right- "+s.~uniqueName).printlno();
         }
         //files?
         var offsetDistance = "\\n\\n";
         
         for (f in s.fixes){
-            (s.name +" : fixes = "+f.name +" ("+1+"/"+s.fixes.size()+")").printlno();
+        	f.~uniqueName = "Mr"+f.ID;
+        	
+            (s.~uniqueName +" : fixes = "+f.~uniqueName +" ("+1+"/"+s.fixes.size()+")").printlno();
     		if (f.ID < lowerBound) {
         		continue;
     		}
@@ -57,43 +60,50 @@ operation Sequence cfaToPlantUML() {
             label = label+"="+((1/s.fixes.size().asDouble()));
             //label = label + distance;
             
-/*            (f.name + " \"" + s.name + ":" + 1 + "/" + f.causes.size() + distance + "\""
+/*            (f.~uniqueName + " \"" + s.~uniqueName + ":" + 1 + "/" + f.causes.size() + distance + "\""
                  + " <... "
-                 + "\"" + offsetDistance + f.name + ":" + 1 + "/" + s.fixes.size() + distance + "\" " + s.name
+                 + "\"" + offsetDistance + f.~uniqueName + ":" + 1 + "/" + s.fixes.size() + distance + "\" " + s.~uniqueName
                  + " : " + label).printlno();
 */                 
-            var notename = f.name+"_"+s.name;
-			("note \""+s.name + ":" + 1 + "/" + f.causes.size()+" -> "+f.name + ":" + 1 + "/" + s.fixes.size()+"\\n"+label+"\" as " + notename).printlno();
-			(f.name + " <..down.. " + notename).printlno();
-			(notename + " ..down.. " + s.name).printlno();
+            var notename = f.~uniqueName+"_"+s.~uniqueName;
+			("note \""+s.~uniqueName + ":" + 1 + "/" + f.causes.size()+" -> "+f.~uniqueName + ":" + 1 + "/" + s.fixes.size()+"\\n"+label+"\" as " + notename).printlno();
+			(f.~uniqueName + " <..down.. " + notename).printlno();
+			(notename + " ..down.. " + s.~uniqueName).printlno();
     
         }
         for (c in s.causes) {
-            (s.name +" : causes = "+c.name +" (c="+1+"/"+s.causes.size()+",f="+1+"/"+c.fixes.size()+",bcw=" +(c.weightFactor*(1/c.fixes.size().asDouble()))+",fcw=" +((1/c.fixes.size().asDouble()))+ ")").printlno();
+        	c.~uniqueName = "Mr"+s.ID;
+            (s.~uniqueName +" : causes = "+c.~uniqueName +" (c="+1+"/"+s.causes.size()+",f="+1+"/"+c.fixes.size()+",bcw=" +(c.weightFactor*(1/c.fixes.size().asDouble()))+",fcw=" +((1/c.fixes.size().asDouble()))+ ")").printlno();
         }
 
-        (s.name+" : total cause weight = "+s.totalWeight).printlno();
-        (s.name+" : average cause weight = "+s.averageWeight).printlno();
-        (s.name+" : total bug cause weight = "+s.totalBugWeight).printlno();
-        (s.name+" : average bug cause weight = "+s.averageBugWeight).printlno();
+        (s.~uniqueName+" : total cause weight = "+s.totalWeight).printlno();
+        (s.~uniqueName+" : average cause weight = "+s.averageWeight).printlno();
+        (s.~uniqueName+" : total bug cause weight = "+s.totalBugWeight).printlno();
+        (s.~uniqueName+" : average bug cause weight = "+s.averageBugWeight).printlno();
 
 
 		//essentially duplicated from above...
         for (a in s.artifactStates) {
-        	a.name = a.name.replaceAll("\\.", "_");
-	        //("object "+a.name).printlno();
+        	if (a.name <> "src/terminal_splitter.cpp") {
+        		//continue;
+        	}
+        	a.~uniqueName = a.name + "_Mr"+a.ID;
+        	a.~uniqueName = a.~uniqueName.replaceAll("[\\.\\/]", "_");
+	        //("object "+a.~uniqueName).printlno();
 	        var color = "";
 	        if (a.totalBugWeight > 0) {
 	        	color = " #FFAAAA";
 	        }
-	        ("object "+a.name + color).printlno();
+	        ("object "+a.~uniqueName + color).printlno();
 	        
-        	(a.name+" : hunks = "+a.hunks).printlno();
-        	(a.name+" : weight factor (bug fix) = "+a.weightFactor).printlno();
+        	(a.~uniqueName+" : hunks = "+a.hunks).printlno();
+        	(a.~uniqueName+" : weight factor (bug fix) = "+a.weightFactor).printlno();
         	
-        	(s.name+" --down-- "+a.name).printlno();
+        	(s.~uniqueName+" --down-- "+a.~uniqueName).printlno();
         	for (f in a.fixes) {
-	            (a.name +" : fixes = "+f.name +" ("+1+"/"+a.fixes.size()+")").printlno();
+	        	f.~uniqueName = f.name + "_Mr"+f.ID;
+	        	f.~uniqueName = f.~uniqueName.replaceAll("[\\.\\/]", "_");		
+	            (a.~uniqueName +" : fixes = "+f.~uniqueName +" ("+1+"/"+a.fixes.size()+")").printlno();
         		if (f.ID < lowerBound) {
 	        		continue;
         		}
@@ -113,24 +123,26 @@ operation Sequence cfaToPlantUML() {
 	            label = label+"="+((1/a.fixes.size().asDouble()));
 	            //label = label + distance;
 	            
-/*	            (f.name + " \"" + a.name + ":" + 1 + "/" + f.causes.size() + distance + "\""
+/*	            (f.~uniqueName + " \"" + a.~uniqueName + ":" + 1 + "/" + f.causes.size() + distance + "\""
 	                 + " <.left.. "
-	                 + "\"" + offsetDistance + f.name + ":" + 1 + "/" + a.fixes.size() + distance + "\" " + a.name
+	                 + "\"" + offsetDistance + f.~uniqueName + ":" + 1 + "/" + a.fixes.size() + distance + "\" " + a.~uniqueName
 	                 + " : " + label).printlno();
 */	            
-				var notename = f.name+"_"+a.name;
-				("note \""+a.name + ":" + 1 + "/" + f.causes.size()+" -> "+f.name + ":" + 1 + "/" + a.fixes.size()+"\\n"+label+"\" as " + notename).printlno();
-				(f.name + " <..up.. " + notename).printlno();
-				(notename + " ..up.. " + a.name).printlno();
+				var notename = f.~uniqueName+"_"+a.~uniqueName;
+				("note \""+a.~uniqueName + ":" + 1 + "/" + f.causes.size()+" -> "+f.~uniqueName + ":" + 1 + "/" + a.fixes.size()+"\\n"+label+"\" as " + notename).printlno();
+				(f.~uniqueName + " <..up.. " + notename).printlno();
+				(notename + " ..up.. " + a.~uniqueName).printlno();
         	}
 	        for (c in a.causes) {
-	            (a.name +" : causes = "+c.name +" (c="+1+"/"+a.causes.size()+",f="+1+"/"+c.fixes.size()+",bcw=" +(c.weightFactor*(1/c.fixes.size().asDouble()))+",fcw=" +((1/c.fixes.size().asDouble()))+ ")").printlno();
+	        	c.~uniqueName = c.name + "_Mr"+c.ID;
+	        	c.~uniqueName = c.~uniqueName.replaceAll("[\\.\\/]", "_");		
+	            (a.~uniqueName +" : causes = "+c.~uniqueName +" (c="+1+"/"+a.causes.size()+",f="+1+"/"+c.fixes.size()+",bcw=" +(c.weightFactor*(1/c.fixes.size().asDouble()))+",fcw=" +((1/c.fixes.size().asDouble()))+ ")").printlno();
 	        }
 
-	        (a.name+" : total cause weight = "+a.totalWeight).printlno();
-	        (a.name+" : average cause weight = "+a.averageWeight).printlno();
-	        (a.name+" : total bug cause weight = "+a.totalBugWeight).printlno();
-	        (a.name+" : average bug cause weight = "+a.averageBugWeight).printlno();
+	        (a.~uniqueName+" : total cause weight = "+a.totalWeight).printlno();
+	        (a.~uniqueName+" : average cause weight = "+a.averageWeight).printlno();
+	        (a.~uniqueName+" : total bug cause weight = "+a.totalBugWeight).printlno();
+	        (a.~uniqueName+" : average bug cause weight = "+a.averageBugWeight).printlno();
         }
 
 
