@@ -28,6 +28,9 @@ pre {
   attributes.add("GlobalCausesCount");
   attributes.add("GlobalFixesCount");
 
+  attributes.add("CarriedTotalBugWeight");
+  attributes.add("ClearedTotalBugWeight");
+
   for (a in attributes) {
 	  var Attribute = new DECENT!Attribute;
 	  Attribute.name = a;
@@ -56,6 +59,8 @@ pre {
   var GlobalCausesCountAttribute = DECENT!Attribute.allInstances().select(a|a.name = "GlobalCausesCount").first();
   var GlobalFixesCountAttribute = DECENT!Attribute.allInstances().select(a|a.name = "GlobalFixesCount").first();
 
+  var CarriedTotalBugWeightAttribute = DECENT!Attribute.allInstances().select(a|a.name = "CarriedTotalBugWeight").first();
+  var ClearedTotalBugWeightAttribute = DECENT!Attribute.allInstances().select(a|a.name = "ClearedTotalBugWeight").first();
 
   //TODO: need to accumulate a value? i.e. keep a balance of sorts? bug cause adds, bug fix removes
   // - or do we focus only on the states that introduce a bug and the activities that lead to them??
@@ -63,41 +68,68 @@ pre {
   //   which would also prompt the use of a balance for all the weights in order to have a meaningful
   //   delta, or alternatively these could become activity values, although the intuition behind that 
   //   may be unclear 
-  //TODO: also investigate the reasons behind those off-the-charts values in the preliminary report
-  //TODO: need to investigate the failed assignments too, see the log for details
+  //DONE: also investigate the reasons behind those off-the-charts values in the preliminary report
+  // -> asumed to be number conversion issues with numbers
+  //DONE: need to investigate the failed assignments too, see the log for details
+  // -> still an issue after improved assignments?
   //TODO: add ratios, e.g. averageBugWeight/averageWeight, also for totals, define interpretation
-  var artifacts = DECENT!Artifact.allInstances();
+
+  ("...transforming states...").println();
   for (s in CFA!ArtifactState.allInstances()) {
   	var fileName = s.file.file_name;
-  	("@"+fileName+" -> "+s.ID).println();
-  	for (a in artifacts.select(a|a.name = fileName)) {
-  		var candidateStates = a.states.select(x|x.ID = s.ID);
-  		if (candidateStates.size()<>1) {
-  			//TODO: investigate why this is the case and optimise in general
-  			("  Artifact "+a.name+" : "+candidateStates.size()+" states found, expecting 1").println();
-  		} else {
-  			var state = candidateStates.first();
-  			state.addValue(BugFixAttribute, s.bugFix);
-  			state.addValue(WeightFactorAttribute, s.weightFactor);
-  			state.addValue(TotalWeightAttribute, s.totalWeight);
-  			state.addValue(TotalBugWeightAttribute, s.totalBugWeight);
-  			state.addValue(AverageWeightAttribute, s.averageWeight);
-  			state.addValue(AverageBugWeightAttribute, s.averageBugWeight);
-  			state.addValue(CausesCountAttribute, s.causes.size().asDouble());
-  			state.addValue(FixesCountAttribute, s.fixes.size().asDouble());
-
-  			state.addValue(GlobalBugFixAttribute, s.globalState.bugFix);
-  			state.addValue(GlobalWeightFactorAttribute, s.globalState.weightFactor);
-  			state.addValue(GlobalTotalWeightAttribute, s.globalState.totalWeight);
-  			state.addValue(GlobalTotalBugWeightAttribute, s.globalState.totalBugWeight);
-  			state.addValue(GlobalAverageWeightAttribute, s.globalState.averageWeight);
-  			state.addValue(GlobalAverageBugWeightAttribute, s.globalState.averageBugWeight);
-  			state.addValue(GlobalCausesCountAttribute, s.globalState.causes.size().asDouble());
-  			state.addValue(GlobalFixesCountAttribute, s.globalState.fixes.size().asDouble());
+  	var filePath = s.action.current_file_path;
+  	var matchedStates = DECENT!State.allInstances().select(m|m.ID = s.ID and m.values.select(v|v.name = "FilePath").first().content = filePath);
+  	var size = matchedStates.size();
+	//check if correct matches can be found 
+  	if (size <> 1) {
+  		("  "+size+" DECENT matches found for: "+fileName+" at "+s.ID).println();
+  		("    Avaliable states at "+s.ID+" are:").println();
+  		for (x in DECENT!State.allInstances().select(x|x.ID = s.ID)) {
+  			("      "+x.artifact.name+" at "+x.ID+" ("+x.values.select(v|v.name = "FilePath").first().content+")").println();
   		}
+  	} else {
+  		var state = matchedStates.first();
+  		state.addValue(BugFixAttribute, s.bugFix);
+  		state.addValue(WeightFactorAttribute, s.weightFactor);
+  		state.addValue(TotalWeightAttribute, s.totalWeight);
+  		state.addValue(TotalBugWeightAttribute, s.totalBugWeight);
+  		state.addValue(AverageWeightAttribute, s.averageWeight);
+  		state.addValue(AverageBugWeightAttribute, s.averageBugWeight);
+  		state.addValue(CausesCountAttribute, s.causes.size().asDouble());
+  		state.addValue(FixesCountAttribute, s.fixes.size().asDouble());
+
+  		state.addValue(GlobalBugFixAttribute, s.globalState.bugFix);
+  		state.addValue(GlobalWeightFactorAttribute, s.globalState.weightFactor);
+  		state.addValue(GlobalTotalWeightAttribute, s.globalState.totalWeight);
+  		state.addValue(GlobalTotalBugWeightAttribute, s.globalState.totalBugWeight);
+  		state.addValue(GlobalAverageWeightAttribute, s.globalState.averageWeight);
+  		state.addValue(GlobalAverageBugWeightAttribute, s.globalState.averageBugWeight);
+  		state.addValue(GlobalCausesCountAttribute, s.globalState.causes.size().asDouble());
+  		state.addValue(GlobalFixesCountAttribute, s.globalState.fixes.size().asDouble());
+  		
+  		var clearedBugWeight = 0.asDouble();
+  		if (s.fixes.size()>0) {
+  			clearedBugWeight = s.weightFactor * (s.fixes.size().asDouble()/s.fixes.size().asDouble());
+  		}
+   		state.addValue(ClearedTotalBugWeightAttribute, clearedBugWeight);
+  		
   	}
   	
   }
+  ("...adding carried weights...").println();
+  
+  for (a in DECENT!Artifact.allInstances()) {
+  	var lastWeight = 0.asDouble();
+  	for (s in a.states) {
+  		var totalBugWeight = s.values.select(v|v.ofAttribute = TotalBugWeightAttribute).first().content;
+  		lastWeight = lastWeight + totalBugWeight;
+  		var clearedBugWeight = s.values.select(v|v.ofAttribute = ClearedTotalBugWeightAttribute).first().content;
+  		lastWeight = lastWeight - clearedBugWeight;
+  		s.addValue(CarriedTotalBugWeightAttribute, lastWeight);
+  	}
+  }
+  
+  ("...done!").println();
 }
 
 //TODO: duplicated from mg2decent3 -> factor out
