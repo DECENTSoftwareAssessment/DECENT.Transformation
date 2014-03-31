@@ -6,6 +6,7 @@ pre {
   ("DECENT States: "+DECENT!State.allInstances().size()).println();
   var Model = DECENT!Model.allInstances().first();
   
+  var CodeArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "code").first();
   var ClassArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "Class").first();
   var MethodArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "Method").first();
   var FunctionArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "Function").first();
@@ -13,33 +14,60 @@ pre {
   var FileAnchorAttribute = DECENT!Attribute.allInstances().select(t|t.name = "FileAnchor").first();
   var FilePathAttribute = DECENT!Attribute.allInstances().select(t|t.name = "FilePath").first();
   
-  
-  var firstClass = FAMIX!Class.allInstances().first();
-  ("FAMIX Classes in "+firstClass.revisionId + ": "+FAMIX!Class.allInstances().size()).println();
-  var statesInRevision = DECENT!State.allInstances().select(s|s.ID = firstClass.revisionId);
-  ("DECENT States in "+firstClass.revisionId + ": "+statesInRevision.size()).println();
-  for (s in statesInRevision) {
-    ("  Changed state of " + s.values.select(v|v.ofAttribute = FilePathAttribute).first().stringContent).println();
+  var revisionId = -1;
+  var potentiallyAffectedClasses = new OrderedSet;
+  var potentiallyAffectedMethods = new OrderedSet;
+  if (FAMIX!FileAnchor.allInstances().size() > 0) {
+	  revisionId = FAMIX!FileAnchor.allInstances().first().revisionId;
+	  potentiallyAffectedClasses = FAMIX!Class.getPotentiallyAffectedAnchoredElements();
+	  potentiallyAffectedMethods = FAMIX!Method.getPotentiallyAffectedAnchoredElements();
+	  ("FAMIX Classes in "+revisionId + ": "+potentiallyAffectedClasses.size()+"/"+FAMIX!Class.allInstances().size()).println();
+	  ("FAMIX Methods in "+revisionId + ": "+potentiallyAffectedMethods.size()+"/"+FAMIX!Class.allInstances().size()).println();
+	  var statesInRevision = DECENT!State.allInstances().select(s|s.ID = revisionId and s.artifact.type = CodeArtifactType);
+	  ("DECENT Code States in "+revisionId + ": "+statesInRevision.size()).println();
+	  for (s in statesInRevision) {
+	    ("  Changed state of Code artifact " + s.values.select(v|v.ofAttribute = FilePathAttribute).first().content).println();
+	  }
+	
+	  var existingStatesInRevision = DECENT!State.allInstances().select(s|s.ID = revisionId and 
+	  								   (s.artifact.type = ClassArtifactType or 
+	  									s.artifact.type = MethodArtifactType or 
+	  									s.artifact.type = ModuleArtifactType or 
+	  									s.artifact.type = FunctionArtifactType));
+	  ("Existing DECENT Anchored Element States in "+revisionId + ": "+existingStatesInRevision.size()).println();
+	  var activities = new OrderedSet;
+	  for (s in existingStatesInRevision) {
+	    ("  Cleaning up existing state " + s.ID +" of artifact " + s.artifact.name + " ("+s.artifact.type.name+")").println();
+	    for (a in s.fromActivity) {
+	    	activities.add(a);
+	    }
+	  	delete s;
+	  }
+	  for (a in activities) {
+	  	delete a;
+	  }
   }
-/*
-  for (c in FAMIX!Class.allInstances()) {
-    ("  Class "+c.name + " in "+c.sourceAnchor_IN_FileAnchor.fileName).println();
-  }
-*/  
 }
 
-operation DECENT!State mapAnchoredElement(c : FAMIX!AnchoredElement, artifactType : DECENT!ArtifactType) {
-    ("Transforming "+artifactType.name+" " +c.name +" at revision "+c.revisionId).println();
+operation Any getPotentiallyAffectedAnchoredElements() : Sequence {
+	return self.allInstances.select(c|c.sourceAnchor_IN_FileAnchor.fileName <> "_unknown_path" and checkParentArtifactStateExists(c.revisionId, c.sourceAnchor_IN_FileAnchor.fileName));
+}
 
+operation checkParentArtifactStateExists(stateId : Integer, filePath : String) : Boolean {
+	return DECENT!State.allInstances().select(s|s.ID = stateId and s.artifact.type = CodeArtifactType and s.values.select(v|v.ofAttribute = FilePathAttribute).first().content = filePath).size() > 0;
+}
+
+operation DECENT!State mapAnchoredElement(c : FAMIX!AnchoredElement, artifactType : DECENT!ArtifactType, name : String) {
     var fileName = c.sourceAnchor_IN_FileAnchor.fileName;
+    ("Transforming "+artifactType.name+" " +name +" at revision "+c.revisionId+" located in "+fileName).println();
+
     //("  File Anchor at "+fileName).println();
-    //TODO: add backout strategy in case content already exists
-    var candidateParentStates = DECENT!State.allInstances().select(s|s.ID = c.revisionId and s.values.get(0).stringContent = fileName);
+    var candidateParentStates = DECENT!State.allInstances().select(s|s.ID = c.revisionId  and s.artifact.type = CodeArtifactType and s.values.select(v|v.ofAttribute = FilePathAttribute).first().content = fileName);
     //("    Candidate Parent States Count: "+candidateParentStates.size()).println();
     //TODO: what if more than one?
     var parent = candidateParentStates.first().artifact;
     //("      Candidate Parent Artifact: "+parent.name).println();
-    var candidateArtifacts = parent.children.select(child|child.name = c.name and child.type = artifactType);
+    var candidateArtifacts = parent.children.select(child|child.name = name and child.type = artifactType);
     var artifact = null;
     if (candidateArtifacts.size() > 0) {
         //("      Candidate Artifacts: "+candidateArtifacts.size()).println();
@@ -47,12 +75,13 @@ operation DECENT!State mapAnchoredElement(c : FAMIX!AnchoredElement, artifactTyp
         artifact = candidateArtifacts.first();
     } else {
         artifact = new DECENT!Artifact;
-        artifact.name = c.name;
+        artifact.name = name;
         artifact.type = artifactType;
         artifact.parent = parent;
     }
-    
+
     var lastState = null; //naive approach
+	//TODO: consider looking up parent artifact or simply using the id from parent.previous.ID for selection
     if (artifact.states.size() > 0) {
         lastState = artifact.states.last();
         self.previous.add(lastState);
@@ -62,7 +91,7 @@ operation DECENT!State mapAnchoredElement(c : FAMIX!AnchoredElement, artifactTyp
     self.ID = c.revisionId;
     artifact.states.add(self);
 
-    self.addValue(FileAnchorAttribute, null, c.sourceAnchor_IN_FileAnchor.fileName+":"+c.sourceAnchor_IN_FileAnchor.startLine+":"+c.sourceAnchor_IN_FileAnchor.endLine);
+    self.addValue(FileAnchorAttribute, c.sourceAnchor_IN_FileAnchor.fileName+":"+c.sourceAnchor_IN_FileAnchor.startLine+":"+c.sourceAnchor_IN_FileAnchor.endLine);
 
     //TODO: keep in mind the parent states may be more than one
     var activity = new DECENT!Activity;
@@ -93,7 +122,7 @@ operation DECENT!State mapAnchoredElement(c : FAMIX!AnchoredElement, artifactTyp
         }
         
         if ((attr.getEAttributeType().getName() == "EDouble")) {
-            self.addValue(attribute, c.eGet(attr),null);
+            self.addValue(attribute, c.eGet(attr));
             
             //updated approch for v3
             activity.addDelta(attribute);
@@ -113,13 +142,11 @@ rule Class2State
     transform c : FAMIX!Class 
     to s : DECENT!State {
     
-    guard : c.sourceAnchor_IN_FileAnchor.fileName <> "_unknown_path" and DECENT!State.allInstances().select(s|s.ID = c.revisionId and s.values.get(0).stringContent = c.sourceAnchor_IN_FileAnchor.fileName).size() > 0
+    guard : c.sourceAnchor_IN_FileAnchor.fileName <> "_unknown_path" and checkParentArtifactStateExists(c.revisionId, c.sourceAnchor_IN_FileAnchor.fileName)
 
-    //("Transforming class "+c.name).println();
-    
-    s.mapAnchoredElement(c, ClassArtifactType);
+    s.mapAnchoredElement(c, ClassArtifactType, c.name);
     c.~done = true;
-    (FAMIX!Class.allInstances().select(c|c.~done == true).size()+"/"+FAMIX!Class.allInstances().select(c|c.sourceAnchor_IN_FileAnchor.fileName <> "_unknown_path").size() + " done").println();
+    (FAMIX!Class.allInstances().select(c|c.~done == true).size()+"/"+potentiallyAffectedClasses.size() + " done").println();
 
     //moved to extracted operation
 /*    
@@ -129,7 +156,7 @@ rule Class2State
     //TODO: deal with unresolved and unmapped elements
     //TODO: simplify
     if (fileName <> "_unknown_path") {
-        var candidateParentStates = DECENT!State.allInstances().select(s|s.ID = c.revisionId and s.values.get(0).stringContent = fileName);
+        var candidateParentStates = DECENT!State.allInstances().select(s|s.ID = c.revisionId and s.values.get(0).content = fileName);
         ("    Candidate Parent States Count: "+candidateParentStates.size()).println();
         if (candidateParentStates.size() > 0) {
             var parent = candidateParentStates.first().artifact;
@@ -149,7 +176,7 @@ rule Class2State
             s.ID = c.revisionId;
             artifact.states.add(s);
 
-            s.addValue(FileAnchorAttribute, null, c.sourceAnchor_IN_FileAnchor.fileName+":"+c.sourceAnchor_IN_FileAnchor.startLine+":"+c.sourceAnchor_IN_FileAnchor.endLine);
+            s.addValue(FileAnchorAttribute, c.sourceAnchor_IN_FileAnchor.fileName+":"+c.sourceAnchor_IN_FileAnchor.startLine+":"+c.sourceAnchor_IN_FileAnchor.endLine);
             
             for (attr in c.eClass().getEAllAttributes()) {
 		        var attribute = DECENT!Attribute.allInstances().
@@ -170,7 +197,7 @@ rule Class2State
 		        }
 		        
 		        if ((attr.getEAttributeType().getName() == "EDouble")) {
-		            s.addValue(attribute, c.eGet(attr),null);
+		            s.addValue(attribute, c.eGet(attr));
 		            //TODO: add activities and deltas
 		        }
 		        
@@ -191,10 +218,9 @@ rule Module2State
         if (parentPackageName.length() > 0) {
             modulePath = parentPackageName.substring(1)+"/"+m.name;
         }
-        return m.name <> "_unknown_file" and DECENT!State.allInstances().select(s|s.ID = m.revisionId and s.values.get(0).stringContent = modulePath).size() > 0; 
+        return m.name <> "_unknown_file" and checkParentArtifactStateExists(m.revisionId, modulePath); 
     }
 
-    //("Transforming module "+m.name).println();
     //create a temparary anchor
     var anchor : new FAMIX!FileAnchor;
     anchor.revisionId = m.revisionId;
@@ -208,7 +234,7 @@ rule Module2State
     anchor.fileName = modulePath;
     //TODO: add start and endlines from file
     anchor.anchoredElement = m;
-    s.mapAnchoredElement(m, ModuleArtifactType);
+    s.mapAnchoredElement(m, ModuleArtifactType, m.name);
 
 }
 
@@ -216,10 +242,9 @@ rule Module2State
 rule Function2State 
     transform f : FAMIX!Function 
     to s : DECENT!State {
-    guard : f.sourceAnchor_IN_FileAnchor.fileName <> "_unknown_path" and DECENT!State.allInstances().select(s|s.ID = f.revisionId and s.values.get(0).stringContent = f.sourceAnchor_IN_FileAnchor.fileName).size() > 0
+    guard : f.sourceAnchor_IN_FileAnchor.fileName <> "_unknown_path" and checkParentArtifactStateExists(f.revisionId, f.sourceAnchor_IN_FileAnchor.fileName)
 
-    ("Transforming function "+f.name).println();
-    s.mapAnchoredElement(f, FunctionArtifactType);
+    s.mapAnchoredElement(f, FunctionArtifactType, f.signature);
 
     //TODO: with regard to methods and functions, these need to be filtered based on whether they are affected by an activity 
     //(via hunks/hits algorithm)
@@ -241,13 +266,12 @@ rule Method2State
     //THUS treat them separately, check for discrepancies and report them (or deal with them somehow) 
     //WHICH also means that the transformations shall be mostly very similar based on the file anchors
 
-    guard : m.sourceAnchor_IN_FileAnchor.fileName <> "_unknown_path" and DECENT!State.allInstances().select(s|s.ID = m.revisionId and s.values.get(0).stringContent = m.sourceAnchor_IN_FileAnchor.fileName).size() > 0
+    guard : m.sourceAnchor_IN_FileAnchor.fileName <> "_unknown_path" and checkParentArtifactStateExists(m.revisionId, m.sourceAnchor_IN_FileAnchor.fileName)
 
-    //("Transforming method "+m.name).println();
-    s.mapAnchoredElement(m, MethodArtifactType);
+    s.mapAnchoredElement(m, MethodArtifactType, m.signature);
 
     m.~done = true;
-    (FAMIX!Method.allInstances().select(m|m.~done == true).size()+"/"+FAMIX!Method.allInstances().select(m|m.sourceAnchor_IN_FileAnchor.fileName <> "_unknown_path").size() + " done").println();
+    (FAMIX!Method.allInstances().select(m|m.~done == true).size()+"/"+potentiallyAffectedMethods.size() + " done").println();
 
 
     //TODO: clean up legacy code based on incorrect assumptions
@@ -283,7 +307,7 @@ rule Method2State
 	    s.ID = m.revisionId;
 	    artifact.states.add(s);
 	    
-	    s.addValue(FileAnchorAttribute, null, m.sourceAnchor_IN_FileAnchor.fileName+":"+m.sourceAnchor_IN_FileAnchor.startLine+":"+m.sourceAnchor_IN_FileAnchor.endLine);
+	    s.addValue(FileAnchorAttribute, m.sourceAnchor_IN_FileAnchor.fileName+":"+m.sourceAnchor_IN_FileAnchor.startLine+":"+m.sourceAnchor_IN_FileAnchor.endLine);
 	    
 	    for (attr in m.eClass().getEAllAttributes()) {
 	        var attribute = DECENT!Attribute.allInstances().
@@ -305,7 +329,7 @@ rule Method2State
 	        }
 	        
 	        if ((attr.getEAttributeType().getName() == "EDouble")) {
-	            s.addValue(attribute, m.eGet(attr),null);
+	            s.addValue(attribute, m.eGet(attr));
 	            //TODO: add activities and deltas
 	        }
 	        
@@ -328,7 +352,7 @@ rule Method2State
 
         //TODO: quite a bit of redundancy with attribute handling, consider revision
         var v : new DECENT!Value;
-        v.stringContent = m.sourceAnchor_IN_FileAnchor.fileName;
+        v.content = m.sourceAnchor_IN_FileAnchor.fileName;
         v.ofAttribute = FileAnchorAttribute;
         am.attributes.add(FileAnchorAttribute);
         FileAnchorAttribute.artifactTypes.add(MethodArtifactType);
