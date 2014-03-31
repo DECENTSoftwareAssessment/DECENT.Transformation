@@ -6,7 +6,7 @@ pre mgbzInitPre {
   
   /********************************** INIT (1x) *******************************/
 
-	var p = Native("java.util.regex.Pattern").compile("(?m).*(rev|commit)\\s([\\d]+)[^\\d].*");
+	var p = Native("java.util.regex.Pattern").compile("(?m).*(revision|rev|commit)\\s([\\d]+)[^\\d].*");
 	var unmappedCount = 0;
 	for (i in BZ!BZIssue.allInstances()) {
 		var relatedRevisions = MG!Revision.allInstances().select(r|r.message.contains(""+i.issueId));
@@ -15,8 +15,9 @@ pre mgbzInitPre {
 				(" -- Fixed Issue "+i.issueId+" ("+i.status+") cannot be mapped. "+i.issueTitle).println();
 				unmappedCount = unmappedCount + 1;
 				for (c in i.comments) {
+					("    + Comment text: "+c.commentText).println();
 					if (c.commentText.contains("SVN rev") or c.commentText.contains("SVN commit")) {
-						("Comment text: "+c.commentText).println();
+						("      Comment text: "+c.commentText).println();
 						var m = p.matcher(c.commentText);
 						if (m.find()) {
 					  		var rev = m.group(2);  
@@ -24,7 +25,6 @@ pre mgbzInitPre {
 							relatedRevisions.addAll(MG!Revision.allInstances().select(r|r.message.contains(""+rev)));
 							("     -- "+relatedRevisions.size()+" matches found...").println();
 							if (relatedRevisions.size() = 0) {
-							} else {
 								unmappedCount = unmappedCount + 1;
 							}
 						}
