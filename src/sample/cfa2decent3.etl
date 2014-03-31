@@ -1,4 +1,5 @@
 //import "cfa-init.etl";
+import "../decent/common.eol";
 
 pre {
   //Some initialization
@@ -130,16 +131,4 @@ pre {
   }
   
   ("...done!").println();
-}
-
-//TODO: duplicated from mg2decent3 -> factor out
-operation Any addValue(attribute : DECENT!Attribute, content : Real) : DECENT!Value {
-    var value : new DECENT!DoubleValue;
-    value.name = attribute.name;
-    value.content = content;
-    self.values.add(value);
-    value.ofAttribute = attribute;
-//    self.artifact.attributes.add(attribute);
-//    attribute.artifactTypes.add(self.artifact.type);
-    return value;
 }
