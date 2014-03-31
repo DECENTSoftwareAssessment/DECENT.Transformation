@@ -1,3 +1,5 @@
+import "../decent/common.eol";
+
 pre {
   //Some initialization
   "Running famix2decent3".println();
@@ -24,39 +26,6 @@ pre {
     ("  Class "+c.name + " in "+c.sourceAnchor_IN_FileAnchor.fileName).println();
   }
 */  
-}
-
-//TODO: figure out type specification for content
-//TODO: copied from mg2decent3
-operation DECENT!State addValue(attribute : DECENT!Attribute, content, stringContent : String) : DECENT!Value {
-    var value : new DECENT!Value;
-    value.name = attribute.name;
-    value.content = content;
-    value.stringContent = stringContent;
-    self.values.add(value);
-    value.ofAttribute = attribute;
-    self.artifact.attributes.add(attribute);
-    attribute.artifactTypes.add(self.artifact.type);
-    return value;
-}
-
-operation DECENT!Activity addDelta(attribute : DECENT!Attribute) : DECENT!Delta {
-    return self.addDelta(attribute, self.targetState.values.select(v|v.ofAttribute = attribute).first());
-}
-
-
-operation DECENT!Activity addDelta(attribute : DECENT!Attribute, value : DECENT!Value) : DECENT!Delta {
-    var delta : new DECENT!Delta;
-    delta.onAttribute = attribute;
-    delta.targetValue = value;
-    if (self.state.isDefined()){
-        delta.value = self.state.values.select(v|v.ofAttribute = attribute).first();
-        delta.change = delta.targetValue.content - delta.value.content;
-    } else {
-        delta.change = delta.targetValue.content;
-    }
-    self.deltas.add(delta);
-    return delta;
 }
 
 operation DECENT!State mapAnchoredElement(c : FAMIX!AnchoredElement, artifactType : DECENT!ArtifactType) {
