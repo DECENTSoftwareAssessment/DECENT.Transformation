@@ -1,6 +1,6 @@
 
 var BugFixCount = DECENT!Attribute.allInstances().select(a|a.name = "BugFixCount").first();
-var Type = DECENT!ArtifactType.allInstances().select(a|a.name = "code").first();
+var Type = DECENT!ArtifactType.allInstances().select(a|a.name = "code" or a.name = "Class").first();
 
 var projectName = DECENT!Project.allInstances().first().name.split("\\.")[0];
 var filename = "/Users/philip-iii/Dev/workspaces/emf/DECENT.Data/input/"+projectName+"/result.csv";
@@ -15,6 +15,17 @@ for (a in Artifact.allInstances().select(x|x.name = "terminal_splitter.cpp")) {
     }
 	
 }
+
+/*
+for (a in Agent.allInstances()) {
+	var difference = a.activities.last().date.time - a.activities.first().date.time;
+	difference = difference.asDouble() / (3600*1000*24);
+	(a.name + " active for " +difference +" days").println();
+	for (ax in a.activities) {
+		("  "+ax.date).println();
+	}
+}
+*/
 
 iterateOverArtifacts(Type);
 
@@ -64,6 +75,7 @@ operation iterateOverArtifacts (type:DECENT!ArtifactType) {
 	        //TODO: note that because of this the last state is not shown!
 	        // - workaround this or show target state values
 	        for (ax in s.activity) {
+	        	 
 	            var output = "";
 	            for (d in ax.deltas) {
 	                //(d.onAttribute+" ").print();
