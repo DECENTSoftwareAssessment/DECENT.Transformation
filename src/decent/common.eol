@@ -1,0 +1,66 @@
+operation Any addValue(attribute : DECENT!Attribute, content : String) : DECENT!Value {
+    var value : new DECENT!StringValue;
+    value.name = attribute.name;
+    value.content = content;
+    self.values.add(value);
+    value.ofAttribute = attribute;
+    //TODO: outsource these
+//    self.artifact.attributes.add(attribute);
+//    attribute.artifactTypes.add(self.artifact.type);
+    return value;
+}
+
+operation Any addValue(attribute : DECENT!Attribute, content : Real) : DECENT!Value {
+    var value : new DECENT!DoubleValue;
+    value.name = attribute.name;
+    value.content = content;
+    self.values.add(value);
+    value.ofAttribute = attribute;
+//    self.artifact.attributes.add(attribute);
+//    attribute.artifactTypes.add(self.artifact.type);
+    return value;
+}
+
+operation Any addValue(attribute : DECENT!Attribute, content : Collection(String)) : DECENT!Value {
+    var value : new DECENT!StringListValue;
+    value.name = attribute.name;
+    value.content = content;
+    self.values.add(value);
+    value.ofAttribute = attribute;
+//    self.artifact.attributes.add(attribute);
+//    attribute.artifactTypes.add(self.artifact.type);
+    return value;
+}
+
+
+operation DECENT!Activity addDelta(attribute : DECENT!Attribute) : DECENT!Delta {
+    return self.addDelta(attribute, self.targetState.values.select(v|v.ofAttribute = attribute).first());
+}
+
+
+operation DECENT!Activity addDelta(attribute : DECENT!Attribute, value : DECENT!Value) : DECENT!Delta {
+    var delta : new DECENT!Delta;
+    delta.onAttribute = attribute;
+    delta.targetValue = value;
+    if (self.state.isDefined()){
+	    delta.sourceValue = self.state.values.select(v|v.ofAttribute = attribute).first();
+        delta.change = delta.targetValue.content - delta.sourceValue.content;
+    } else {
+        delta.change = delta.targetValue.content;
+    }
+    self.deltas.add(delta);
+    return delta;
+}
+
+operation DECENT!Artifact setArtifactType(fileType : String) {
+    var artifactType = DECENT!ArtifactType.allInstances().
+        select(at|at.name = fileType).first;
+    if (not artifactType.isDefined()){
+        //("  Artifact type not defined. Initializing "+fcl.child.file_type+" ").println();
+        artifactType = new DECENT!ArtifactType;
+        artifactType.name = fileType;
+        Model.artifactTypeHierarchy.types.add(artifactType);
+    }
+    self.type = artifactType;
+
+}
