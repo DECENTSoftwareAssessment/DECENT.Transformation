@@ -43,12 +43,12 @@ public class EtlStandaloneLauncher extends EpsilonStandaloneLauncher {
 
 	@Override
 	public List<IModel> getModels() throws Exception {
-		EmfUtil.register(URI.createFileURI(new File("../DECENT/model/DECENTv2.ecore").getAbsolutePath()), EPackage.Registry.INSTANCE);
-		EmfUtil.register(URI.createFileURI(new File("../famix.m3/model/AbstractDECENTProvider.ecore").getAbsolutePath()), EPackage.Registry.INSTANCE);
-		EmfUtil.register(URI.createFileURI(new File("../famix.m3/model/FAMIX.ecore").getAbsolutePath()), EPackage.Registry.INSTANCE);
+		EmfUtil.register(URI.createFileURI(new File("../DECENT.One/model/DECENTv3.ecore").getAbsolutePath()), EPackage.Registry.INSTANCE);
+		EmfUtil.register(URI.createFileURI(new File("../DECENT.One/model/AbstractDECENTProvider.ecore").getAbsolutePath()), EPackage.Registry.INSTANCE);
+		EmfUtil.register(URI.createFileURI(new File("../DECENT.One/model/FAMIX.ecore").getAbsolutePath()), EPackage.Registry.INSTANCE);
 		
 		List<IModel> models = new ArrayList<IModel>();
-		models.add(createEmfModel("DECENT", "output/MGGitWS.decent", "../DECENT/model/DECENTv2.ecore", true, true));
+		models.add(createEmfModel("DECENT", "output/MGGitWS.decent", "../DECENT.One/model/DECENTv3.ecore", true, true));
 //		models.add(createEmfModel("FAMIX", "input/model.famix", "../famix.m3/model/FAMIX.ecore", true, false));
 		models.add(createEmfModel("FAMIX", "/home/philip-iii/TEMP/fmx/famix/8/model.famix", "../famix.m3/model/FAMIX.ecore", true, false));
 		

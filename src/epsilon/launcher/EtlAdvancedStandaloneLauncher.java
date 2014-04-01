@@ -39,7 +39,7 @@ import epsilon.launcher.EpsilonStandaloneLauncher;
 public class EtlAdvancedStandaloneLauncher extends EpsilonStandaloneLauncher {
 	
 	public static void main(String[] args) throws Exception {
-		new EtlAdvancedStandaloneLauncher().execute();
+		new EtlAdvancedStandaloneLauncher().execute(args[0], args[1], args[2]);
 	}
 	
 	@Override
@@ -47,15 +47,16 @@ public class EtlAdvancedStandaloneLauncher extends EpsilonStandaloneLauncher {
 		return new EtlModule();
 	}
 
-	@Override
-	public void execute() throws Exception {
-		EmfUtil.register(URI.createFileURI(new File("../DECENT/model/DECENTv2.ecore").getAbsolutePath()), EPackage.Registry.INSTANCE);
-		EmfUtil.register(URI.createFileURI(new File("../DECENT/model/DECENTv3.ecore").getAbsolutePath()), EPackage.Registry.INSTANCE);
-		EmfUtil.register(URI.createFileURI(new File("../famix.m3/model/AbstractDECENTProvider.ecore").getAbsolutePath()), EPackage.Registry.INSTANCE);
-		EmfUtil.register(URI.createFileURI(new File("../famix.m3/model/FAMIX.ecore").getAbsolutePath()), EPackage.Registry.INSTANCE);
-
+	public void execute(String location, String lowerBound, String upperBound) throws Exception {
+		EmfUtil.register(URI.createFileURI(new File("../DECENT.Meta/model/DECENTv2.ecore").getAbsolutePath()), EPackage.Registry.INSTANCE);
+		EmfUtil.register(URI.createFileURI(new File("../DECENT.Meta/model/DECENTv3.ecore").getAbsolutePath()), EPackage.Registry.INSTANCE);
+		EmfUtil.register(URI.createFileURI(new File("../DECENT.Meta/model/AbstractDECENTProvider.ecore").getAbsolutePath()), EPackage.Registry.INSTANCE);
+		EmfUtil.register(URI.createFileURI(new File("../DECENT.Meta/model/FAMIX.ecore").getAbsolutePath()), EPackage.Registry.INSTANCE);
+		lowerBound = "2";
+		upperBound = "4";
 		//executeDefault(); //default slower version (reloads decent model instance every time)
-		executeSeparate(); //reloads only famix model instances
+		//String location = "/Users/philip-iii/Dev/workspaces/emf/DECENT.Data/input/yakuake";
+		executeSeparate(location, lowerBound, upperBound); //reloads only famix model instances
 	}
 	
 	private void executeDefault() throws Exception {
@@ -71,6 +72,8 @@ public class EtlAdvancedStandaloneLauncher extends EpsilonStandaloneLauncher {
 		
 		String famixResourceLocation = "/home/philip-iii/TEMP";
 		famixResourceLocation = "/media/DATA/Backup/Results/rekonq/fmx/famix/";
+		famixResourceLocation = "/Users/philip-iii/Dev/workspaces/emf/DECENT.Data/input/yakuake/famix";
+		
 
 		File ws = new File(famixResourceLocation);
 		String[] commits = ws.list();
@@ -120,7 +123,7 @@ public class EtlAdvancedStandaloneLauncher extends EpsilonStandaloneLauncher {
 		module.getContext().getModelRepository().dispose();
 	}
 
-	private void executeSeparate() throws Exception, URISyntaxException,
+	private void executeSeparate(String location, String lowerBound, String upperBound) throws Exception, URISyntaxException,
 			EolModelLoadingException, EolRuntimeException {
 		module = createModule();
 		module.parse(getFile(getSource()));
@@ -133,12 +136,9 @@ public class EtlAdvancedStandaloneLauncher extends EpsilonStandaloneLauncher {
 			System.exit(-1);
 		}
 
-		module.getContext().getModelRepository().addModel(getDecentModel());
+		module.getContext().getModelRepository().addModel(getDecentModel(location));
 		
-		String famixResourceLocation = "/home/philip-iii/TEMP";
-		famixResourceLocation = "/media/DATA/Backup/Results/rekonq/fmx/famix/";
-
-		File ws = new File(famixResourceLocation);
+		File ws = new File(location+"/famix");
 		String[] commits = ws.list();
 		Arrays.sort(commits, new Comparator<String>() {
 
@@ -155,32 +155,39 @@ public class EtlAdvancedStandaloneLauncher extends EpsilonStandaloneLauncher {
 		});
 		
 		for (String c : commits) {
-			if (Integer.parseInt(c)<5) {
+			if (	Integer.parseInt(c)>=(Integer.parseInt(lowerBound)) &&
+					Integer.parseInt(c)<=(Integer.parseInt(upperBound))
+			) {
 				System.out.println("Processing: "+c);
-				IModel famixModel = getFamixModel(Integer.parseInt(c));
+				IModel famixModel = getFamixModel(location,Integer.parseInt(c));
 				module.getContext().getModelRepository().addModel(famixModel);
+				//System.out.println("@"+module.getContext().getModelRepository().getModels().size()+" models loaded");
 				preProcess();
-				
+				//module.execute();
 				result = execute(module);
 				postProcess();
 				//module.getContext().getModelRepository().getModelByName("FAMIX").dispose();
-				module.getContext().getModelRepository().removeModel(famixModel);
+				//module.getContext().getModelRepository().getModelByName("FAMIX").dispose();
+//				module.getContext().getModelRepository().removeModel(famixModel);
+				module.reset();
+				module.parse(getFile(getSource()));
+				module.getContext().getModelRepository().addModel(getDecentModel(location));
+
 			}
 		}
 		module.getContext().getModelRepository().dispose();
 	}
 	
-	public IModel getDecentModel() throws Exception {
-		String decentResourceLocation = "output/MGGitWS.decent";
-		decentResourceLocation = "output/rekonq.decent";
-		IModel model = createEmfModel("DECENT", decentResourceLocation, "../DECENT/model/DECENTv3.ecore", true, true);
+	public IModel getDecentModel(String location) throws Exception {
+		String decentResourceLocation = location+"/model.decent";
+		IModel model = createEmfModel("DECENT", decentResourceLocation, "../DECENT.Meta/model/DECENTv3.ecore", true, true);
 		return model;
 	}
 
-	public IModel getFamixModel(int commitId) throws Exception {
-		String famixResourceLocation = "/home/philip-iii/TEMP";
-		famixResourceLocation = "/media/DATA/Backup/Results/rekonq";
-		IModel model =  createEmfModel("FAMIX", famixResourceLocation + "/fmx/famix/"+commitId+"/model.famix", "../famix.m3/model/FAMIX.ecore", true, false);
+	public IModel getFamixModel(String location, int commitId) throws Exception {
+		//TODO: make filtered optional infix
+		String famixResourceLocation = location+"/famix/"+commitId+"/filtered/model.famix";
+		IModel model =  createEmfModel("FAMIX", famixResourceLocation, "../DECENT.Meta/model/FAMIX.ecore", true, false);
 		return model;
 	}
 	
