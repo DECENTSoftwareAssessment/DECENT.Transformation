@@ -26,45 +26,35 @@ pre mgInitPre {
   BranchAttribute.name = "Branch";
   Model.attributePool.attributes.add(BranchAttribute);
 
-
-  var FileSizeAttribute = new DECENT!Attribute;
-  FileSizeAttribute.name = "FileSize";
-  Model.attributePool.attributes.add(FileSizeAttribute);
-
-  var LOCAttribute = new DECENT!Attribute;
-  LOCAttribute.name = "LOC";
-  Model.attributePool.attributes.add(LOCAttribute);
-
-  var LinesAddedAttribute = new DECENT!Attribute;
-  LinesAddedAttribute.name = "LinesAdded";
-  Model.attributePool.attributes.add(LinesAddedAttribute);
-
-  var LinesRemovedAttribute = new DECENT!Attribute;
-  LinesRemovedAttribute.name = "LinesRemoved";
-  Model.attributePool.attributes.add(LinesRemovedAttribute);
-
-  var IsBugFix = new DECENT!Attribute;
-  IsBugFix.name = "IsBugFix";
-  Model.attributePool.attributes.add(IsBugFix);
-
-  var BugFixCount = new DECENT!Attribute;
-  BugFixCount.name = "BugFixCount";
-  Model.attributePool.attributes.add(BugFixCount);
+  var attributes = new OrderedSet;
+  attributes.add("FileSize");
+  attributes.add("LOC");
+  attributes.add("LinesAdded");
+  attributes.add("LinesRemoved");
+  attributes.add("IsBugFix");
+  attributes.add("BugFixCount");
+  attributes.add("FragmentCount");
+  attributes.add("HunkCount");
+  attributes.add("Message");
+  
+  for (a in attributes) {
+	  var Attribute = new DECENT!Attribute;
+	  Attribute.name = a;
+      if (Model.attributePool.attributes.select(a|a.name = Attribute.name).size() = 0) {
+	    Model.attributePool.attributes.add(Attribute);
+      }
+  }
 
 
-  //extension
-  var FragmentCount = new DECENT!Attribute;
-  FragmentCount.name = "FragmentCount";
-  Model.attributePool.attributes.add(FragmentCount);
-
-  var HunkCount = new DECENT!Attribute;
-  HunkCount.name = "HunkCount";
-  Model.attributePool.attributes.add(HunkCount);
-
-  var Message = new DECENT!Attribute;
-  Message.name = "Message";
-  Model.attributePool.attributes.add(Message);
-
+  var FileSizeAttribute = DECENT!Attribute.allInstances().select(a|a.name = "FileSize").first();
+  var LOCAttribute = DECENT!Attribute.allInstances().select(a|a.name = "LOC").first();
+  var LinesAddedAttribute = DECENT!Attribute.allInstances().select(a|a.name = "LinesAdded").first();
+  var LinesRemovedAttribute = DECENT!Attribute.allInstances().select(a|a.name = "LinesRemoved").first();
+  var IsBugFixAttribute = DECENT!Attribute.allInstances().select(a|a.name = "IsBugFix").first();
+  var BugFixCountAttribute = DECENT!Attribute.allInstances().select(a|a.name = "BugFixCount").first();
+  var FragmentCountAttribute = DECENT!Attribute.allInstances().select(a|a.name = "FragmentCount").first();
+  var HunkCountAttribute = DECENT!Attribute.allInstances().select(a|a.name = "HunkCount").first();
+  var MessageAttribute = DECENT!Attribute.allInstances().select(a|a.name = "Message").first();
 
   var Project = new DECENT!Project;
   Project.name = MG!Model.allInstances().first().name;
@@ -217,7 +207,7 @@ rule Action2State
 		s.addValue(LOCAttribute, a.revision.content.select(c|c.file = a.file).first().loc.asDouble());
 	}
 
-    s.addValue(FragmentCount, a.revision.lineBlames->select(l|l.file = a.file).size().asDouble());
+    s.addValue(FragmentCountAttribute, a.revision.lineBlames->select(l|l.file = a.file).size().asDouble());
 	
 	//TODO: handle activities and deltas (as a post step?)
     var activity = new DECENT!Activity;
@@ -238,8 +228,8 @@ rule Action2State
         difference = linesAdded - linesRemoved;
     }
 
-    activity.addValue(HunkCount, a.revision.hunks->select(h|h.file = a.file).size().asDouble());
-	activity.addValue(Message, a.revision.message);
+    activity.addValue(HunkCountAttribute, a.revision.hunks->select(h|h.file = a.file).size().asDouble());
+	activity.addValue(MessageAttribute, a.revision.message);
     activity.addValue(LinesAddedAttribute, linesAdded);
     activity.addValue(LinesRemovedAttribute, linesRemoved);
 
@@ -293,7 +283,7 @@ operation MG!File traverseChildren(parent : DECENT!Artifact) {
             s.addValue(BugFixCount, bugFixCount+ax.revision.is_bug_fix.asDouble());
             
             //TODO: check if available
-            s.addValue(FragmentCount, ax.revision.lineBlames->select(l|l.file = fcl.child).size().asDouble());
+            s.addValue(FragmentCountAttribute, ax.revision.lineBlames->select(l|l.file = fcl.child).size().asDouble());
             
             //dealing with file copies
             //TODO: or move in a separate operatation (in post) - set previous state accordingly
@@ -353,13 +343,13 @@ operation MG!File traverseChildren(parent : DECENT!Artifact) {
 			fileSize = processedCount.asDouble;
             s.addValue(FileSizeAttribute, fileSize);
             
-            activity.addDelta(FragmentCount);
+            activity.addDelta(FragmentCountAttribute);
             activity.addDelta(FileSizeAttribute);
             activity.addDelta(BugFixCount);
             
             
-            activity.addValue(HunkCount, ax.revision.hunks->select(h|h.file = fcl.child).size().asDouble());
-			activity.addValue(Message, ax.revision.message);
+            activity.addValue(HunkCountAttribute, ax.revision.hunks->select(h|h.file = fcl.child).size().asDouble());
+			activity.addValue(MessageAttribute, ax.revision.message);
             activity.addValue(LinesAddedAttribute, linesAdded);
             activity.addValue(LinesRemovedAttribute, linesRemoved);
 
