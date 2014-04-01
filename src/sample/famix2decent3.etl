@@ -35,17 +35,24 @@ pre {
 	  									s.artifact.type = ModuleArtifactType or 
 	  									s.artifact.type = FunctionArtifactType));
 	  ("Existing DECENT Anchored Element States in "+revisionId + ": "+existingStatesInRevision.size()).println();
-	  var activities = new OrderedSet;
+	  var fromActivities = new OrderedSet;
+	  var toActivities = new OrderedSet;
 	  for (s in existingStatesInRevision) {
 	    ("  Cleaning up existing state " + s.ID +" of artifact " + s.artifact.name + " ("+s.artifact.type.name+")").println();
 	    for (a in s.fromActivity) {
-	    	activities.add(a);
+	    	fromActivities.add(a);
+	    }
+	    for (a in s.activity) {
+	    	toActivities.add(a);
 	    }
 	  	delete s;
 	  }
-	  for (a in activities) {
+	  for (a in fromActivities) {
 	  	delete a;
 	  }
+  	  //TODO: handle hooks for future actifivities based on the current states (in post)
+  	  //TODO: consider generating separate decent instances for each revision (or a set of revisinos) which may be 
+  	  //handled as a resource set
   }
 }
 
@@ -81,9 +88,11 @@ operation DECENT!State mapAnchoredElement(c : FAMIX!AnchoredElement, artifactTyp
     }
 
     var lastState = null; //naive approach
-	//TODO: consider looking up parent artifact or simply using the id from parent.previous.ID for selection
+
     if (artifact.states.size() > 0) {
-        lastState = artifact.states.last();
+    	var parentPrevious = candidateParentStates.first().previous;
+    	lastState = artifact.states.select(s|s.ID = parentPrevious.ID).first();
+        //lastState = artifact.states.last();
         self.previous.add(lastState);
     }
 
