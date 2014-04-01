@@ -5,6 +5,10 @@ Model.artifactTypeHierarchy = new DECENT1!ArtifactTypeHierarchy;
 Model.agentPool = new DECENT1!AgentPool;
 Model.attributePool = new DECENT1!AttributePool;
 
+var a : new DECENT1!Attribute;
+a.name = "LOC";
+Model.attributePool.attributes.add(a);
+
 var s1 : new DECENT1!State;
 s1.ID=1;
 
@@ -15,3 +19,9 @@ s2.previous.add(s1);
 var s3 : new DECENT2!State;
 s3.ID=3;
 s3.previous.add(s2);
+
+var v : new DECENT2!Value;
+v.ofAttribute = a;
+
+s3.values.add(v);
+
