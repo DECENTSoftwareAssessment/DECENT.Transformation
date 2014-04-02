@@ -66,6 +66,10 @@ operation DECENT!Activity addDelta(attribute : DECENT!Attribute, value : DECENT!
     return delta;
 }
 
+operation Any toDays() : Real {
+	return self.asDouble() / (3600*1000*24);
+}
+
 operation DECENT!Artifact setArtifactType(fileType : String) {
     var artifactType = DECENT!ArtifactType.allInstances().
         select(at|at.name = fileType).first;
