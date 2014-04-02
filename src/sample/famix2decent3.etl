@@ -13,12 +13,34 @@ pre {
   var ModuleArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "Module").first();
   var FileAnchorAttribute = DECENT!Attribute.allInstances().select(t|t.name = "FileAnchor").first();
   var FilePathAttribute = DECENT!Attribute.allInstances().select(t|t.name = "FilePath").first();
+
+  var attributes = new OrderedSet;
+  attributes.add("LinesPostHits");
+  attributes.add("StartLine");
+  attributes.add("EndLine");
+  
+  for (a in attributes) {
+      if (Model.attributePool.attributes.select(att|att.name = a).size() = 0) {
+		  var Attribute = new DECENT!Attribute;
+		  Attribute.name = a;
+	      Model.attributePool.attributes.add(Attribute);
+      }
+  }
+
+  var LinesPostHitsAttribute = DECENT!Attribute.allInstances().select(a|a.name = "LinesPostHits").first();
+  var StartLineAttribute = DECENT!Attribute.allInstances().select(a|a.name = "StartLine").first();
+  var EndLineAttribute = DECENT!Attribute.allInstances().select(a|a.name = "EndLine").first();
+  var LinesPreAttribute = DECENT!Attribute.allInstances().select(a|a.name = "LinesPre").first();
+  var LinesPostAttribute = DECENT!Attribute.allInstances().select(a|a.name = "LinesPost").first();
+
+
   
   var revisionId = -1;
   var potentiallyAffectedClasses = new OrderedSet;
   var potentiallyAffectedMethods = new OrderedSet;
   
   var codeStatesInRevision = new OrderedSet;
+  var cleaned = false;
    
   if (FAMIX!FileAnchor.allInstances().size() > 0) {
 	  revisionId = FAMIX!FileAnchor.allInstances().first().revisionId;
@@ -40,6 +62,7 @@ pre {
 	  ("Existing DECENT Anchored Element States in "+revisionId + ": "+existingStatesInRevision.size()).println();
 	  var fromActivities = new OrderedSet;
 	  for (s in existingStatesInRevision) {
+	  	cleaned = true;
 	    ("  Cleaning up existing state " + s.ID +" of artifact " + s.artifact.name + " ("+s.artifact.type.name+")").println();
 	    for (a in s.fromActivity) {
 	    	fromActivities.add(a);
@@ -55,10 +78,11 @@ pre {
 }
 
 post {
-	("Updating "+toActivities.size()+" broken activities...").println();
+	("Updating broken activities...").println();
 	("DECENT Code States in "+revisionId + ": "+codeStatesInRevision.size()).println();
 	
 	//top down approach potentially inefficient
+	if (cleaned) { 
 	    //for all states of affected code artifacts
 	    for (cs in codeStatesInRevision) {
 			("  State of "+cs.artifact.name + " at " + cs.ID).println();
@@ -89,6 +113,16 @@ post {
 		  		}
 	    	}
 		}
+	}
+	//TODO: add hits labeling as a post processing step (with an option for on-the-fly filering as a guard)
+	//- add affected lines in decent (from mg)
+	//- startLine = s.values.select(v|v.ofAttribute = StartLineAttribute).first().content
+	//- endLine = s.values.select(v|v.ofAttribute = EndLineAttribute).first().content
+	//or 
+	//- startLine = e.anchor.startLine
+	//- endLine = e.anchor.endLine
+	//then
+	//- select(l|l >= startLine and l <= endLine)
 }
 
 operation Any getPotentiallyAffectedAnchoredElements() : Sequence {
@@ -96,7 +130,9 @@ operation Any getPotentiallyAffectedAnchoredElements() : Sequence {
 }
 
 operation checkParentArtifactStateExists(stateId : Integer, filePath : String) : Boolean {
-	return DECENT!State.allInstances().select(s|s.ID = stateId and s.artifact.type = CodeArtifactType and s.values.select(v|v.ofAttribute = FilePathAttribute).first().content = filePath).size() > 0;
+	var count = DECENT!State.allInstances().select(s|s.ID = stateId and s.artifact.type = CodeArtifactType and s.values.select(v|v.ofAttribute = FilePathAttribute).first().content = filePath).size();
+	//("---- "+count+" states for artifacts located in "+filePath+" at "+stateId).println();
+	return count > 0;
 }
 
 operation DECENT!State mapAnchoredElement(c : FAMIX!AnchoredElement, artifactType : DECENT!ArtifactType, name : String) {
@@ -122,16 +158,18 @@ operation DECENT!State mapAnchoredElement(c : FAMIX!AnchoredElement, artifactTyp
         artifact.parent = parent;
     }
 
-    var lastState = null; //naive approach
+    var lastState = null; 
 
     if (artifact.states.size() > 0) {
     	//TODO: what if more than one?
     	var parentPrevious = candidateParentStates.first().previous.first();
-    	lastState = artifact.states.select(s|s.ID = parentPrevious.ID).first();
-        //lastState = artifact.states.last();
-        if (lastState.isDefined()) {
-	        self.previous.add(lastState);
-        } 
+    	if (parentPrevious.isDefined()) {
+	    	lastState = artifact.states.select(s|s.ID = parentPrevious.ID).first();
+	        //lastState = artifact.states.last();
+	        if (lastState.isDefined()) {
+		        self.previous.add(lastState);
+	        } 
+    	}
     }
 
     self.name = candidateParentStates.first().name;
@@ -139,6 +177,8 @@ operation DECENT!State mapAnchoredElement(c : FAMIX!AnchoredElement, artifactTyp
     artifact.states.add(self);
 
     self.addValue(FileAnchorAttribute, c.sourceAnchor_IN_FileAnchor.fileName+":"+c.sourceAnchor_IN_FileAnchor.startLine+":"+c.sourceAnchor_IN_FileAnchor.endLine);
+    self.addValue(StartLineAttribute, c.sourceAnchor_IN_FileAnchor.startLine);
+    self.addValue(EndLineAttribute, c.sourceAnchor_IN_FileAnchor.endLine);
 
     //TODO: keep in mind the parent states may be more than one
     var activity = new DECENT!Activity;
