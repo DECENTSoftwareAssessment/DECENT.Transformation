@@ -223,6 +223,36 @@ rule Action2State
 
     s.addValue(AggregateFragmentCountAttribute, a.revision.lineBlames->select(l|l.file = a.file).size().asDouble());
 	
+	s.addSpatialCharacteristics(a.revision.hunks->select(h|h.file = a.file));
+	
+	//TODO: handle activities and deltas (as a post step?)
+    var activity = new DECENT!Activity;
+    activity.targetState = s;
+    activity.state = lastState;            
+    activity.date = a.revision.author_date;
+    activity.type = a.type;
+    activity.agent = a.revision.author.equivalent();
+	
+    
+    var linesAdded = "0".asDouble();
+    var linesRemoved = "0".asDouble();
+    var difference = "0".asDouble();
+    var patchLines = a.revision.patchLines->select(l|l.file = a.file);
+    if (patchLines.size() > 0) {
+        linesAdded = patchLines.asOrderedSet().first().added.asDouble();
+        linesRemoved = patchLines.asOrderedSet().first().removed.asDouble();
+        difference = linesAdded - linesRemoved;
+    }
+
+    activity.addValue(HunkCountAttribute, a.revision.hunks->select(h|h.file = a.file).size().asDouble());
+	activity.addValue(MessageAttribute, a.revision.message);
+    activity.addValue(LinesAddedAttribute, linesAdded);
+    activity.addValue(LinesRemovedAttribute, linesRemoved);
+
+}
+
+
+operation DECENT!State addSpatialCharacteristics(hunks : Collection) {
 	//consider outsourcing
 	var linesPre = new OrderedSet;
 	var linesPost = new OrderedSet;
@@ -233,7 +263,7 @@ rule Action2State
 	var postDifference = 0;
 	var fragmentCount = 0;
 	var tailChanged = false;
-    for (h in a.revision.hunks->select(h|h.file = a.file)) {
+    for (h in hunks) {
 		var oldStartLine = h.old_start_line_normalized;
 		var newStartLine = h.new_start_line_normalized;
 		var oldEndLine = h.old_end_line_normalized;
@@ -288,37 +318,12 @@ rule Action2State
 		fragmentCount = fragmentCount + 1;
 		fragments.add(fragmentCount);
 	}
-	s.addIntegerCollectionValue(LinesPreAttribute, linesPre.sortBy(l|l));
-	s.addIntegerCollectionValue(LinesPostAttribute, linesPost.sortBy(l|l));
-	s.addIntegerCollectionValue(LinesMergedAttribute, linesMerged.sortBy(l|l));
-	s.addValue(FragmentCountAttribute, fragments.size().asDouble());
-	//outsource end
-	
-	//TODO: handle activities and deltas (as a post step?)
-    var activity = new DECENT!Activity;
-    activity.targetState = s;
-    activity.state = lastState;            
-    activity.date = a.revision.author_date;
-    activity.type = a.type;
-    activity.agent = a.revision.author.equivalent();
-	
-    
-    var linesAdded = "0".asDouble();
-    var linesRemoved = "0".asDouble();
-    var difference = "0".asDouble();
-    var patchLines = a.revision.patchLines->select(l|l.file = a.file);
-    if (patchLines.size() > 0) {
-        linesAdded = patchLines.asOrderedSet().first().added.asDouble();
-        linesRemoved = patchLines.asOrderedSet().first().removed.asDouble();
-        difference = linesAdded - linesRemoved;
-    }
-
-    activity.addValue(HunkCountAttribute, a.revision.hunks->select(h|h.file = a.file).size().asDouble());
-	activity.addValue(MessageAttribute, a.revision.message);
-    activity.addValue(LinesAddedAttribute, linesAdded);
-    activity.addValue(LinesRemovedAttribute, linesRemoved);
-
+	self.addIntegerCollectionValue(LinesPreAttribute, linesPre.sortBy(l|l));
+	self.addIntegerCollectionValue(LinesPostAttribute, linesPost.sortBy(l|l));
+	self.addIntegerCollectionValue(LinesMergedAttribute, linesMerged.sortBy(l|l));
+	self.addValue(FragmentCountAttribute, fragments.size().asDouble());
 }
+
 
 //pre-processing based
 operation MG!File traverseChildren(parent : DECENT!Artifact) {
