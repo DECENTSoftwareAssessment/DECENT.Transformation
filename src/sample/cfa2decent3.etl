@@ -33,10 +33,10 @@ pre {
   attributes.add("ClearedTotalBugWeight");
 
   for (a in attributes) {
-	  var Attribute = new DECENT!Attribute;
-	  Attribute.name = a;
-      if (Model.attributePool.attributes.select(a|a.name = Attribute.name).size() = 0) {
-	    Model.attributePool.attributes.add(Attribute);
+      if (Model.attributePool.attributes.select(att|att.name = a).size() = 0) {
+		  var Attribute = new DECENT!Attribute;
+		  Attribute.name = a;
+	      Model.attributePool.attributes.add(Attribute);
       }
   }
 
@@ -90,6 +90,11 @@ pre {
   		}
   	} else {
   		var state = matchedStates.first();
+  		
+  		for (a in attributes) {
+			state.values.removeAll(state.values.select(v|v.ofAttribute.name = a));
+		}
+  		
   		state.addValue(BugFixAttribute, s.bugFix);
   		state.addValue(WeightFactorAttribute, s.weightFactor);
   		state.addValue(TotalWeightAttribute, s.totalWeight);
