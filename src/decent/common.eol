@@ -14,13 +14,14 @@ operation Any addValue(attribute : DECENT!Attribute, content : String) : DECENT!
     return self.addValue(attribute, content, value);
 }
 
-operation Any addValue(attribute : DECENT!Attribute, content : Real) : DECENT!Value {
-    var value : new DECENT!DoubleValue;
+//NOTE: order matters, otherwise integers are mistakenly treated as reals
+operation Any addValue(attribute : DECENT!Attribute, content : Integer) : DECENT!Value {
+    var value : new DECENT!IntegerValue;
     return self.addValue(attribute, content, value);
 }
 
-operation Any addValue(attribute : DECENT!Attribute, content : Integer) : DECENT!Value {
-    var value : new DECENT!IntegerValue;
+operation Any addValue(attribute : DECENT!Attribute, content : Real) : DECENT!Value {
+    var value : new DECENT!DoubleValue;
     return self.addValue(attribute, content, value);
 }
 
