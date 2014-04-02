@@ -52,8 +52,6 @@ public class EtlAdvancedStandaloneLauncher extends EpsilonStandaloneLauncher {
 		EmfUtil.register(URI.createFileURI(new File("../DECENT.Meta/model/DECENTv3.ecore").getAbsolutePath()), EPackage.Registry.INSTANCE);
 		EmfUtil.register(URI.createFileURI(new File("../DECENT.Meta/model/AbstractDECENTProvider.ecore").getAbsolutePath()), EPackage.Registry.INSTANCE);
 		EmfUtil.register(URI.createFileURI(new File("../DECENT.Meta/model/FAMIX.ecore").getAbsolutePath()), EPackage.Registry.INSTANCE);
-		lowerBound = "2";
-		upperBound = "4";
 		//executeDefault(); //default slower version (reloads decent model instance every time)
 		//String location = "/Users/philip-iii/Dev/workspaces/emf/DECENT.Data/input/yakuake";
 		executeSeparate(location, lowerBound, upperBound); //reloads only famix model instances
@@ -136,8 +134,13 @@ public class EtlAdvancedStandaloneLauncher extends EpsilonStandaloneLauncher {
 			System.exit(-1);
 		}
 
-		module.getContext().getModelRepository().addModel(getDecentModel(location));
+		module.reset();
 		
+		IModel decentModel = getDecentModel(location);
+		decentModel.load();
+		//module.getContext().getModelRepository().addModel(decentModel);
+
+		//extract to method
 		File ws = new File(location+"/famix");
 		String[] commits = ws.list();
 		Arrays.sort(commits, new Comparator<String>() {
@@ -154,28 +157,27 @@ public class EtlAdvancedStandaloneLauncher extends EpsilonStandaloneLauncher {
 			}
 		});
 		
+		//TODO: add option "safe" which stores each intermediate decent model (and/or reloads it)
 		for (String c : commits) {
 			if (	Integer.parseInt(c)>=(Integer.parseInt(lowerBound)) &&
 					Integer.parseInt(c)<=(Integer.parseInt(upperBound))
 			) {
 				System.out.println("Processing: "+c);
-				IModel famixModel = getFamixModel(location,Integer.parseInt(c));
-				module.getContext().getModelRepository().addModel(famixModel);
-				//System.out.println("@"+module.getContext().getModelRepository().getModels().size()+" models loaded");
-				preProcess();
-				//module.execute();
-				result = execute(module);
-				postProcess();
-				//module.getContext().getModelRepository().getModelByName("FAMIX").dispose();
-				//module.getContext().getModelRepository().getModelByName("FAMIX").dispose();
-//				module.getContext().getModelRepository().removeModel(famixModel);
-				module.reset();
 				module.parse(getFile(getSource()));
-				module.getContext().getModelRepository().addModel(getDecentModel(location));
-
+				IModel famixModel = getFamixModel(location,Integer.parseInt(c));
+				famixModel.load();
+				module.getContext().getModelRepository().addModel(decentModel);
+				module.getContext().getModelRepository().addModel(famixModel);
+				preProcess();
+				module.execute();
+				//result = execute(module);
+				postProcess();
+				famixModel.dispose();
+				module.reset();
 			}
 		}
-		module.getContext().getModelRepository().dispose();
+		decentModel.dispose();
+		//module.getContext().getModelRepository().dispose();
 	}
 	
 	public IModel getDecentModel(String location) throws Exception {
