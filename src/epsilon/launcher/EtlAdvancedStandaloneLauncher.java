@@ -140,22 +140,7 @@ public class EtlAdvancedStandaloneLauncher extends EpsilonStandaloneLauncher {
 		decentModel.load();
 		//module.getContext().getModelRepository().addModel(decentModel);
 
-		//extract to method
-		File ws = new File(location+"/famix");
-		String[] commits = ws.list();
-		Arrays.sort(commits, new Comparator<String>() {
-
-			@Override
-			public int compare(String o1, String o2) {
-				if (o1.equals(o2)) {
-					return 0;
-				} else if (Integer.parseInt(o1)>Integer.parseInt(o2)){
-					return 1;
-				} else {
-					return -1;
-				}
-			}
-		});
+		String[] commits = getSortedCommits(location);
 		
 		//TODO: add option "safe" which stores each intermediate decent model (and/or reloads it)
 		for (String c : commits) {
@@ -178,6 +163,25 @@ public class EtlAdvancedStandaloneLauncher extends EpsilonStandaloneLauncher {
 		}
 		decentModel.dispose();
 		//module.getContext().getModelRepository().dispose();
+	}
+
+	private String[] getSortedCommits(String location) {
+		File ws = new File(location+"/famix");
+		String[] commits = ws.list();
+		Arrays.sort(commits, new Comparator<String>() {
+
+			@Override
+			public int compare(String o1, String o2) {
+				if (o1.equals(o2)) {
+					return 0;
+				} else if (Integer.parseInt(o1)>Integer.parseInt(o2)){
+					return 1;
+				} else {
+					return -1;
+				}
+			}
+		});
+		return commits;
 	}
 	
 	public IModel getDecentModel(String location) throws Exception {
