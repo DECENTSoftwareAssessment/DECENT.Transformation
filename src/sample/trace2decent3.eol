@@ -4,6 +4,7 @@ import "../decent/common.eol";
 var Model = DECENT!Model.allInstances().first();
 
 var attributes = new OrderedSet;
+attributes.add("BugCount");
 attributes.add("BugComments");
 attributes.add("BugEvents");
 attributes.add("BugResolutions");
@@ -16,22 +17,31 @@ for (a in attributes) {
     }
 }
 
+var BugCountAttribute = DECENT!Attribute.allInstances().select(t|t.name = "BugCount").first();
 var BugCommentsAttribute = DECENT!Attribute.allInstances().select(t|t.name = "BugComments").first();
 var BugEventsAttribute = DECENT!Attribute.allInstances().select(t|t.name = "BugEvents").first();
 var BugResolutionsAttribute = DECENT!Attribute.allInstances().select(t|t.name = "BugResolutions").first();
 
 //TODO: filter for files only?
-//TODO: add backout strategy 
 for (s in DECENT!State.allInstances()) {
+	for (a in attributes) {
+		s.values.removeAll(s.values.select(v|v.ofAttribute.name = a));
+	}
+
+	var bugCount = 0.asDouble();
 	var commentCount = 0.asDouble();
 	var eventCount = 0.asDouble();
 	var resolutionsCount = 0.asDouble();
 	for (t in TRACE!Trace.allInstances().select(x|x.target.commit_id = s.ID)) {
-		commentCount = t.source.comments.size().asDouble();
-		eventCount = t.source.events.size().asDouble();
-		resolutionsCount = t.source.events.select(x|x.newValue = "FIXED").size().asDouble();
-		("  State "+s.ID+ " : "+resolutionsCount + " / " + eventCount + " / "+commentCount).println();
+		//TODO:what if there are more than one?
+		// => currently summed together
+		bugCount = bugCount + 1;
+		commentCount = commentCount + t.source.comments.size().asDouble();
+		eventCount = eventCount + t.source.events.size().asDouble();
+		resolutionsCount = resolutionsCount + t.source.events.select(x|x.newValue = "FIXED").size().asDouble();
+		("  Issue "+t.source.issueId+" mapped to State "+s.ID+ " of " +s.artifact.name+" : "+resolutionsCount + " / " + eventCount + " / "+commentCount).println();
 	}
+	s.addValue(BugCountAttribute, bugCount);
 	s.addValue(BugCommentsAttribute, commentCount);
 	s.addValue(BugEventsAttribute, eventCount);
 	s.addValue(BugResolutionsAttribute, resolutionsCount);
