@@ -40,6 +40,9 @@ pre mgInitPre {
   attributes.add("LinesPre");
   attributes.add("LinesPost");
   attributes.add("LinesMerged");
+  attributes.add("VarianceLinesPre");
+  attributes.add("VarianceLinesPost");
+  attributes.add("VarianceLinesMerged");
   attributes.add("AbsoluteTime");
   attributes.add("RelativeTime");
   attributes.add("TimeDistance");
@@ -65,6 +68,9 @@ pre mgInitPre {
   var LinesPreAttribute = DECENT!Attribute.allInstances().select(a|a.name = "LinesPre").first();
   var LinesPostAttribute = DECENT!Attribute.allInstances().select(a|a.name = "LinesPost").first();
   var LinesMergedAttribute = DECENT!Attribute.allInstances().select(a|a.name = "LinesMerged").first();
+  var VarianceLinesPreAttribute = DECENT!Attribute.allInstances().select(a|a.name = "VarianceLinesPre").first();
+  var VarianceLinesPostAttribute = DECENT!Attribute.allInstances().select(a|a.name = "VarianceLinesPost").first();
+  var VarianceLinesMergedAttribute = DECENT!Attribute.allInstances().select(a|a.name = "VarianceLinesMerged").first();
   var AbsoluteTimeAttribute = DECENT!Attribute.allInstances().select(a|a.name = "AbsoluteTime").first();
   var RelativeTimeAttribute = DECENT!Attribute.allInstances().select(a|a.name = "RelativeTime").first();
   var TimeDistanceAttribute = DECENT!Attribute.allInstances().select(a|a.name = "TimeDistance").first();
@@ -224,8 +230,11 @@ rule Action2State
     s.addValue(AggregateFragmentCountAttribute, a.revision.lineBlames->select(l|l.file = a.file).size().asDouble());
 	
 	s.addSpatialCharacteristics(a.revision.hunks->select(h|h.file = a.file));
+	//TODO: add temporal characteristics
+	//TODO: also add distances between bugs, own changes, all changes, bug lifetimes..
 	
 	//TODO: handle activities and deltas (as a post step?)
+	//TODO: deltas!
     var activity = new DECENT!Activity;
     activity.targetState = s;
     activity.state = lastState;            
@@ -322,6 +331,9 @@ operation DECENT!State addSpatialCharacteristics(hunks : Collection) {
 	self.addIntegerCollectionValue(LinesPostAttribute, linesPost.sortBy(l|l));
 	self.addIntegerCollectionValue(LinesMergedAttribute, linesMerged.sortBy(l|l));
 	self.addValue(FragmentCountAttribute, fragments.size().asDouble());
+	self.addValue(VarianceLinesPreAttribute, linesPre.getVariance());
+	self.addValue(VarianceLinesPostAttribute, linesPost.getVariance());
+	self.addValue(VarianceLinesMergedAttribute, linesMerged.getVariance());
 }
 
 
