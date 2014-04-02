@@ -1,5 +1,4 @@
-operation Any addValue(attribute : DECENT!Attribute, content : String) : DECENT!Value {
-    var value : new DECENT!StringValue;
+operation Any addValue(attribute : DECENT!Attribute, content : Real, value : DECENT!Value) : DECENT!Value {
     value.name = attribute.name;
     value.content = content;
     self.values.add(value);
@@ -10,26 +9,34 @@ operation Any addValue(attribute : DECENT!Attribute, content : String) : DECENT!
     return value;
 }
 
+operation Any addValue(attribute : DECENT!Attribute, content : String) : DECENT!Value {
+    var value : new DECENT!StringValue;
+    return self.addValue(attribute, content, value);
+}
+
 operation Any addValue(attribute : DECENT!Attribute, content : Real) : DECENT!Value {
     var value : new DECENT!DoubleValue;
-    value.name = attribute.name;
-    value.content = content;
-    self.values.add(value);
-    value.ofAttribute = attribute;
-//    self.artifact.attributes.add(attribute);
-//    attribute.artifactTypes.add(self.artifact.type);
-    return value;
+    return self.addValue(attribute, content, value);
+}
+
+operation Any addValue(attribute : DECENT!Attribute, content : Integer) : DECENT!Value {
+    var value : new DECENT!IntegerValue;
+    return self.addValue(attribute, content, value);
 }
 
 operation Any addValue(attribute : DECENT!Attribute, content : Collection(String)) : DECENT!Value {
     var value : new DECENT!StringListValue;
-    value.name = attribute.name;
-    value.content = content;
-    self.values.add(value);
-    value.ofAttribute = attribute;
-//    self.artifact.attributes.add(attribute);
-//    attribute.artifactTypes.add(self.artifact.type);
-    return value;
+    return self.addValue(attribute, content, value);
+}
+
+operation Any addValueI(attribute : DECENT!Attribute, content : Collection(Integer)) : DECENT!Value {
+    var value : new DECENT!IntegerListValue;
+    return self.addValue(attribute, content, value);
+}
+
+operation Any addValueR(attribute : DECENT!Attribute, content : Collection(Real)) : DECENT!Value {
+    var value : new DECENT!DoubleListValue;
+    return self.addValue(attribute, content, value);
 }
 
 
