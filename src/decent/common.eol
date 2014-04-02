@@ -1,4 +1,4 @@
-operation Any addValue(attribute : DECENT!Attribute, content : Real, value : DECENT!Value) : DECENT!Value {
+operation Any addValue(attribute : DECENT!Attribute, content : Any, value : DECENT!Value) : DECENT!Value {
     value.name = attribute.name;
     value.content = content;
     self.values.add(value);
@@ -24,17 +24,23 @@ operation Any addValue(attribute : DECENT!Attribute, content : Integer) : DECENT
     return self.addValue(attribute, content, value);
 }
 
-operation Any addValue(attribute : DECENT!Attribute, content : Collection(String)) : DECENT!Value {
+operation Any addValue(attribute : DECENT!Attribute, content : Collection) : DECENT!Value {
+    var value : new DECENT!ListValue;
+    ("collection "+content).println();
+    return self.addValue(attribute, content, value);
+}
+
+operation Any addStringCollectionValue(attribute : DECENT!Attribute, content : Collection(String)) : DECENT!Value {
     var value : new DECENT!StringListValue;
     return self.addValue(attribute, content, value);
 }
 
-operation Any addValueI(attribute : DECENT!Attribute, content : Collection(Integer)) : DECENT!Value {
+operation Any addIntegerCollectionValue(attribute : DECENT!Attribute, content : Collection(Integer)) : DECENT!Value {
     var value : new DECENT!IntegerListValue;
     return self.addValue(attribute, content, value);
 }
 
-operation Any addValueR(attribute : DECENT!Attribute, content : Collection(Real)) : DECENT!Value {
+operation Any addDoubleCollectionValue(attribute : DECENT!Attribute, content : Collection(Real)) : DECENT!Value {
     var value : new DECENT!DoubleListValue;
     return self.addValue(attribute, content, value);
 }
