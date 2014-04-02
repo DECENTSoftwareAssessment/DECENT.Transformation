@@ -123,6 +123,8 @@ post {
 	//- endLine = e.anchor.endLine
 	//then
 	//- select(l|l >= startLine and l <= endLine)
+	Model.content.add("famix2decent3@"+revisionId);
+	
 }
 
 operation Any getPotentiallyAffectedAnchoredElements() : Sequence {

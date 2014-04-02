@@ -8,6 +8,8 @@ attributes.add("BugCount");
 attributes.add("BugComments");
 attributes.add("BugEvents");
 attributes.add("BugResolutions");
+attributes.add("BugLifespan");
+
   
 for (a in attributes) {
     if (Model.attributePool.attributes.select(att|att.name = a).size() = 0) {
@@ -21,6 +23,8 @@ var BugCountAttribute = DECENT!Attribute.allInstances().select(t|t.name = "BugCo
 var BugCommentsAttribute = DECENT!Attribute.allInstances().select(t|t.name = "BugComments").first();
 var BugEventsAttribute = DECENT!Attribute.allInstances().select(t|t.name = "BugEvents").first();
 var BugResolutionsAttribute = DECENT!Attribute.allInstances().select(t|t.name = "BugResolutions").first();
+var BugLifespanAttribute = DECENT!Attribute.allInstances().select(t|t.name = "BugLifespan").first();
+
 
 //TODO: filter for files only?
 for (s in DECENT!State.allInstances()) {
@@ -32,6 +36,7 @@ for (s in DECENT!State.allInstances()) {
 	var commentCount = 0.asDouble();
 	var eventCount = 0.asDouble();
 	var resolutionsCount = 0.asDouble();
+	var lifespan = 0;
 	for (t in TRACE!Trace.allInstances().select(x|x.target.commit_id = s.ID)) {
 		//TODO:what if there are more than one?
 		// => currently summed together
@@ -39,12 +44,14 @@ for (s in DECENT!State.allInstances()) {
 		commentCount = commentCount + t.source.comments.size().asDouble();
 		eventCount = eventCount + t.source.events.size().asDouble();
 		resolutionsCount = resolutionsCount + t.source.events.select(x|x.newValue = "FIXED").size().asDouble();
+		lifespan = lifespan + (t.source.lastModifiedOn.time - t.source.reportedOn.time);
 		("  Issue "+t.source.issueId+" mapped to State "+s.ID+ " of " +s.artifact.name+" : "+resolutionsCount + " / " + eventCount + " / "+commentCount).println();
 	}
 	s.addValue(BugCountAttribute, bugCount);
 	s.addValue(BugCommentsAttribute, commentCount);
 	s.addValue(BugEventsAttribute, eventCount);
 	s.addValue(BugResolutionsAttribute, resolutionsCount);
+	s.addValue(BugLifespanAttribute, lifespan.toDays());
 	//TODO: add lifetime, involved people, etc.
 }
 	

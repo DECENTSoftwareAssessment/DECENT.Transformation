@@ -131,6 +131,7 @@ post mgInitPost{
   }
   
     //TODO: adjust branching structure
+  Model.content.add("mg2decent3");
 }
 
 operation String replaceExtension() : String {

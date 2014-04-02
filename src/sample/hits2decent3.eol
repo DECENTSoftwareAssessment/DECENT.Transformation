@@ -2,6 +2,9 @@ import "../decent/common.eol";
 
 "Running hits2decent ".println();
 
+//TODO: could also be integrated back into famix2decent as inline checking 
+//to further filter out unchanged elements 
+
 var Model = DECENT!Model.allInstances().first();
 
 var attributes = new OrderedSet;
@@ -47,3 +50,5 @@ for (s in existingStatesInRevision) {
 	s.values.removeAll(s.values.select(v|v.ofAttribute = LinesPostHitsAttribute));
 	s.addIntegerCollectionValue(LinesPostHitsAttribute, linesPostHits);
 }
+
+Model.content.add("hits2decent3");
