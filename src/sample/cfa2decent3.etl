@@ -32,6 +32,13 @@ pre {
   attributes.add("CarriedTotalBugWeight");
   attributes.add("ClearedTotalBugWeight");
 
+  //TODO: these may need to be pre-calculated in mg2cfa
+  attributes.add("AverageFixedLifespan");
+  attributes.add("AverageFixedBugLifespan");
+  attributes.add("AverageCausedLifespan");
+  attributes.add("AverageCausedBugLifespan");
+
+
   for (a in attributes) {
       if (Model.attributePool.attributes.select(att|att.name = a).size() = 0) {
 		  var Attribute = new DECENT!Attribute;
@@ -63,6 +70,11 @@ pre {
   var CarriedTotalBugWeightAttribute = DECENT!Attribute.allInstances().select(a|a.name = "CarriedTotalBugWeight").first();
   var ClearedTotalBugWeightAttribute = DECENT!Attribute.allInstances().select(a|a.name = "ClearedTotalBugWeight").first();
 
+  var AverageFixedLifespanAttribute = DECENT!Attribute.allInstances().select(a|a.name = "AverageFixedLifespan").first();
+  var AverageFixedBugLifespanAttribute = DECENT!Attribute.allInstances().select(a|a.name = "AverageFixedBugLifespan").first();
+  var AverageCausedLifespanAttribute = DECENT!Attribute.allInstances().select(a|a.name = "AverageCausedLifespan").first();
+  var AverageCausedBugLifespanAttribute = DECENT!Attribute.allInstances().select(a|a.name = "AverageCausedBugLifespan").first();
+
   //TODO: need to accumulate a value? i.e. keep a balance of sorts? bug cause adds, bug fix removes
   // - or do we focus only on the states that introduce a bug and the activities that lead to them??
   //   in which case it would make sense to report the target state instead of the source state
@@ -74,18 +86,19 @@ pre {
   //DONE: need to investigate the failed assignments too, see the log for details
   // -> still an issue after improved assignments?
   //TODO: add ratios, e.g. averageBugWeight/averageWeight, also for totals, define interpretation
+  //TODO: add lifespans
 
   ("...transforming states...").println();
   for (s in CFA!ArtifactState.allInstances()) {
   	var fileName = s.file.file_name;
   	var filePath = s.action.current_file_path;
-  	var matchedStates = DECENT!State.allInstances().select(m|m.ID = s.ID and m.values.select(v|v.name = "FilePath").first().content = filePath);
+  	var matchedStates = DECENT!State.allInstances().select(m|m.artifact.isMGtype() and m.ID = s.ID and m.values.select(v|v.name = "FilePath").first().content = filePath);
   	var size = matchedStates.size();
 	//check if correct matches can be found 
   	if (size <> 1) {
   		("  "+size+" DECENT matches found for: "+fileName+" at "+s.ID).println();
   		("    Avaliable states at "+s.ID+" are:").println();
-  		for (x in DECENT!State.allInstances().select(x|x.ID = s.ID)) {
+  		for (x in DECENT!State.allInstances().select(x|x.artifact.isMGtype() and x.ID = s.ID)) {
   			("      "+x.artifact.name+" at "+x.ID+" ("+x.values.select(v|v.name = "FilePath").first().content+")").println();
   		}
   	} else {
@@ -118,13 +131,67 @@ pre {
   			clearedBugWeight = s.weightFactor * (s.fixes.size().asDouble()/s.fixes.size().asDouble());
   		}
    		state.addValue(ClearedTotalBugWeightAttribute, clearedBugWeight);
+   		
+   		//temporal
+   		//TODO: consider moving to mg2cfa 
+   		//TODO: consider filtering by weight
+   		//TODO: considering adding further temporals
+   		//TODO: describe intuitions (in particular for average caused lifespans):
+   		// - average caused lifespan indicates the lifespan of the changes / lines changed in the state
+   		// - average caused bug lifespan indicates the lifespan of the buggy changes / buggy lines changed in the state
+   		// - difference between the two above would indicate that buggy parts were removed faster 
+   		//   it would also create bias thus needs to be hidden for machine learning
+   		//   but could be used for statistics, filtering, comparison with issue lifetimes and other purposes
+   		// - not sure what to make out of the average fixed lifespan - i.e. the age of the changed lines
+   		//TODO: add for the global states as well for reference
+   		//TODO: also consider projecting on the project, agent, and artifact lifespans
+   		// - separate values can be calculated for agents
+   		var averageFixedLifespan = 0.asDouble();
+   		var averageFixedBugLifespan = 0.asDouble();
+   		var averageCausedLifespan = 0.asDouble();
+   		var averageCausedBugLifespan = 0.asDouble();
+
+		var time = s.action.revision.author_date.time;
+		var totalFixedTime = 0;
+		for (c in s.fixes) {
+			var causeTime = c.action.revision.author_date.time;
+			totalFixedTime = totalFixedTime + (time - causeTime);
+		}
+		if (s.fixes.size() > 0) {
+			averageFixedLifespan = (totalFixedTime / s.fixes.size().asDouble()).toDays();
+			averageFixedBugLifespan = s.weightFactor*(totalFixedTime / s.fixes.size().asDouble()).toDays();
+		}
+		
+		var totalCausedTime = 0;
+		for (f in s.causes) {
+			var fixTime = f.action.revision.author_date.time;
+			totalCausedTime = totalCausedTime + (fixTime - time);
+		}
+		if (s.causes.size() > 0) {
+			averageCausedLifespan = (totalCausedTime / s.causes.size().asDouble()).toDays();
+		}
+		
+		var totalCausedBugTime = 0;
+		var selectedCauses = s.causes.select(c|c.weightFactor > 0);
+		for (f in selectedCauses) {
+			var fixTime = f.action.revision.author_date.time;
+			totalCausedBugTime = totalCausedBugTime + (fixTime - time);
+		}
+		if (selectedCauses.size() > 0) {
+			averageCausedBugLifespan = (totalCausedBugTime / selectedCauses.size().asDouble()).toDays();
+		}
+		
+   		state.addValue(AverageFixedLifespanAttribute, averageFixedLifespan);
+   		state.addValue(AverageFixedBugLifespanAttribute, averageFixedBugLifespan);
+   		state.addValue(AverageCausedLifespanAttribute, averageCausedLifespan);
+   		state.addValue(AverageCausedBugLifespanAttribute, averageCausedBugLifespan);
   		
   	}
   	
   }
   ("...adding carried weights...").println();
   
-  for (a in DECENT!Artifact.allInstances()) {
+  for (a in DECENT!Artifact.allInstances().select(x|x.isMGtype())) {
   	var lastWeight = 0.asDouble();
   	for (s in a.states) {
   		var totalBugWeight = s.values.select(v|v.ofAttribute = TotalBugWeightAttribute).first().content;
@@ -140,4 +207,14 @@ pre {
 
 post {
   Model.content.add("cfa2decent3");
+}
+
+operation DECENT!Artifact isMGtype() : Boolean {
+	return self.type.name = "code" or 
+		self.type.name = "documentation" or 
+		self.type.name = "image" or 
+		self.type.name = "devel-doc" or 
+		self.type.name = "unknown" or 
+		self.type.name = "build" or 
+		self.type.name = "ui";
 }
