@@ -77,3 +77,28 @@ operation DECENT!Artifact setArtifactType(fileType : String) {
     self.type = artifactType;
 
 }
+
+operation Collection getVariance() : Real {
+	if (self.size = 1) {
+	    //variance for a set of 1 elememts shall be 0
+		return 0.asReal();
+	}
+	
+    var n = 0.asReal();
+    var sum1 = 0.asReal();
+    for (x in self){
+        n = n + 1;
+        sum1 = sum1 + x;
+    }
+    var mean = sum1/n;
+ 
+    var sum2 = 0.asReal();
+    var sum3 = 0.asReal();
+    for (x in self){
+        sum2 = sum2 + ((x - mean) * (x - mean));
+        sum3 = sum3 + (x - mean);
+    
+    }
+    var variance = (sum2 - (sum3*sum3)/n)/(n - 1);
+    return variance;
+}
