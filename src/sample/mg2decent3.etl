@@ -33,9 +33,16 @@ pre mgInitPre {
   attributes.add("LinesRemoved");
   attributes.add("IsBugFix");
   attributes.add("BugFixCount");
+  attributes.add("AggregateFragmentCount");
   attributes.add("FragmentCount");
   attributes.add("HunkCount");
   attributes.add("Message");
+  attributes.add("LinesPre");
+  attributes.add("LinesPost");
+  attributes.add("LinesMerged");
+  attributes.add("AbsoluteTime");
+  attributes.add("RelativeTime");
+  attributes.add("TimeDistance");
   
   for (a in attributes) {
 	  var Attribute = new DECENT!Attribute;
@@ -45,16 +52,22 @@ pre mgInitPre {
       }
   }
 
-
   var FileSizeAttribute = DECENT!Attribute.allInstances().select(a|a.name = "FileSize").first();
   var LOCAttribute = DECENT!Attribute.allInstances().select(a|a.name = "LOC").first();
   var LinesAddedAttribute = DECENT!Attribute.allInstances().select(a|a.name = "LinesAdded").first();
   var LinesRemovedAttribute = DECENT!Attribute.allInstances().select(a|a.name = "LinesRemoved").first();
   var IsBugFixAttribute = DECENT!Attribute.allInstances().select(a|a.name = "IsBugFix").first();
   var BugFixCountAttribute = DECENT!Attribute.allInstances().select(a|a.name = "BugFixCount").first();
+  var AggregateFragmentCountAttribute = DECENT!Attribute.allInstances().select(a|a.name = "AggregateFragmentCount").first();
   var FragmentCountAttribute = DECENT!Attribute.allInstances().select(a|a.name = "FragmentCount").first();
   var HunkCountAttribute = DECENT!Attribute.allInstances().select(a|a.name = "HunkCount").first();
   var MessageAttribute = DECENT!Attribute.allInstances().select(a|a.name = "Message").first();
+  var LinesPreAttribute = DECENT!Attribute.allInstances().select(a|a.name = "LinesPre").first();
+  var LinesPostAttribute = DECENT!Attribute.allInstances().select(a|a.name = "LinesPost").first();
+  var LinesMergedAttribute = DECENT!Attribute.allInstances().select(a|a.name = "LinesMerged").first();
+  var AbsoluteTimeAttribute = DECENT!Attribute.allInstances().select(a|a.name = "AbsoluteTime").first();
+  var RelativeTimeAttribute = DECENT!Attribute.allInstances().select(a|a.name = "RelativeTime").first();
+  var TimeDistanceAttribute = DECENT!Attribute.allInstances().select(a|a.name = "TimeDistance").first();
 
   var Project = new DECENT!Project;
   Project.name = MG!Model.allInstances().first().name;
@@ -179,6 +192,7 @@ rule Action2State
     ("Transforming action "+ a.revision.commit_id + " for " + a.file.file_name).println();
 	s.ID = a.revision.commit_id;
 	s.artifact = a.file.equivalent();
+	
 	s.addValue(FilePathAttribute, a.current_file_path);
 	s.addValue(BranchAttribute, a.branch.name);
 	
@@ -207,7 +221,78 @@ rule Action2State
 		s.addValue(LOCAttribute, a.revision.content.select(c|c.file = a.file).first().loc.asDouble());
 	}
 
-    s.addValue(FragmentCountAttribute, a.revision.lineBlames->select(l|l.file = a.file).size().asDouble());
+    s.addValue(AggregateFragmentCountAttribute, a.revision.lineBlames->select(l|l.file = a.file).size().asDouble());
+	
+	//consider outsourcing
+	var linesPre = new OrderedSet;
+	var linesPost = new OrderedSet;
+	var linesMerged = new OrderedSet;
+	var fragments = new OrderedSet;
+	var size = 0;
+	var preDifference = 0;
+	var postDifference = 0;
+	var fragmentCount = 0;
+	var tailChanged = false;
+    for (h in a.revision.hunks->select(h|h.file = a.file)) {
+		var oldStartLine = h.old_start_line_normalized;
+		var newStartLine = h.new_start_line_normalized;
+		var oldEndLine = h.old_end_line_normalized;
+		var newEndLine = h.new_end_line_normalized;
+		oldEndLine = oldEndLine + 1;
+		newEndLine = newEndLine + 1;
+		if (h.old_start_line = 0) {
+			oldEndLine = oldEndLine - 1;
+		}
+		if (h.new_start_line = 0) {
+			newEndLine = newEndLine - 1;
+		}
+		//can be further refined into addAll(Sequence{oldStartLine..(oldEndLine-1)})
+		//and addAll(Sequence{oldStartLine..(oldEndLine-1)}.collect(v|v + postDifference)
+		var i = 0;
+		while (i < (oldEndLine - oldStartLine)){
+			linesPre.add(oldStartLine + i);
+			linesMerged.add(oldStartLine + i + postDifference);
+			i = i + 1;
+		}
+		i = 0;
+		while (i < (newEndLine - newStartLine)){
+			linesPost.add(newStartLine + i);
+			if (h.old_end_line = 0 ) {
+				linesMerged.add(newStartLine + i + preDifference);
+			}
+			i = i + 1;
+		}
+
+		size=size+h.difference;
+		
+		if (h.difference > 0) {
+			postDifference = postDifference + h.difference.abs();
+		} 
+		if (h.difference < 0) {
+			preDifference = preDifference + h.difference.abs();
+		}
+    	
+		if (oldStartLine = 1 or newStartLine = 1) {
+		} else {
+			fragmentCount = fragmentCount + 1;
+			fragments.add(fragmentCount);
+		}
+		if (oldEndLine-1 = size or newEndLine-1 = size) {
+			tailChanged = true;
+		}
+		fragmentCount = fragmentCount + 1;
+		fragments.add(fragmentCount);
+    	
+    }
+	if (not tailChanged) {
+		fragmentCount = fragmentCount + 1;
+		fragments.add(fragmentCount);
+	}
+	s.addIntegerCollectionValue(LinesPreAttribute, linesPre.sortBy(l|l));
+	s.addIntegerCollectionValue(LinesPostAttribute, linesPost.sortBy(l|l));
+	s.addIntegerCollectionValue(LinesMergedAttribute, linesMerged.sortBy(l|l));
+	s.addValue(FragmentCountAttribute, fragments.size().asDouble());
+	//outsource end
 	
 	//TODO: handle activities and deltas (as a post step?)
     var activity = new DECENT!Activity;
