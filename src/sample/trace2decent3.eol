@@ -1,0 +1,36 @@
+
+("Running trace2decent").println();
+
+var attributes = new OrderedSet;
+attributes.add("BugComments");
+attributes.add("BugEvents");
+attributes.add("BugResolutions");
+  
+for (a in attributes) {
+    if (Model.attributePool.attributes.select(att|att.name = a).size() = 0) {
+		var Attribute = new DECENT!Attribute;
+		Attribute.name = a;
+	    Model.attributePool.attributes.add(Attribute);
+    }
+}
+
+var BugCommentsAttribute = DECENT!Attribute.allInstances().select(t|t.name = "BugComments").first();
+var BugEventsAttribute = DECENT!Attribute.allInstances().select(t|t.name = "BugEvents").first();
+var BugResolutionsAttribute = DECENT!Attribute.allInstances().select(t|t.name = "BugResolutions").first();
+
+for (s in DECENT!State.allInstances()) {
+	var commentCount = 0.asDouble();
+	var eventCount = 0.asDouble();
+	var resolutionsCount = 0.asDouble();
+	for (t in TRACE!Trace.allInstances().select(x|x.target.commit_id = s.ID)) {
+		commentCount = t.source.comments.size().asDouble();
+		eventCount = t.source.events.size().asDouble();
+		resolutionsCount = t.source.events.select(x|x.newValue = "FIXED").size().asDouble();
+		("  State "+s.ID+ " : "+resolutionsCount + " / " + eventCount + " / "+commentCount).println();
+	}
+	s.addValue(BugCommentsAttribute, commentCount);
+	s.addValue(BugEventsAttribute, eventCount);
+	s.addValue(BugResolutionsAttribute, resolutionsCount);
+	//TODO: add lifetime, involved people, etc.
+}
+	
