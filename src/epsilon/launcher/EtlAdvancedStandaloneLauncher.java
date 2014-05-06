@@ -77,6 +77,7 @@ public class EtlAdvancedStandaloneLauncher extends EpsilonStandaloneLauncher {
 
 		String[] commits = getSortedCommits(location);
 		
+		//TODO: add option "semi-safe" which stores intermediate decent model but does not reload it (optionally with a frequency - every 1/2/5/10 revisions)
 		//TODO: add option "safe" which stores each intermediate decent model (and/or reloads it)
 		for (String c : commits) {
 			if (	Integer.parseInt(c)>=(Integer.parseInt(lowerBound)) &&
@@ -90,14 +91,13 @@ public class EtlAdvancedStandaloneLauncher extends EpsilonStandaloneLauncher {
 				module.getContext().getModelRepository().addModel(famixModel);
 				preProcess();
 				module.execute();
-				//result = execute(module);
 				postProcess();
 				famixModel.dispose();
+				decentModel.store();
 				module.reset();
 			}
 		}
 		decentModel.dispose();
-		//module.getContext().getModelRepository().dispose();
 	}
 
 	private String[] getSortedCommits(String location) {
