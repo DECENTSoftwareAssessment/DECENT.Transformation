@@ -1,0 +1,64 @@
+
+
+var x = new Sequence;
+x.add(1);
+x.addAll(Sequence{0..0});
+
+for (i in x) {
+	("->"+i).println();
+}
+
+var a = new Set(String);
+var b = new Set(String);
+var c = new Set(String);
+var d = new Set;
+(a).println();
+a.addValue("S");
+a.addValue("P");
+b.addValue(1);
+b.addValue(2);
+c.addValue(1.0);
+c.addValue(2.0);
+d.addValue(a);
+d.addValue(b);
+d.addValue(c);
+(a).println();
+(b).println();
+(c).println();
+(d).println();
+
+
+operation Any addValue(p : String) {
+	(p + " (string)").println();
+	self.add(p);
+}
+
+operation Any addValue(p : Integer) {
+	(p + " (integer)").println();
+	self.add(p);
+}
+
+operation Any addValue(p : Real) {
+	(p + " (real)").println();
+	self.add(p);
+}
+
+operation Any addValue(p : Collection(String)) {
+	(p + " (collection(string))").println();
+	self.add(p);
+}
+
+operation Any addValue(p : Collection(Real)) {
+	(p + " (collection(real))").println();
+	self.add(p);
+}
+
+operation Any addValue(p : Collection(String)) {
+	(p + " (collection(string))").println();
+	self.add(p);
+}
+
+operation Any addValue(p : Collection(Integer)) {
+	(p + " (collection(integer))").println();
+	self.add(p);
+}
