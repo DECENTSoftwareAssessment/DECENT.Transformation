@@ -11,33 +11,33 @@ pre {
   ("Initializing CFA definitions").println();
   //This should only run once!!!
   
-  var attributes = new OrderedSet;
+  var attributes = new Map;
   
-  attributes.add(new OrderedSet("BugFix","Local (artifact) label as bug fix from revision message"));
-  attributes.add(new OrderedSet("WeightFactor","Local (artifact) weight factor from CFA analysis"));
-  attributes.add(new OrderedSet("TotalWeight","Total local (artifact) cause weight from CFA analysis (total weight for caused changes)"));
-  attributes.add(new OrderedSet("AverageWeight","Average local (artifact) cause weight from CFA analysis (average weight for caused changes)"));
-  attributes.add(new OrderedSet("TotalBugWeight","Total local (artifact) bug cause weight from CFA analysis (total weight for caused fixes)"));
-  attributes.add(new OrderedSet("AverageBugWeight","Average local (artifact) bug cause weight from CFA analysis (average weight for caused fixes)"));
-  attributes.add(new OrderedSet("CausesCount","Number of caused changes in future states of artifact"));
-  attributes.add(new OrderedSet("FixesCount","Number of causing past states of artifact"));
-  attributes.add(new OrderedSet("GlobalBugFix","Global label as bug fix from revision message"));
-  attributes.add(new OrderedSet("GlobalWeightFactor","Global (revision) weight factor from CFA analysis"));
-  attributes.add(new OrderedSet("GlobalTotalWeight","Total global (revision) cause weight from CFA analysis (total weight for caused changes)"));
-  attributes.add(new OrderedSet("GlobalAverageWeight","Average global (revision) cause weight from CFA analysis (average weight for caused changes)"));
-  attributes.add(new OrderedSet("GlobalTotalBugWeight","Total global (revision) bug cause weight from CFA analysis (total weight for caused fixes)"));
-  attributes.add(new OrderedSet("GlobalAverageBugWeight","Average global (revision) bug cause weight from CFA analysis (average weight for caused fixes)"));
-  attributes.add(new OrderedSet("GlobalCausesCount","Number of caused changes in future states of global state (revision)"));
-  attributes.add(new OrderedSet("GlobalFixesCount","Number of causing past states of global state (revision)"));
+  attributes.put("BugFix","Local (artifact) label as bug fix from revision message");
+  attributes.put("WeightFactor","Local (artifact) weight factor from CFA analysis");
+  attributes.put("TotalWeight","Total local (artifact) cause weight from CFA analysis (total weight for caused changes)");
+  attributes.put("AverageWeight","Average local (artifact) cause weight from CFA analysis (average weight for caused changes)");
+  attributes.put("TotalBugWeight","Total local (artifact) bug cause weight from CFA analysis (total weight for caused fixes)");
+  attributes.put("AverageBugWeight","Average local (artifact) bug cause weight from CFA analysis (average weight for caused fixes)");
+  attributes.put("CausesCount","Number of caused changes in future states of artifact");
+  attributes.put("FixesCount","Number of causing past states of artifact");
+  attributes.put("GlobalBugFix","Global label as bug fix from revision message");
+  attributes.put("GlobalWeightFactor","Global (revision) weight factor from CFA analysis");
+  attributes.put("GlobalTotalWeight","Total global (revision) cause weight from CFA analysis (total weight for caused changes)");
+  attributes.put("GlobalAverageWeight","Average global (revision) cause weight from CFA analysis (average weight for caused changes)");
+  attributes.put("GlobalTotalBugWeight","Total global (revision) bug cause weight from CFA analysis (total weight for caused fixes)");
+  attributes.put("GlobalAverageBugWeight","Average global (revision) bug cause weight from CFA analysis (average weight for caused fixes)");
+  attributes.put("GlobalCausesCount","Number of caused changes in future states of global state (revision)");
+  attributes.put("GlobalFixesCount","Number of causing past states of global state (revision)");
 
-  attributes.add(new OrderedSet("CarriedTotalBugWeight","Accumulated total local (artifact) bug cause weight from past states"));
-  attributes.add(new OrderedSet("ClearedTotalBugWeight","Cleared total local (artifact) bug cause weight"));
+  attributes.put("CarriedTotalBugWeight","Accumulated total local (artifact) bug cause weight from past states");
+  attributes.put("ClearedTotalBugWeight","Cleared total local (artifact) bug cause weight");
 
   //TODO: these may need to be pre-calculated in mg2cfa
-  attributes.add(new OrderedSet("AverageFixedLifespan",""));
-  attributes.add(new OrderedSet("AverageFixedBugLifespan",""));
-  attributes.add(new OrderedSet("AverageCausedLifespan",""));
-  attributes.add(new OrderedSet("AverageCausedBugLifespan",""));
+  attributes.put("AverageFixedLifespan","");
+  attributes.put("AverageFixedBugLifespan","");
+  attributes.put("AverageCausedLifespan","");
+  attributes.put("AverageCausedBugLifespan","");
 
   Model.addAttributes(attributes);
   

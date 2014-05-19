@@ -3,13 +3,12 @@ import "../decent/common.eol";
 ("Running trace2decent").println();
 var Model = DECENT!Model.allInstances().first();
 
-var attributes = new OrderedSet;
-attributes.add(new OrderedSet("BugCount","Number of linked issue reports"));
-attributes.add(new OrderedSet("BugComments","Number of comments in linked issue reports"));
-attributes.add(new OrderedSet("BugEvents","Number of events related to linked issue reports"));
-attributes.add(new OrderedSet("BugResolutions","Number of resolutions of linked issue reports"));
-attributes.add(new OrderedSet("BugLifespan","Lifespan of linked issue reports"));
-
+var attributes = new Map;
+attributes.put("BugCount","Number of linked issue reports");
+attributes.put("BugComments","Number of comments in linked issue reports");
+attributes.put("BugEvents","Number of events related to linked issue reports");
+attributes.put("BugResolutions","Number of resolutions of linked issue reports");
+attributes.put("BugLifespan","Lifespan of linked issue )ports");
 Model.addAttributes(attributes);
 
 var BugCountAttribute = DECENT!Attribute.allInstances().select(t|t.name = "BugCount").first();
@@ -18,9 +17,10 @@ var BugEventsAttribute = DECENT!Attribute.allInstances().select(t|t.name = "BugE
 var BugResolutionsAttribute = DECENT!Attribute.allInstances().select(t|t.name = "BugResolutions").first();
 var BugLifespanAttribute = DECENT!Attribute.allInstances().select(t|t.name = "BugLifespan").first();
 
+var artifactTypes = new OrderedSet("build","code","documentation","ui","image","unknown","devel-doc");
 
 //TODO: filter for files only?
-for (s in DECENT!State.allInstances()) {
+for (s in DECENT!State.allInstances().select(s|artifactTypes.includes(s.artifact.type.name))) {
 	for (a in attributes) {
 		s.values.removeAll(s.values.select(v|v.ofAttribute.name = a));
 	}
@@ -47,4 +47,6 @@ for (s in DECENT!State.allInstances()) {
 	s.addValue(BugLifespanAttribute, lifespan.toDays());
 	//TODO: add lifetime, involved people, etc.
 }
-	
+
+Model.content.add("trace2decent3");
+
