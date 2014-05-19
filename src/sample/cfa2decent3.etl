@@ -12,42 +12,34 @@ pre {
   //This should only run once!!!
   
   var attributes = new OrderedSet;
-  attributes.add("BugFix");
-  attributes.add("WeightFactor");
-  attributes.add("TotalWeight");
-  attributes.add("AverageWeight");
-  attributes.add("TotalBugWeight");
-  attributes.add("AverageBugWeight");
-  attributes.add("CausesCount");
-  attributes.add("FixesCount");
-  attributes.add("GlobalBugFix");
-  attributes.add("GlobalWeightFactor");
-  attributes.add("GlobalTotalWeight");
-  attributes.add("GlobalAverageWeight");
-  attributes.add("GlobalTotalBugWeight");
-  attributes.add("GlobalAverageBugWeight");
-  attributes.add("GlobalCausesCount");
-  attributes.add("GlobalFixesCount");
+  
+  attributes.add(new OrderedSet("BugFix","Local (artifact) label as bug fix from revision message"));
+  attributes.add(new OrderedSet("WeightFactor","Local (artifact) weight factor from CFA analysis"));
+  attributes.add(new OrderedSet("TotalWeight","Total local (artifact) cause weight from CFA analysis (total weight for caused changes)"));
+  attributes.add(new OrderedSet("AverageWeight","Average local (artifact) cause weight from CFA analysis (average weight for caused changes)"));
+  attributes.add(new OrderedSet("TotalBugWeight","Total local (artifact) bug cause weight from CFA analysis (total weight for caused fixes)"));
+  attributes.add(new OrderedSet("AverageBugWeight","Average local (artifact) bug cause weight from CFA analysis (average weight for caused fixes)"));
+  attributes.add(new OrderedSet("CausesCount","Number of caused changes in future states of artifact"));
+  attributes.add(new OrderedSet("FixesCount","Number of causing past states of artifact"));
+  attributes.add(new OrderedSet("GlobalBugFix","Global label as bug fix from revision message"));
+  attributes.add(new OrderedSet("GlobalWeightFactor","Global (revision) weight factor from CFA analysis"));
+  attributes.add(new OrderedSet("GlobalTotalWeight","Total global (revision) cause weight from CFA analysis (total weight for caused changes)"));
+  attributes.add(new OrderedSet("GlobalAverageWeight","Average global (revision) cause weight from CFA analysis (average weight for caused changes)"));
+  attributes.add(new OrderedSet("GlobalTotalBugWeight","Total global (revision) bug cause weight from CFA analysis (total weight for caused fixes)"));
+  attributes.add(new OrderedSet("GlobalAverageBugWeight","Average global (revision) bug cause weight from CFA analysis (average weight for caused fixes)"));
+  attributes.add(new OrderedSet("GlobalCausesCount","Number of caused changes in future states of global state (revision)"));
+  attributes.add(new OrderedSet("GlobalFixesCount","Number of causing past states of global state (revision)"));
 
-  attributes.add("CarriedTotalBugWeight");
-  attributes.add("ClearedTotalBugWeight");
+  attributes.add(new OrderedSet("CarriedTotalBugWeight","Accumulated total local (artifact) bug cause weight from past states"));
+  attributes.add(new OrderedSet("ClearedTotalBugWeight","Cleared total local (artifact) bug cause weight"));
 
   //TODO: these may need to be pre-calculated in mg2cfa
-  attributes.add("AverageFixedLifespan");
-  attributes.add("AverageFixedBugLifespan");
-  attributes.add("AverageCausedLifespan");
-  attributes.add("AverageCausedBugLifespan");
+  attributes.add(new OrderedSet("AverageFixedLifespan",""));
+  attributes.add(new OrderedSet("AverageFixedBugLifespan",""));
+  attributes.add(new OrderedSet("AverageCausedLifespan",""));
+  attributes.add(new OrderedSet("AverageCausedBugLifespan",""));
 
-
-  for (a in attributes) {
-      if (Model.attributePool.attributes.select(att|att.name = a).size() = 0) {
-		  var Attribute = new DECENT!Attribute;
-		  Attribute.name = a;
-	      Model.attributePool.attributes.add(Attribute);
-      }
-  }
-
-
+  Model.addAttributes(attributes);
   
   var BugFixAttribute = DECENT!Attribute.allInstances().select(a|a.name = "BugFix").first();
   var WeightFactorAttribute = DECENT!Attribute.allInstances().select(a|a.name = "WeightFactor").first();
@@ -142,6 +134,8 @@ pre {
    		// - difference between the two above would indicate that buggy parts were removed faster 
    		//   it would also create bias thus needs to be hidden for machine learning
    		//   but could be used for statistics, filtering, comparison with issue lifetimes and other purposes
+   		//   could also be used as target for prediction (whether a piece looks like it may soon be changed, 
+   		//   or perhaps also contain a bug that will survive a given number of days)
    		// - not sure what to make out of the average fixed lifespan - i.e. the age of the changed lines
    		//TODO: add for the global states as well for reference
    		//TODO: also consider projecting on the project, agent, and artifact lifespans

@@ -27,33 +27,27 @@ pre mgInitPre {
   Model.attributePool.attributes.add(BranchAttribute);
 
   var attributes = new OrderedSet;
-  attributes.add("FileSize");
-  attributes.add("LOC");
-  attributes.add("LinesAdded");
-  attributes.add("LinesRemoved");
-  attributes.add("IsBugFix");
-  attributes.add("BugFixCount");
-  attributes.add("AggregateFragmentCount");
-  attributes.add("FragmentCount");
-  attributes.add("HunkCount");
-  attributes.add("Message");
-  attributes.add("LinesPre");
-  attributes.add("LinesPost");
-  attributes.add("LinesMerged");
-  attributes.add("VarianceLinesPre");
-  attributes.add("VarianceLinesPost");
-  attributes.add("VarianceLinesMerged");
-  attributes.add("AbsoluteTime");
-  attributes.add("RelativeTime");
-  attributes.add("TimeDistance");
+  attributes.add(new OrderedSet("FileSize","File size in bytes"));
+  attributes.add(new OrderedSet("LOC","Lines of code"));
+  attributes.add(new OrderedSet("LinesAdded","Lines added"));
+  attributes.add(new OrderedSet("LinesRemoved","Lines removed"));
+  attributes.add(new OrderedSet("IsBugFix","Revision is labeled as bug fix"));
+  attributes.add(new OrderedSet("BugFixCount","Number of bug fixes in past revisions"));
+  attributes.add(new OrderedSet("AggregateFragmentCount",""));
+  attributes.add(new OrderedSet("FragmentCount","Number of fragments (changed and unchanged)?"));
+  attributes.add(new OrderedSet("HunkCount","Number of fragments (changed)?"));
+  attributes.add(new OrderedSet("Message","Commit message"));
+  attributes.add(new OrderedSet("LinesPre","Affected lines from the previous state"));
+  attributes.add(new OrderedSet("LinesPost","Affected lines in the resulting state"));
+  attributes.add(new OrderedSet("LinesMerged","Affected lines from both the previous and the resulting state (merged)"));
+  attributes.add(new OrderedSet("VarianceLinesPre","Variance of the affected lines from the previous state"));
+  attributes.add(new OrderedSet("VarianceLinesPost","Variance of the affected lines in the resulting state"));
+  attributes.add(new OrderedSet("VarianceLinesMerged","Variance of the affected lines from both the previous and the resulting state"));
+  attributes.add(new OrderedSet("AbsoluteTime","Distance to the beginning of time?"));
+  attributes.add(new OrderedSet("RelativeTime","Distance to the first state?"));
+  attributes.add(new OrderedSet("TimeDistance","Distance to last state?"));
   
-  for (a in attributes) {
-	  var Attribute = new DECENT!Attribute;
-	  Attribute.name = a;
-      if (Model.attributePool.attributes.select(a|a.name = Attribute.name).size() = 0) {
-	    Model.attributePool.attributes.add(Attribute);
-      }
-  }
+  Model.addAttributes(attributes);
 
   var FileSizeAttribute = DECENT!Attribute.allInstances().select(a|a.name = "FileSize").first();
   var LOCAttribute = DECENT!Attribute.allInstances().select(a|a.name = "LOC").first();

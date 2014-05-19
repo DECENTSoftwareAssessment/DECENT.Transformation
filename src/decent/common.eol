@@ -70,6 +70,17 @@ operation Any toDays() : Real {
 	return self.asDouble() / (3600*1000*24);
 }
 
+operation DECENT!Model addAttributes( attributes : OrderedSet) : Real {
+  for (a in attributes) {
+      if (Model.attributePool.attributes.select(att|att.name = a.first()).size() = 0) {
+		  var Attribute = new DECENT!Attribute;
+		  Attribute.name = a.first();
+		  Attribute.description = a.last();
+	      Model.attributePool.attributes.add(Attribute);
+      }
+  }
+}
+
 operation DECENT!Artifact setArtifactType(fileType : String) {
     var artifactType = DECENT!ArtifactType.allInstances().
         select(at|at.name = fileType).first;

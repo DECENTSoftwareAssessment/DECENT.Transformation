@@ -15,17 +15,11 @@ pre {
   var FilePathAttribute = DECENT!Attribute.allInstances().select(t|t.name = "FilePath").first();
 
   var attributes = new OrderedSet;
-  attributes.add("LinesPostHits");
-  attributes.add("StartLine");
-  attributes.add("EndLine");
+  attributes.add(new OrderedSet("LinesPostHits", "Changed lines within artifact"));
+  attributes.add(new OrderedSet("StartLine", "Artifact start line"));
+  attributes.add(new OrderedSet("EndLine", "Artifact end line"));
   
-  for (a in attributes) {
-      if (Model.attributePool.attributes.select(att|att.name = a).size() = 0) {
-		  var Attribute = new DECENT!Attribute;
-		  Attribute.name = a;
-	      Model.attributePool.attributes.add(Attribute);
-      }
-  }
+  Model.addAttributes(attributes);
 
   var LinesPostHitsAttribute = DECENT!Attribute.allInstances().select(a|a.name = "LinesPostHits").first();
   var StartLineAttribute = DECENT!Attribute.allInstances().select(a|a.name = "StartLine").first();
@@ -94,20 +88,22 @@ post {
 		  			("      Child of "+next.artifact.name + " - " + child.name).println();
 		  			//get newly added state of child
 		  			for (current in child.states.select(s|s.ID = revisionId).first()) {
-		  				("        State of "+current.artifact.name + " at " + current.ID).println();
-			  			//for all states of the child of the affected artifact corresponding to the next state of that artifact
-			  			for (s in child.states.select(s|s.ID = next.ID)) {
-			  				("          Next state of "+s.artifact.name + " at " + s.ID).println();
-			  				s.previous.add(current);
-			  				//update broken activities
-						    for (a in s.fromActivity.select(a|a.state = null)) {
-						    	("            Fixing activity on "+current.ID +" to "+s.ID + " of "+s.artifact.name).println();
-						    	a.state = current;
-						    	for (d in a.deltas) {
-						    		d.sourceValue = current.values.select(v|v.ofAttribute = d.onAttribute).first();
-						    	}
-						    }
-			  			}
+		  				if (current.isDefined()) {
+			  				("        State of "+current.artifact.name + " at " + current.ID).println();
+				  			//for all states of the child of the affected artifact corresponding to the next state of that artifact
+				  			for (s in child.states.select(s|s.ID = next.ID)) {
+				  				("          Next state of "+s.artifact.name + " at " + s.ID).println();
+				  				s.previous.add(current);
+				  				//update broken activities
+							    for (a in s.fromActivity.select(a|a.state = null)) {
+							    	("            Fixing activity on "+current.ID +" to "+s.ID + " of "+s.artifact.name).println();
+							    	a.state = current;
+							    	for (d in a.deltas) {
+							    		d.sourceValue = current.values.select(v|v.ofAttribute = d.onAttribute).first();
+							    	}
+							    }
+				  			}
+		  				}
 		  			}
 		  			
 		  		}
