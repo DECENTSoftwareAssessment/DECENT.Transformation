@@ -1,0 +1,55 @@
+
+//At least some of the problems may be attributed to git-svn bridge and import and 
+//multiple initial commits... (with possibly parallel master branches)
+
+var lowerBound = 0;
+var upperBound = 2310;
+upperBound = 400;
+
+var files = MG!File.allInstances().select(f|f.file_name = "tabwidget.cpp");
+
+for (f in files) {
+	var actions = MG!Action.allInstances().select(a|a.file = f and a.revision.commit_id <= upperBound and a.revision.commit_id >= lowerBound );
+	("  File "+f.file_name + " : " + actions.size() + " actions").println();
+	for (a in actions) {
+		("    " +f.file_name+ " " +a.type+ " "+ a.revision.commit_id + " ("+a.current_file_path+") on " +a.branch.name).println();
+
+		if (a.type = "A") {
+			("      -> "+a.revision).println();
+			for (ax in a.revision.actions) {
+				("        ->  "+ax.file.file_name+ " " +ax.type+ " "+ ax.revision.commit_id + " ("+ax.current_file_path+") on " +ax.branch.name).println();
+			}
+			
+		}
+	    var hunks = a.revision.hunks.select(h|h.file = a.file);
+	    for (h in hunks) {
+	        for (hb in h.hunkBlame) {
+	            if (hb.lastRevision.commit_id >= lowerBound) {
+	            	//NOTE: using the file name rather than the file seems to fix resolution issues
+		            var cause = hb.lastRevision.actions.select(ax|ax.file.file_name = a.file.file_name).first();
+	
+					if (cause.isUndefined()) {
+		            	//NOTE: file name may still be a problem with renaming, try backup approach with file itself
+						("      File name matching for File "+a.file.file_name+" from Revision "+h.revision.commit_id+" to Revision "+hb.lastRevision.commit_id+" failed, attempting file object matching...").println();
+						for (ax in hb.lastRevision.actions) {
+							("        ->  "+ax.file.file_name+ " " +ax.type+ " "+ ax.revision.commit_id + " ("+ax.current_file_path+") on " +ax.branch.name).println();
+						
+						}
+		            	cause = hb.lastRevision.actions.select(ax|ax.file = a.file).first();
+					}
+	
+		            if (cause.isDefined()) {
+					
+					} else {
+						("        Cause link for File "+a.file.file_name+" from Revision "+h.revision.commit_id+" to Revision "+hb.lastRevision.commit_id+" cannot be resolved.. Investigate!").println();
+						
+					}
+				}
+			}
+		}
+					
+	}
+
+}
+
+
