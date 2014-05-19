@@ -21,7 +21,7 @@ var artifactTypes = new OrderedSet("build","code","documentation","ui","image","
 
 //TODO: filter for files only?
 for (s in DECENT!State.allInstances().select(s|artifactTypes.includes(s.artifact.type.name))) {
-	for (a in attributes) {
+	for (a in attributes.keySet()) {
 		s.values.removeAll(s.values.select(v|v.ofAttribute.name = a));
 	}
 
