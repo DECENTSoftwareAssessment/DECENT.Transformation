@@ -4,20 +4,13 @@ import "../decent/common.eol";
 var Model = DECENT!Model.allInstances().first();
 
 var attributes = new OrderedSet;
-attributes.add("BugCount");
-attributes.add("BugComments");
-attributes.add("BugEvents");
-attributes.add("BugResolutions");
-attributes.add("BugLifespan");
+attributes.add(new OrderedSet("BugCount","Number of linked issue reports"));
+attributes.add(new OrderedSet("BugComments","Number of comments in linked issue reports"));
+attributes.add(new OrderedSet("BugEvents","Number of events related to linked issue reports"));
+attributes.add(new OrderedSet("BugResolutions","Number of resolutions of linked issue reports"));
+attributes.add(new OrderedSet("BugLifespan","Lifespan of linked issue reports"));
 
-  
-for (a in attributes) {
-    if (Model.attributePool.attributes.select(att|att.name = a).size() = 0) {
-		var Attribute = new DECENT!Attribute;
-		Attribute.name = a;
-	    Model.attributePool.attributes.add(Attribute);
-    }
-}
+Model.addAttributes(attributes);
 
 var BugCountAttribute = DECENT!Attribute.allInstances().select(t|t.name = "BugCount").first();
 var BugCommentsAttribute = DECENT!Attribute.allInstances().select(t|t.name = "BugComments").first();
