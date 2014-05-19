@@ -75,6 +75,7 @@ pre {
   //   may be unclear 
   //DONE: also investigate the reasons behind those off-the-charts values in the preliminary report
   // -> asumed to be number conversion issues with numbers
+  // -> TODO: add normalizationn
   //DONE: need to investigate the failed assignments too, see the log for details
   // -> still an issue after improved assignments?
   //TODO: add ratios, e.g. averageBugWeight/averageWeight, also for totals, define interpretation
@@ -96,7 +97,7 @@ pre {
   	} else {
   		var state = matchedStates.first();
   		
-  		for (a in attributes) {
+  		for (a in attributes.keySet()) {
 			state.values.removeAll(state.values.select(v|v.ofAttribute.name = a));
 		}
   		
