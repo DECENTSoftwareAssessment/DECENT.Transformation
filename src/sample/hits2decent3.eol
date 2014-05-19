@@ -7,18 +7,10 @@ import "../decent/common.eol";
 
 var Model = DECENT!Model.allInstances().first();
 
-var attributes = new OrderedSet;
-attributes.add("LinesPostHits");
-attributes.add("StartLine");
-attributes.add("EndLine");
-  
-for (a in attributes) {
-    if (Model.attributePool.attributes.select(att|att.name = a).size() = 0) {
-		var Attribute = new DECENT!Attribute;
-		Attribute.name = a;
-	    Model.attributePool.attributes.add(Attribute);
-    }
-}
+var attributes = new Map;
+attributes.put("LinesPostHits","Changed lines within artifact");
+
+Model.addAttributes(attributes);  
 
 var ClassArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "Class").first();
 var MethodArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "Method").first();

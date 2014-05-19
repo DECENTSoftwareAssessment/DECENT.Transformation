@@ -14,10 +14,10 @@ pre {
   var FileAnchorAttribute = DECENT!Attribute.allInstances().select(t|t.name = "FileAnchor").first();
   var FilePathAttribute = DECENT!Attribute.allInstances().select(t|t.name = "FilePath").first();
 
+  //TODO: this is effectively moved to hits2decent
   var attributes = new Map;
-  attributes.put("LinesPostHits", "Changed lines within artifact");
   attributes.put("StartLine", "Artifact start line");
-  attributes.Put("EndLine", "Artifact end line");
+  attributes.put("EndLine", "Artifact end line");
   
   Model.addAttributes(attributes);
 
