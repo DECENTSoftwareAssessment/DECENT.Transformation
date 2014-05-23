@@ -20,10 +20,8 @@ import "../decent/common.eol";
   attributes.put("Distance","Distance to previous state");
   
   attributes.put("Frequency","Frequency of changes (=Revisions-1/Age)");
-  attributes.put("FrequencyLowerBound","Frequency lower bound (=Revisions-1/Lifespan)");
-  attributes.put("FrequencyUpperBound","Frequency upper bound (=Revisions-1/1)");
   attributes.put("FrequencyAverage","Frequency average (=All Revisions-1/Lifespan)");
-  attributes.put("FrequencyNormalized","Normalized ([min..max] -> [0..1]) frequency of changes (=Revisions-1/Age)");
+  attributes.put("FrequencyDistanceToAverage","Frequency distance to average (=Frequency-FrequencyAverage)");
 
   Model.addAttributes(attributes);
 
@@ -41,10 +39,8 @@ import "../decent/common.eol";
   var DistanceAttribute = DECENT!Attribute.allInstances().select(a|a.name = "Distance").first();
   
   var FrequencyAttribute = DECENT!Attribute.allInstances().select(a|a.name = "Frequency").first();
-  var FrequencyLowerBoundAttribute = DECENT!Attribute.allInstances().select(a|a.name = "FrequencyLowerBound").first();
-  var FrequencyUpperBoundAttribute = DECENT!Attribute.allInstances().select(a|a.name = "FrequencyUpperBound").first();
   var FrequencyAverageAttribute = DECENT!Attribute.allInstances().select(a|a.name = "FrequencyAverage").first();
-  var FrequencyNormalizedAttribute = DECENT!Attribute.allInstances().select(a|a.name = "FrequencyNormalized").first();
+  var FrequencyDistanceToAverageAttribute = DECENT!Attribute.allInstances().select(a|a.name = "FrequencyDistanceToAverage").first();
 
 
   //TODO: other temporal dimensions such as cause-fix time, agent time, bug lifetime vs fragment lifetime, etc.
@@ -70,12 +66,10 @@ import "../decent/common.eol";
   	var resolution = 24*60*60*1000;//days*hours*minutes*seconds
   	//resolution = 60*1000;//minutes*seconds
   	
-  	("Factor: "+ ((sortedStates.size().asDouble()-1)/(lifespan.asDouble()/resolution)).asDouble()).println();
   	for (s in sortedStates) {
 	 	for (a in attributes.keySet()) {
 			s.values.removeAll(s.values.select(v|v.ofAttribute.name = a));
 		}
-  		//TODO: add deltas
   		//TODO: technically lifespan does not need to be included
   		//TODO: difference can also be inferred from age delta
   		//TODO: the interesting part would be the deltas in the 
@@ -93,21 +87,11 @@ import "../decent/common.eol";
 
 		var frequency = ((revisions.asDouble()-1)/age).asDouble();
   		s.addValue(FrequencyAttribute, frequency);
-
-		var frequencyLowerBound = ((revisions.asDouble()-1)/(lifespan.asDouble()/resolution)).asDouble();
-  		s.addValue(FrequencyLowerBoundAttribute, frequencyLowerBound);
-
-  		var frequencyUpperBound = ((revisions.asDouble()-1)/1).asDouble();
-  		s.addValue(FrequencyUpperBoundAttribute, frequencyUpperBound);
   		
   		var frequencyAverage = ((sortedStates.size().asDouble()-1)/(lifespan.asDouble()/resolution)).asDouble();
   		s.addValue(FrequencyAverageAttribute, frequencyAverage);
 
-		var frequencyNormalized = frequency.normalize(frequencyLowerBound, frequencyUpperBound);
-  		s.addValue(FrequencyNormalizedAttribute, frequencyNormalized);
-		//("**Age: "+age + " (+"+distance+") => "+(revisions.asDouble()-1)+"/"+age).println();
-		//("  Freq: "+frequency+"\n    Range: "+frequencyLowerBound +"-"+frequencyUpperBound+"\n      Normalized (0..1): "+frequencyNormalized).println();
-		(age + "\t"+(revisions-1)+"\t"+frequency+"\t"+frequencyLowerBound+"\t"+frequencyUpperBound+"\t"+frequencyNormalized+"\t"+frequencyAverage).println();
+  		s.addValue(FrequencyDistanceToAverageAttribute, frequency-frequencyAverage);
   		
   		absoluteTime.add(s.fromActivity.first().date.time.asDouble()/resolution);
   		s.addDoubleCollectionValue(AbsoluteTimeAttribute, absoluteTime);
@@ -126,7 +110,8 @@ import "../decent/common.eol";
 		activity.addDelta(AgeAttribute); //effectively =difference
 		activity.addDelta(DistanceAttribute); //indicate difference to last distance +slower/-faster
 		activity.addDelta(FrequencyAttribute); 
-
+		activity.addDelta(FrequencyDistanceToAverageAttribute); 
+		
   		
   		previousStateTime = s.fromActivity.first().date.time;
   	}
@@ -134,7 +119,3 @@ import "../decent/common.eol";
 
   Model.content.add("temporal2decent3");
   
-  
-operation Real normalize(min : Real, max : Real) : Real {
-	return ((self - min) / (max - min))*(1-0) + 0;
-}
