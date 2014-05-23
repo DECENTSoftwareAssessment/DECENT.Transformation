@@ -70,15 +70,15 @@ operation Any toDays() : Real {
 	return self.asDouble() / (3600*1000*24);
 }
 
-operation DECENT!Model addAttributes( attributes : OrderedSet) : Real {
-  for (a in attributes) {
-      if (Model.attributePool.attributes.select(att|att.name = a.first()).size() = 0) {
-		  var Attribute = new DECENT!Attribute;
-		  Attribute.name = a.first();
-		  Attribute.description = a.last();
-	      Model.attributePool.attributes.add(Attribute);
-      }
-  }
+operation DECENT!Model addAttributes(attributes : Map) : Real {
+	for (a in attributes.keySet()) {
+    	if (Model.attributePool.attributes.select(att|att.name = a).size() = 0) {
+		  	var Attribute = new DECENT!Attribute;
+		  	Attribute.name = a;
+		  	Attribute.description = attributes.get(a);
+	      	Model.attributePool.attributes.add(Attribute);
+      	}
+  	}
 }
 
 operation DECENT!Artifact setArtifactType(fileType : String) {
@@ -92,6 +92,10 @@ operation DECENT!Artifact setArtifactType(fileType : String) {
     }
     self.type = artifactType;
 
+}
+
+operation Real normalize(min : Real, max : Real) : Real {
+	return ((self - min) / (max - min))*(1-0) + 0;
 }
 
 operation Collection getVariance() : Real {
