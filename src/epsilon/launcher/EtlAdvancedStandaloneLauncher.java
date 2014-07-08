@@ -81,7 +81,8 @@ public class EtlAdvancedStandaloneLauncher extends EpsilonStandaloneLauncher {
 		//TODO: add option "semi-safe" which stores intermediate decent model but does not reload it (optionally with a frequency - every 1/2/5/10 revisions)
 		//TODO: add option "safe" which stores each intermediate decent model (and/or reloads it)
 		for (String c : commits) {
-			if (	Integer.parseInt(c)>=(Integer.parseInt(lowerBound)) &&
+			if (
+					Integer.parseInt(c)>=(Integer.parseInt(lowerBound)) &&
 					Integer.parseInt(c)<=(Integer.parseInt(upperBound))
 			) {
 				System.out.println("Processing: "+c);
@@ -147,7 +148,7 @@ public class EtlAdvancedStandaloneLauncher extends EpsilonStandaloneLauncher {
 	@Override
 	public String getSource() throws Exception {
 		//return "src/sample/famix2decent.etl";
-		return "epsilon/trasform/famix2decent3.etl";
+		return "epsilon/transform/famix2decent3.etl";
 	}
 
 	@Override
