@@ -22,6 +22,7 @@ import org.eclipse.emf.common.util.URI;
 import org.eclipse.emf.ecore.EPackage;
 import org.eclipse.epsilon.common.parse.problem.ParseProblem;
 import org.eclipse.epsilon.emc.emf.EmfUtil;
+import org.eclipse.epsilon.emc.emf.InMemoryEmfModel;
 import org.eclipse.epsilon.eol.IEolExecutableModule;
 import org.eclipse.epsilon.eol.exceptions.EolRuntimeException;
 import org.eclipse.epsilon.eol.exceptions.models.EolModelLoadingException;
@@ -122,6 +123,8 @@ public class EtlAdvancedStandaloneLauncher extends EpsilonStandaloneLauncher {
 	public IModel getDecentModel(String location) throws Exception {
 		String decentResourceLocation = location+"/model.decent";
 		IModel model = createEmfModel("DECENT", decentResourceLocation, "../DECENT.Meta/model/DECENTv3.ecore", true, true);
+		//In memory example -> can be used to work with DB? or even EMF-Fragments
+		//new InMemoryEmfModel("DECENT", resource, "../DECENT.Meta/model/DECENTv3.ecore")
 		return model;
 	}
 
@@ -144,7 +147,7 @@ public class EtlAdvancedStandaloneLauncher extends EpsilonStandaloneLauncher {
 	@Override
 	public String getSource() throws Exception {
 		//return "src/sample/famix2decent.etl";
-		return "src/sample/famix2decent3.etl";
+		return "epsilon/trasform/famix2decent3.etl";
 	}
 
 	@Override

@@ -1,0 +1,160 @@
+import "../libraries/cfa/cfa2plantuml.eol";
+
+pre mgInitPre {
+
+  //Some initialization
+  //More generic (might be simplified)
+  "Running mg2cfn".println();
+  
+  /********************************** INIT (1x) *******************************/
+  var lowerBound = 0;
+  var upperBound = 2310;
+  upperBound = 600;
+}
+
+post mgInitPost{
+    ("Post processing... ").println();
+    for (s in CFA!State.allInstances()) {
+        for (f in s.fixes) {
+            f.totalWeight = f.totalWeight + (1/s.fixes.size().asDouble());
+            f.totalBugWeight = f.totalBugWeight + s.weightFactor * (1/s.fixes.size().asDouble());
+        }
+    }
+    for (s in CFA!State.allInstances()) {
+    	var causes = s.causes.size();
+    	if (causes = 0) {
+    		causes = 1.asDouble();
+    	}
+        s.averageWeight = s.totalWeight / causes;
+        s.averageBugWeight = s.totalBugWeight / causes;
+    }
+    
+    //visualization
+    var projectName = MG!Model.allInstances().first().name;
+    var filename = "/Users/philip-iii/Dev/workspaces/emf/DECENT.Transformations/plantuml/cfa.model.generated."+projectName+"-"+lowerBound+"-"+upperBound+".plantuml";
+	var writer;
+    upperBound = 0;
+	//CFA!GlobalState.allInstances().select(s|s.ID = 65 or s.ID = 72).cfaToPlantUMLFile(filename);
+    //CFA!GlobalState.allInstances().select(s|s.ID <= upperBound and s.ID >= lowerBound).cfaToPlantUMLFile(filename);    
+}
+
+
+rule Models
+    transform s : MG!Model 
+    to t : CFA!CFN {
+    ("Transforming model "+ s.name +", URI: " +s.uri).println();    
+    t.name = s.name;
+}
+
+rule Revisions
+    transform r : MG!Revision 
+    to s : CFA!GlobalState {
+    
+    guard : /*r.is_bug_fix <> 0 and*/ (r.commit_id <= upperBound and r.commit_id >= lowerBound )
+    ("Transforming "+ r.commit_id +" Fix: " +r.is_bug_fix).println();
+    s.cfn = r.repository.equivalent();
+    s.revision = r;
+    s.ID = r.commit_id;
+    s.name = ""+r.commit_id;
+    s.hunks = r.hunks.size();
+    s.bugFix = r.is_bug_fix.asDouble();
+    s.weightFactor = r.is_bug_fix.asDouble();
+
+    //s.fixesWeightFactor = 1.asDouble();
+    
+    //necessary?
+    var totalFixCount = 0;
+    for (h in r.hunks) {
+        totalFixCount = totalFixCount+h.hunkBlame.size();
+	}
+    
+    for (h in r.hunks) {
+        for (hb in h.hunkBlame) {
+            if (hb.lastRevision.commit_id >= lowerBound) {
+	            var cause = hb.lastRevision.equivalent(); 
+	            s.fixes.add(cause);
+	            cause.causes.add(s); 
+	            
+	            //necessary?
+	            //var weight = 1/totalFixCount.asDouble();
+	            //cause.totalWeight = cause.totalWeight + weight;
+	            //cause.totalBugWeight = cause.totalBugWeight + s.weightFactor*weight;
+            }
+        }
+    }        
+}
+
+rule Actions
+    transform a : MG!Action 
+    to s : CFA!ArtifactState {
+    //TODO: investigate causes for missing links (copy, rename, other?), try branch filtering, etc...
+    //-> keep in mind potential odd issues with svn-bridges and such 
+    //-> use different projects for the time being (yakuake?)
+    //-> disregard these problems for the time being
+    guard : /*r.is_bug_fix <> 0 and*/ (a.revision.commit_id <= upperBound and a.revision.commit_id >= lowerBound )
+    //("Transforming "+ a.file.file_name+"_Mr"+a.revision.commit_id+" Fix: " +a.revision.is_bug_fix).println();
+    s.file = a.file;
+    s.action = a;
+    //s.name = a.file.file_name+"_Mr"+a.revision.commit_id;
+    s.name = a.current_file_path;
+    s.ID = a.revision.commit_id;
+    
+    var hunks = a.revision.hunks.select(h|h.file = a.file);
+    s.hunks = hunks.size();
+    s.bugFix = a.revision.is_bug_fix.asDouble();
+    s.weightFactor = a.revision.is_bug_fix.asDouble();
+
+    s.globalState = a.revision.equivalent();
+
+	//consider moving to preprocessing
+	//not sure this is needed any longer
+	if (a.copy.isDefined()) {
+        a.file.~copyFrom = a.copy.fromFile;
+	}	
+
+	//consider moving to post for performance
+    for (h in hunks) {
+        for (hb in h.hunkBlame) {
+            if (hb.lastRevision.commit_id >= lowerBound) {
+            	//NOTE: using the file name rather than the file seems to fix resolution issues
+	            var cause = hb.lastRevision.actions.select(ax|ax.file.file_name = a.file.file_name).first().equivalent();
+
+				if (cause.isUndefined()) {
+	            	//NOTE: file name may still be a problem with renaming, try backup approach with file itself
+	            	cause = hb.lastRevision.actions.select(ax|ax.file = a.file).first().equivalent();
+				}
+
+	            if (cause.isDefined()) {
+		            s.fixes.add(cause);
+		            cause.causes.add(s); 
+	            } 
+	            else {
+	            	//log and investigate errors (wrong blames or copied/renamed files?)
+	            	//("  Cause link for File "+a.file.file_name+" from Revision "+h.revision.commit_id+" to Revision "+hb.lastRevision.commit_id+" cannot be resolved.. Investigate!").println();
+/*	            	if (a.file.~copyFrom.isUndefined()) {
+	            		if (a.copy.isDefined()) {
+				            a.file.~copyFrom = a.copy.fromFile;
+	            		} else {
+	            			("  Cause link for File "+a.file.file_name+" from Revision "+h.revision.commit_id+" to Revision "+hb.lastRevision.commit_id+" cannot be resolved.. Investigate!").println();
+	            		}
+	            	}
+*/	            	cause = hb.lastRevision.actions.select(ax|ax.file = a.file.~copyFrom).first().equivalent();
+		            if (cause.isDefined()) {
+			            s.fixes.add(cause);
+			            cause.causes.add(s);
+		            } else {
+		            	("  Cause link for File "+a.file.file_name+" from Revision "+h.revision.commit_id+" to Revision "+hb.lastRevision.commit_id+" still cannot be resolved.. Investigate!").println();
+		            } 
+	            	
+	            }
+	            
+	            //necessary?
+	            //var weight = 1/totalFixCount.asDouble();
+	            //cause.totalWeight = cause.totalWeight + weight;
+	            //cause.totalBugWeight = cause.totalBugWeight + s.weightFactor*weight;
+            }
+        }
+    }        
+
+
+}

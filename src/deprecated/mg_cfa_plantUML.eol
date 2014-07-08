@@ -1,0 +1,178 @@
+
+var output = "";
+var filename = "/Users/philip-iii/Dev/workspaces/emf/DECENT.Transformations/plantuml/cfa.generated1.plantuml";
+var file = new Native("java.io.File") (filename);
+var writer = new Native("java.io.FileWriter") (file);
+
+var upperbound = 2000;
+var lowerbound = -1;
+var fixed = -1;
+
+var revisions = MG!Revision.allInstances().select(r| (r.commit_id <= upperbound and r.commit_id >= lowerbound) or r.commit_id=fixed);
+
+("@startuml").printlno();
+("skinparam classArrowColor #444488").printlno();
+("skinparam objectBorderColor #444444").printlno();
+("skinparam objectBackgroundColor #EDEDED").printlno();
+("skinparam classArrowFontStyle bold").printlno();
+("skinparam classArrowFontSize 16").printlno();
+("skinparam classArrowFontColor #AA4444").printlno();
+("").printlno();
+
+var lastId;
+
+for (r in revisions) {
+    var id = "r"+r.commit_id;
+    
+    ("object "+id).printlno();
+    ("object "+id).println();
+    if (lastId.isDefined()) {
+        (lastId +" - "+id).printlno();
+    }
+    (id +" : hunks = "+r.hunks.size()).printlno();
+    (id +" : bug_fix = "+r.is_bug_fix).printlno();
+    
+    var lastFile;
+    var totalFixCount = 0;
+    r.~causes = new Set;
+    r.~fixes = new Set;
+    
+    r.~totalWeight = 0.0;
+    
+    for (h in r.hunks) {
+        totalFixCount = totalFixCount+h.hunkBlame.size();
+        for (hb in h.hunkBlame) {
+        }
+    }
+    
+    for (h in r.hunks) {
+
+        var parent = id;
+        if (lastFile.isDefined()) {
+            parent = lastFile.file_name+"_"+id+"";
+        }
+        if (lastFile<>h.file) {
+            (parent + " -- " + h.file.file_name+"_"+id+"").replaceAll("(?:[\\w\\d])-(?:[\\w\\d])", "\\.").printlno();
+        }
+        lastFile = h.file;
+
+        for (hb in h.hunkBlame) {
+            var causeId = hb.lastRevision.commit_id;
+            
+            if (revisions.includes(hb.lastRevision)) {
+	            r.~fixes.add(hb.lastRevision);
+	            hb.lastRevision.~causes.add(r);
+            
+            	(h.file.file_name+"_r"+hb.lastRevision.commit_id + " <.left. " + h.file.file_name+"_r"+h.revision.commit_id+"").replaceAll("(?:[\\w\\d])-(?:[\\w\\d])", "\\.").printlno();
+            
+	            var fixWeight = "";
+	            fixWeight = 1+"/"+totalFixCount;
+	
+	            var causeWeight = "";
+	            causeWeight = 1+"/"+hb.lastRevision.hunkBlames.size();
+	            
+	//            (id +" : fixes = "+"r"+causeId +" ("+fixWeight+")").printlno();
+	//            ("r"+causeId +" : causes = "+""+id +" ("+causeWeight+")").printlno();
+	
+	            var label = "cause\\n" + r.patches.select(p|p.file = h.file).first().patch.replaceAll("\n","\\\\n") +"";
+	            var factor = "";
+	            factor = r.is_bug_fix;
+	            factor = 1.0;
+	            var weight = 0.0;
+	            var distance = "";
+	            var d = 0;
+	            while (d < (r.commit_id - causeId)) {
+	                distance = distance + "\\n";
+	                d = d+1;
+	            }
+	            label = "weight";
+	            label = label+": "+factor+"*"+fixWeight;
+	            weight = factor*(1/totalFixCount.asDouble());
+	            label = label+"="+weight;
+	            label = label+distance;
+	
+	            hb.lastRevision.~totalWeight = hb.lastRevision.~totalWeight + weight;
+	
+/*            
+            ("r" + causeId + " \"" + id + ":" + causeWeight + distance + "\""
+                 + " <... "
+                 + "\"" + "r" + causeId + ":" + fixWeight + "\" " + id
+                 + " : " + label).printlno();
+*/        
+	            }
+            }
+            
+    }
+
+    lastId = id;
+}
+
+for (r in revisions) {
+    r.~totalWeight = 0.0;
+    var offset = 0;
+    for (f in r.~fixes) {
+        offset = offset+1;
+        ("r"+r.commit_id +" : fixes = "+"r"+f.commit_id +" ("+1+"/"+r.~fixes.size()+")").printlno();
+
+	    var distance = "";
+	    var offsetDistance = "";
+	    var d = 0;
+	    while (d < (r.commit_id - f.commit_id)) {
+	        distance = distance + "\\n";
+	        d = d+1;
+	    }
+	    var od = 0;
+        while (od < offset) {
+            offsetDistance = offsetDistance + "\\n";
+            od = od+1;
+        }
+
+
+        var factor = 1.0;
+        factor = r.is_bug_fix;
+	    
+	    var weight = 0.0;
+	    var label = "";
+	    label = "weight";
+        label = label + ": " + factor + "*" + 1 + "/" + r.~fixes.size();
+        weight = factor*(1/r.~fixes.size().asDouble());
+        label = label+"="+weight;
+	    label = label + distance;
+
+        f.~totalWeight = f.~totalWeight + weight;
+	    
+        ("r" + f.commit_id + " \"" + "r"+ r.commit_id + ":" + 1 + "/" + f.~causes.size() + distance + offsetDistance + "\""
+                 + " <... "
+                 + "\"" + "r" + f.commit_id + ":" + 1 + "/" + r.~fixes.size() + distance + offsetDistance + "\" " + "r" + r.commit_id
+                 + " : " + label).printlno();
+    }
+    for (c in r.~causes) {
+        ("r"+r.commit_id +" : causes = "+"r"+c.commit_id +" ("+1+"/"+r.~causes.size()+",w=" +(c.is_bug_fix*(1/c.~fixes.size().asDouble()))+ ")").printlno();
+    }
+}
+
+for (r in revisions) {
+    //("r"+r.commit_id +" : total bug weight = "+r.~totalWeight).printlno();
+    //("r"+r.commit_id +" : average weight = "+(r.~totalWeight / r.hunkBlames.size())).printlno();
+    ("r"+r.commit_id +" : total bug weight = "+r.~totalWeight).printlno();
+    ("r"+r.commit_id +" : average weight = "+(r.~totalWeight / r.~causes.size())).printlno();
+}
+
+("@enduml").printlno();
+//("flushing output").println();
+("finishing..").println();
+//output.writeToFile(filename);
+writer.close();
+
+operation String printlno() {
+    //output = output + self + "\n";
+    writer.write(self + "\n");
+    writer.flush();
+    //self.println();
+}
+
+operation String writeToFile(filename:String) {
+    writer.write(self + "\n");
+    writer.flush();
+    writer.close();
+}

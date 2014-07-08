@@ -1,5 +1,5 @@
 import "../mg/mg_hunks.eol";
-import "../decent/common.eol";
+import "../../epsilon/libraries/decent/common.eol";
 
 //changed lines
 // Before After	After After

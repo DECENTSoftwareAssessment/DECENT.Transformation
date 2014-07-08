@@ -1,0 +1,178 @@
+import "../libraries/decent/common.eol";
+
+  "Running temporal2decent".println();
+
+  var Model = DECENT!Model.allInstances().first();
+
+  var attributes = new Map;
+
+  attributes.put("AbsoluteTime","Set of distances to the beginning of time");
+  attributes.put("RelativeTime","Set of distances to the first state");
+  attributes.put("DistanceTime","Set of distances to previous states");
+
+  attributes.put("AbsoluteTimeVariance","Variance of distances to the beginning of time");
+  attributes.put("RelativeTimeVariance","Variance of distances to the first state");
+  attributes.put("DistanceTimeVariance","Variance of distances to previous states");
+
+  attributes.put("Revisions","Current number of revisions");
+  attributes.put("Lifespan","Lifespan of artifact");
+  attributes.put("Age","Age of artifact in state");
+  attributes.put("Distance","Distance to previous state");
+
+  attributes.put("DistanceAverage","Average distance between states");
+  attributes.put("DistanceRunningAverage","Running average distance between states");
+  
+  attributes.put("Frequency","Frequency of changes (=Revisions-1/Age)");
+  attributes.put("FrequencyAverage","Frequency average (=All Revisions-1/Lifespan)");
+  attributes.put("FrequencyDistanceToAverage","Frequency distance to average (=Frequency-FrequencyAverage)");
+
+  Model.addAttributes(attributes);
+
+  var AbsoluteTimeAttribute = DECENT!Attribute.allInstances().select(a|a.name = "AbsoluteTime").first();
+  var RelativeTimeAttribute = DECENT!Attribute.allInstances().select(a|a.name = "RelativeTime").first();
+  var DistanceTimeAttribute = DECENT!Attribute.allInstances().select(a|a.name = "DistanceTime").first();
+
+  var AbsoluteTimeVarianceAttribute = DECENT!Attribute.allInstances().select(a|a.name = "AbsoluteTimeVariance").first();
+  var RelativeTimeVarianceAttribute = DECENT!Attribute.allInstances().select(a|a.name = "RelativeTimeVariance").first();
+  var DistanceTimeVarianceAttribute = DECENT!Attribute.allInstances().select(a|a.name = "DistanceTimeVariance").first();
+
+  var RevisionsAttribute = DECENT!Attribute.allInstances().select(a|a.name = "Revisions").first();
+  var LifespanAttribute = DECENT!Attribute.allInstances().select(a|a.name = "Lifespan").first();
+  var AgeAttribute = DECENT!Attribute.allInstances().select(a|a.name = "Age").first();
+  var DistanceAttribute = DECENT!Attribute.allInstances().select(a|a.name = "Distance").first();
+
+  var DistanceAverageAttribute = DECENT!Attribute.allInstances().select(a|a.name = "DistanceAverage").first();
+  var DistanceRunningAverageAttribute = DECENT!Attribute.allInstances().select(a|a.name = "DistanceRunningAverage").first();
+
+  
+  var FrequencyAttribute = DECENT!Attribute.allInstances().select(a|a.name = "Frequency").first();
+  var FrequencyAverageAttribute = DECENT!Attribute.allInstances().select(a|a.name = "FrequencyAverage").first();
+  var FrequencyDistanceToAverageAttribute = DECENT!Attribute.allInstances().select(a|a.name = "FrequencyDistanceToAverage").first();
+
+
+  //TODO: other temporal dimensions such as cause-fix time, agent time, bug lifetime vs fragment lifetime, etc.
+  ("Adding temporal characteristics...").println();
+  for (a in DECENT!Artifact.allInstances().select(a|a.states.size > 0)) {
+  	
+  	("..."+a.name).println();
+  	//TODO: may need to convert to days already here at the expense of flexibility downstream
+  	//- alternatively, this can be generalized so that the same can be calculated based on hits for other artifacts
+  	
+  	//consider adding the sorting as indicated below, 
+  	//keep in mind that all other deltas are based on the default ordering, 
+  	//thus temporal ordering causes inconsistencies with the rest 
+  	//var sortedStates = a.states.sortBy(s|s.fromActivity.first().date.time);
+  	var sortedStates = a.states; 
+  	var timeCreated = sortedStates.first().fromActivity.first().date.time;
+  	var lifespan =  sortedStates.last().fromActivity.first().date.time - timeCreated;
+  	var revisions = 0;
+  	var previousStateTime = timeCreated;
+  	var absoluteTime = new Sequence;
+  	var relativeTime = new Sequence;
+  	var distanceTime = new Sequence;
+  	var resolution = 24*60*60*1000;//days*hours*minutes*seconds
+  	//resolution = 60*1000;//minutes*seconds
+  	
+  	//TODO: filter hits only 
+  	for (s in sortedStates) {
+	 	for (a in attributes.keySet()) {
+			s.values.removeAll(s.values.select(v|v.ofAttribute.name = a));
+		}
+  		//TODO: technically lifespan does not need to be included
+  		//TODO: difference can also be inferred from age delta
+  		//TODO: the interesting part would be the deltas in the 
+  		//      frequency as shifting gears between faster and 
+  		//      slower speed occurs
+  		//TODO: keep in mind that changes in temporal order due to branching may create artifacts
+  		revisions = revisions + 1;
+  		s.addValue(RevisionsAttribute, revisions.asDouble());
+  		s.addValue(LifespanAttribute, lifespan.asDouble()/resolution);
+
+  		var age = (s.fromActivity.first().date.time - timeCreated).asDouble()/resolution;
+  		s.addValue(AgeAttribute, age);
+  		
+  		var distance = (s.fromActivity.first().date.time - previousStateTime).asDouble()/resolution;
+  		s.addValue(DistanceAttribute, distance);
+
+  		var distanceAverage = (lifespan/(sortedStates.size().asDouble()-1)).asDouble();
+  		s.addValue(DistanceAverageAttribute, distanceAverage);
+
+  		var distanceRunningAverage = (age/revisions).asDouble();
+  		s.addValue(DistanceRunningAverageAttribute, distanceRunningAverage);
+
+		var frequency = ((revisions.asDouble()-1)/age).asDouble();
+  		s.addValue(FrequencyAttribute, frequency);
+  		
+  		var frequencyAverage = ((sortedStates.size().asDouble()-1)/(lifespan.asDouble()/resolution)).asDouble();
+  		s.addValue(FrequencyAverageAttribute, frequencyAverage);
+
+  		s.addValue(FrequencyDistanceToAverageAttribute, frequency-frequencyAverage);
+  		
+  		absoluteTime.add(s.fromActivity.first().date.time.asDouble()/resolution);
+  		s.addDoubleCollectionValue(AbsoluteTimeAttribute, absoluteTime);
+  		s.addValue(AbsoluteTimeVarianceAttribute, absoluteTime.getVariance());
+
+		relativeTime.add((s.fromActivity.first().date.time - timeCreated).asDouble()/resolution);
+  		s.addDoubleCollectionValue(RelativeTimeAttribute, relativeTime);
+		s.addValue(RelativeTimeVarianceAttribute, relativeTime.getVariance());
+		
+		distanceTime.add((s.fromActivity.first().date.time - previousStateTime).asDouble()/resolution);
+  		s.addDoubleCollectionValue(DistanceTimeAttribute, distanceTime);
+		s.addValue(DistanceTimeVarianceAttribute, distanceTime.getVariance());
+
+		//selected deltas
+		var activity = s.fromActivity.first();
+		activity.addDelta(AgeAttribute); //effectively =difference
+		activity.addDelta(DistanceAttribute); //indicate difference to last distance +slower/-faster
+		activity.addDelta(DistanceRunningAverageAttribute); 
+		activity.addDelta(FrequencyAttribute); 
+		activity.addDelta(FrequencyDistanceToAverageAttribute); 
+		
+  		
+  		previousStateTime = s.fromActivity.first().date.time;
+  	}
+  }
+
+  Model.content.add("temporal2decent3");
+  
+  //query -> move to a separte module
+  for (a in DECENT!Artifact.allInstances().select(a|a.states.size > 0)) {
+  	("Artifact: "+a.name).println();
+  	var separator = "\t";
+  	(
+  	 "FrequencyReference" + separator + 
+  	 RevisionsAttribute.name + separator + 
+  	 AgeAttribute.name + separator + 
+  	 DistanceAttribute.name + separator + 
+  	 FrequencyAttribute.name + separator + 
+  	 FrequencyAverageAttribute.name + separator + 
+  	 FrequencyDistanceToAverageAttribute.name + separator + 
+  	 DistanceAverageAttribute.name + separator + 
+  	 DistanceRunningAverageAttribute.name + separator + 
+  	 FrequencyAttribute.name+"(delta)" + separator + 
+  	 FrequencyDistanceToAverageAttribute.name+"(delta)" + separator + 
+  	 DistanceAttribute.name+"(delta)"
+  	).println();
+  	
+  	//TODO: filter hits only 
+   	//var sortedStates = a.states.sortBy(s|s.fromActivity.first().date.time);
+  	var sortedStates = a.states; 
+  	
+    for (s in sortedStates) {
+    	(
+    	   (s.values.select(v|v.ofAttribute = AgeAttribute).first.content*s.values.select(v|v.ofAttribute = FrequencyAverageAttribute).first.content) + separator +
+			s.values.select(v|v.ofAttribute = RevisionsAttribute).first.content + separator +
+			s.values.select(v|v.ofAttribute = AgeAttribute).first.content + separator +
+			s.values.select(v|v.ofAttribute = DistanceAttribute).first.content + separator +
+			s.values.select(v|v.ofAttribute = FrequencyAttribute).first.content + separator +
+			s.values.select(v|v.ofAttribute = FrequencyAverageAttribute).first.content + separator +
+			s.values.select(v|v.ofAttribute = FrequencyDistanceToAverageAttribute).first.content + separator +
+			s.values.select(v|v.ofAttribute = DistanceAverageAttribute).first.content + separator +
+			s.values.select(v|v.ofAttribute = DistanceRunningAverageAttribute).first.content + separator +
+			s.fromActivity.first().deltas.select(d|d.onAttribute = FrequencyAttribute).first.change + separator +
+			s.fromActivity.first().deltas.select(d|d.onAttribute = FrequencyDistanceToAverageAttribute).first.change + separator +
+			s.fromActivity.first().deltas.select(d|d.onAttribute = DistanceAttribute).first.change
+    	).replaceAll("\\.",",").println();
+	}
+  }
+  

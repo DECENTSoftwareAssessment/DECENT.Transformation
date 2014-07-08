@@ -6,84 +6,356 @@ skinparam classArrowFontStyle bold
 skinparam classArrowFontSize 16
 skinparam classArrowFontColor #AA4444
 
-object r2300
-r2300 : hunks = 0
-r2300 : fixesWeightFactor = 0.0
-r2300 : causes = r2306 (1/2,w=1.0)
-r2300 : causes = r2307 (1/2,w=0.5)
-r2300 : total cause weight = 1.5
-r2300 : average cause weight = 0.75
-object r2301
-r2301 : hunks = 0
-r2301 : fixesWeightFactor = 1.0
-r2300 - r2301
-r2301 : total cause weight = 0.0
-r2301 : average cause weight = NaN
-object r2302
-r2302 : hunks = 0
-r2302 : fixesWeightFactor = 0.0
-r2301 - r2302
-r2302 : total cause weight = 0.0
-r2302 : average cause weight = NaN
-object r2303
-r2303 : hunks = 0
-r2303 : fixesWeightFactor = 0.0
-r2302 - r2303
-r2303 : total cause weight = 0.0
-r2303 : average cause weight = NaN
-object r2304
-r2304 : hunks = 0
-r2304 : fixesWeightFactor = 1.0
-r2303 - r2304
-r2304 : total cause weight = 0.0
-r2304 : average cause weight = NaN
-object r2305
-r2305 : hunks = 0
-r2305 : fixesWeightFactor = 0.0
-r2304 - r2305
-r2305 : total cause weight = 0.0
-r2305 : average cause weight = NaN
-object r2306
-r2306 : hunks = 0
-r2306 : fixesWeightFactor = 1.0
-r2305 - r2306
-r2306 : fixes = r2300 (1/1)
-r2300 "r2306:1/2\n\n\n\n\n\n" <... "\n\n\nr2300:1/1\n\n\n\n\n\n" r2306 : weight: 1.0*1/1=1.0\n\n\n\n\n\n
-r2306 : causes = r2307 (1/2,w=0.5)
-r2306 : causes = r2310 (1/2,w=0.0)
-r2306 : total cause weight = 0.5
-r2306 : average cause weight = 0.25
-object r2307
-r2307 : hunks = 0
-r2307 : fixesWeightFactor = 1.0
-r2306 - r2307
-r2307 : fixes = r2306 (1/2)
-r2306 "r2307:1/2\n" <... "\n\n\nr2306:1/2\n" r2307 : weight: 1.0*1/2=0.5\n
-r2307 : fixes = r2300 (1/2)
-r2300 "r2307:1/2\n\n\n\n\n\n\n" <... "\n\n\n\nr2300:1/2\n\n\n\n\n\n\n" r2307 : weight: 1.0*1/2=0.5\n\n\n\n\n\n\n
-r2307 : causes = r2309 (1/1,w=0.0)
-r2307 : total cause weight = 0.0
-r2307 : average cause weight = 0.0
-object r2308
-r2308 : hunks = 0
-r2308 : fixesWeightFactor = 1.0
-r2307 - r2308
-r2308 : total cause weight = 0.0
-r2308 : average cause weight = NaN
-object r2309
-r2309 : hunks = 0
-r2309 : fixesWeightFactor = 0.0
-r2308 - r2309
-r2309 : fixes = r2307 (1/1)
-r2307 "r2309:1/1\n\n" <... "\n\n\nr2307:1/1\n\n" r2309 : weight: 0.0*1/1=0.0\n\n
-r2309 : total cause weight = 0.0
-r2309 : average cause weight = NaN
-object r2310
-r2310 : hunks = 0
-r2310 : fixesWeightFactor = 0.0
-r2309 - r2310
-r2310 : fixes = r2306 (1/1)
-r2306 "r2310:1/2\n\n\n\n" <... "\n\n\nr2306:1/1\n\n\n\n" r2310 : weight: 0.0*1/1=0.0\n\n\n\n
-r2310 : total cause weight = 0.0
-r2310 : average cause weight = NaN
+object Mr2300
+Mr2300 : hunks = 15
+Mr2300 : weight factor (bug fix) = 0.0
+Mr2300 : causes = Mr2306 (1/2,w=1.0)
+Mr2300 : causes = Mr2307 (1/2,w=0.5)
+Mr2300 : total cause weight = 1.5
+Mr2300 : average cause weight = 0.75
+Mr2300 : total bug cause weight = 1.5
+Mr2300 : average bug cause weight = 0.75
+session.cpp_Mr2300 : hunks = 2
+session.cpp_Mr2300 : weight factor (bug fix) = 0.0
+Mr2300----session.cpp_Mr2300
+session.cpp_Mr2300 : causes = session.cpp_Mr2307 (1/1,w=1.0)
+session.cpp_Mr2300 : total cause weight = 1.0
+session.cpp_Mr2300 : average cause weight = 1.0
+session.cpp_Mr2300 : total bug cause weight = 1.0
+session.cpp_Mr2300 : average bug cause weight = 1.0
+sessionmanager.cpp_Mr2300 : hunks = 13
+sessionmanager.cpp_Mr2300 : weight factor (bug fix) = 0.0
+Mr2300----sessionmanager.cpp_Mr2300
+sessionmanager.cpp_Mr2300 : causes = sessionmanager.cpp_Mr2306 (1/2,w=1.0)
+sessionmanager.cpp_Mr2300 : causes = sessionmanager.cpp_Mr2307 (1/2,w=0.5)
+sessionmanager.cpp_Mr2300 : total cause weight = 1.5
+sessionmanager.cpp_Mr2300 : average cause weight = 0.75
+sessionmanager.cpp_Mr2300 : total bug cause weight = 1.5
+sessionmanager.cpp_Mr2300 : average bug cause weight = 0.75
+object Mr2301
+Mr2301 : hunks = 3
+Mr2301 : weight factor (bug fix) = 1.0
+Mr2300 - Mr2301
+Mr2301 : total cause weight = 0.0
+Mr2301 : average cause weight = NaN
+Mr2301 : total bug cause weight = 0.0
+Mr2301 : average bug cause weight = NaN
+tabbar.cpp_Mr2301 : hunks = 2
+tabbar.cpp_Mr2301 : weight factor (bug fix) = 1.0
+Mr2301----tabbar.cpp_Mr2301
+tabbar.cpp_Mr2301 : total cause weight = 0.0
+tabbar.cpp_Mr2301 : average cause weight = NaN
+tabbar.cpp_Mr2301 : total bug cause weight = 0.0
+tabbar.cpp_Mr2301 : average bug cause weight = NaN
+tabbar.h_Mr2301 : hunks = 1
+tabbar.h_Mr2301 : weight factor (bug fix) = 1.0
+Mr2301----tabbar.h_Mr2301
+tabbar.h_Mr2301 : total cause weight = 0.0
+tabbar.h_Mr2301 : average cause weight = NaN
+tabbar.h_Mr2301 : total bug cause weight = 0.0
+tabbar.h_Mr2301 : average bug cause weight = NaN
+object Mr2302
+Mr2302 : hunks = 12
+Mr2302 : weight factor (bug fix) = 0.0
+Mr2301 - Mr2302
+Mr2302 : total cause weight = 0.0
+Mr2302 : average cause weight = NaN
+Mr2302 : total bug cause weight = 0.0
+Mr2302 : average bug cause weight = NaN
+bookmarkcontextmenu.cpp_Mr2302 : hunks = 6
+bookmarkcontextmenu.cpp_Mr2302 : weight factor (bug fix) = 0.0
+Mr2302----bookmarkcontextmenu.cpp_Mr2302
+bookmarkcontextmenu.cpp_Mr2302 : total cause weight = 0.0
+bookmarkcontextmenu.cpp_Mr2302 : average cause weight = NaN
+bookmarkcontextmenu.cpp_Mr2302 : total bug cause weight = 0.0
+bookmarkcontextmenu.cpp_Mr2302 : average bug cause weight = NaN
+bookmarkcontextmenu.h_Mr2302 : hunks = 2
+bookmarkcontextmenu.h_Mr2302 : weight factor (bug fix) = 0.0
+Mr2302----bookmarkcontextmenu.h_Mr2302
+bookmarkcontextmenu.h_Mr2302 : total cause weight = 0.0
+bookmarkcontextmenu.h_Mr2302 : average cause weight = NaN
+bookmarkcontextmenu.h_Mr2302 : total bug cause weight = 0.0
+bookmarkcontextmenu.h_Mr2302 : average bug cause weight = NaN
+bookmarkstoolbar.cpp_Mr2302 : hunks = 4
+bookmarkstoolbar.cpp_Mr2302 : weight factor (bug fix) = 0.0
+Mr2302----bookmarkstoolbar.cpp_Mr2302
+bookmarkstoolbar.cpp_Mr2302 : total cause weight = 0.0
+bookmarkstoolbar.cpp_Mr2302 : average cause weight = NaN
+bookmarkstoolbar.cpp_Mr2302 : total bug cause weight = 0.0
+bookmarkstoolbar.cpp_Mr2302 : average bug cause weight = NaN
+object Mr2303
+Mr2303 : hunks = 1
+Mr2303 : weight factor (bug fix) = 0.0
+Mr2302 - Mr2303
+Mr2303 : total cause weight = 0.0
+Mr2303 : average cause weight = NaN
+Mr2303 : total bug cause weight = 0.0
+Mr2303 : average bug cause weight = NaN
+bookmarkstreemodel.cpp_Mr2303 : hunks = 1
+bookmarkstreemodel.cpp_Mr2303 : weight factor (bug fix) = 0.0
+Mr2303----bookmarkstreemodel.cpp_Mr2303
+bookmarkstreemodel.cpp_Mr2303 : total cause weight = 0.0
+bookmarkstreemodel.cpp_Mr2303 : average cause weight = NaN
+bookmarkstreemodel.cpp_Mr2303 : total bug cause weight = 0.0
+bookmarkstreemodel.cpp_Mr2303 : average bug cause weight = NaN
+object Mr2304
+Mr2304 : hunks = 7
+Mr2304 : weight factor (bug fix) = 1.0
+Mr2303 - Mr2304
+Mr2304 : total cause weight = 0.0
+Mr2304 : average cause weight = NaN
+Mr2304 : total bug cause weight = 0.0
+Mr2304 : average bug cause weight = NaN
+bookmarks.cpp_Mr2304 : hunks = 6
+bookmarks.cpp_Mr2304 : weight factor (bug fix) = 1.0
+Mr2304----bookmarks.cpp_Mr2304
+bookmarks.cpp_Mr2304 : total cause weight = 0.0
+bookmarks.cpp_Mr2304 : average cause weight = NaN
+bookmarks.cpp_Mr2304 : total bug cause weight = 0.0
+bookmarks.cpp_Mr2304 : average bug cause weight = NaN
+bookmarks.h_Mr2304 : hunks = 1
+bookmarks.h_Mr2304 : weight factor (bug fix) = 1.0
+Mr2304----bookmarks.h_Mr2304
+bookmarks.h_Mr2304 : total cause weight = 0.0
+bookmarks.h_Mr2304 : average cause weight = NaN
+bookmarks.h_Mr2304 : total bug cause weight = 0.0
+bookmarks.h_Mr2304 : average bug cause weight = NaN
+object Mr2305
+Mr2305 : hunks = 1
+Mr2305 : weight factor (bug fix) = 0.0
+Mr2304 - Mr2305
+Mr2305 : total cause weight = 0.0
+Mr2305 : average cause weight = NaN
+Mr2305 : total bug cause weight = 0.0
+Mr2305 : average bug cause weight = NaN
+rekonq.desktop_Mr2305 : hunks = 1
+rekonq.desktop_Mr2305 : weight factor (bug fix) = 0.0
+Mr2305----rekonq.desktop_Mr2305
+rekonq.desktop_Mr2305 : total cause weight = 0.0
+rekonq.desktop_Mr2305 : average cause weight = NaN
+rekonq.desktop_Mr2305 : total bug cause weight = 0.0
+rekonq.desktop_Mr2305 : average bug cause weight = NaN
+object Mr2306
+Mr2306 : hunks = 16
+Mr2306 : weight factor (bug fix) = 1.0
+Mr2305 - Mr2306
+Mr2306 : fixes = Mr2300 (1/1)
+note "Mr2306:1/2 -> Mr2300:1/1\nweight: 1.0*1/1=1.0\n\n\n\n\n\n" as Mr2300_Mr2306
+Mr2300 <..down.. Mr2300_Mr2306
+Mr2300_Mr2306 ..down.. Mr2306
+Mr2306 : causes = Mr2307 (1/2,w=0.5)
+Mr2306 : causes = Mr2310 (1/2,w=0.0)
+Mr2306 : total cause weight = 1.5
+Mr2306 : average cause weight = 0.75
+Mr2306 : total bug cause weight = 0.5
+Mr2306 : average bug cause weight = 0.25
+session_Mr2306 : hunks = 1
+session_Mr2306 : weight factor (bug fix) = 1.0
+Mr2306----session_Mr2306
+session_Mr2306 : causes = session_Mr2310 (1/1,w=0.0)
+session_Mr2306 : total cause weight = 1.0
+session_Mr2306 : average cause weight = 1.0
+session_Mr2306 : total bug cause weight = 0.0
+session_Mr2306 : average bug cause weight = 0.0
+session.cpp_Mr2306 : hunks = 0
+session.cpp_Mr2306 : weight factor (bug fix) = 1.0
+Mr2306----session.cpp_Mr2306
+session.cpp_Mr2306 : total cause weight = 0.0
+session.cpp_Mr2306 : average cause weight = NaN
+session.cpp_Mr2306 : total bug cause weight = 0.0
+session.cpp_Mr2306 : average bug cause weight = NaN
+session.h_Mr2306 : hunks = 1
+session.h_Mr2306 : weight factor (bug fix) = 1.0
+Mr2306----session.h_Mr2306
+session.h_Mr2306 : total cause weight = 0.0
+session.h_Mr2306 : average cause weight = NaN
+session.h_Mr2306 : total bug cause weight = 0.0
+session.h_Mr2306 : average bug cause weight = NaN
+sessionmanager.cpp_Mr2306 : hunks = 12
+sessionmanager.cpp_Mr2306 : weight factor (bug fix) = 1.0
+Mr2306----sessionmanager.cpp_Mr2306
+sessionmanager.cpp_Mr2306 : fixes = sessionmanager.cpp_Mr2300 (1/1)
+note "sessionmanager.cpp_Mr2306:1/2 -> sessionmanager.cpp_Mr2300:1/1\nweight: 1.0*1/1=1.0" as sessionmanager.cpp_Mr2300_sessionmanager.cpp_Mr2306
+sessionmanager.cpp_Mr2300 <..up.. sessionmanager.cpp_Mr2300_sessionmanager.cpp_Mr2306
+sessionmanager.cpp_Mr2300_sessionmanager.cpp_Mr2306 ..up.. sessionmanager.cpp_Mr2306
+sessionmanager.cpp_Mr2306 : causes = sessionmanager.cpp_Mr2307 (1/1,w=0.5)
+sessionmanager.cpp_Mr2306 : total cause weight = 0.5
+sessionmanager.cpp_Mr2306 : average cause weight = 0.5
+sessionmanager.cpp_Mr2306 : total bug cause weight = 0.5
+sessionmanager.cpp_Mr2306 : average bug cause weight = 0.5
+sessionmanager.h_Mr2306 : hunks = 2
+sessionmanager.h_Mr2306 : weight factor (bug fix) = 1.0
+Mr2306----sessionmanager.h_Mr2306
+sessionmanager.h_Mr2306 : total cause weight = 0.0
+sessionmanager.h_Mr2306 : average cause weight = NaN
+sessionmanager.h_Mr2306 : total bug cause weight = 0.0
+sessionmanager.h_Mr2306 : average bug cause weight = NaN
+object Mr2307
+Mr2307 : hunks = 36
+Mr2307 : weight factor (bug fix) = 1.0
+Mr2306 - Mr2307
+Mr2307 : fixes = Mr2306 (1/2)
+note "Mr2307:1/2 -> Mr2306:1/2\nweight: 1.0*1/2=0.5\n" as Mr2306_Mr2307
+Mr2306 <..down.. Mr2306_Mr2307
+Mr2306_Mr2307 ..down.. Mr2307
+Mr2307 : fixes = Mr2300 (1/2)
+note "Mr2307:1/2 -> Mr2300:1/2\nweight: 1.0*1/2=0.5\n\n\n\n\n\n\n" as Mr2300_Mr2307
+Mr2300 <..down.. Mr2300_Mr2307
+Mr2300_Mr2307 ..down.. Mr2307
+Mr2307 : causes = Mr2309 (1/1,w=0.0)
+Mr2307 : total cause weight = 1.0
+Mr2307 : average cause weight = 1.0
+Mr2307 : total bug cause weight = 0.0
+Mr2307 : average bug cause weight = 0.0
+session.cpp_Mr2307 : hunks = 23
+session.cpp_Mr2307 : weight factor (bug fix) = 1.0
+Mr2307----session.cpp_Mr2307
+session.cpp_Mr2307 : fixes = session.cpp_Mr2300 (1/1)
+note "session.cpp_Mr2307:1/1 -> session.cpp_Mr2300:1/1\nweight: 1.0*1/1=1.0" as session.cpp_Mr2300_session.cpp_Mr2307
+session.cpp_Mr2300 <..up.. session.cpp_Mr2300_session.cpp_Mr2307
+session.cpp_Mr2300_session.cpp_Mr2307 ..up.. session.cpp_Mr2307
+session.cpp_Mr2307 : causes = session.cpp_Mr2309 (1/1,w=0.0)
+session.cpp_Mr2307 : total cause weight = 1.0
+session.cpp_Mr2307 : average cause weight = 1.0
+session.cpp_Mr2307 : total bug cause weight = 0.0
+session.cpp_Mr2307 : average bug cause weight = 0.0
+session.h_Mr2307 : hunks = 4
+session.h_Mr2307 : weight factor (bug fix) = 1.0
+Mr2307----session.h_Mr2307
+session.h_Mr2307 : total cause weight = 0.0
+session.h_Mr2307 : average cause weight = NaN
+session.h_Mr2307 : total bug cause weight = 0.0
+session.h_Mr2307 : average bug cause weight = NaN
+sessionmanager.cpp_Mr2307 : hunks = 9
+sessionmanager.cpp_Mr2307 : weight factor (bug fix) = 1.0
+Mr2307----sessionmanager.cpp_Mr2307
+sessionmanager.cpp_Mr2307 : fixes = sessionmanager.cpp_Mr2306 (1/2)
+note "sessionmanager.cpp_Mr2307:1/1 -> sessionmanager.cpp_Mr2306:1/2\nweight: 1.0*1/2=0.5" as sessionmanager.cpp_Mr2306_sessionmanager.cpp_Mr2307
+sessionmanager.cpp_Mr2306 <..up.. sessionmanager.cpp_Mr2306_sessionmanager.cpp_Mr2307
+sessionmanager.cpp_Mr2306_sessionmanager.cpp_Mr2307 ..up.. sessionmanager.cpp_Mr2307
+sessionmanager.cpp_Mr2307 : fixes = sessionmanager.cpp_Mr2300 (1/2)
+note "sessionmanager.cpp_Mr2307:1/2 -> sessionmanager.cpp_Mr2300:1/2\nweight: 1.0*1/2=0.5" as sessionmanager.cpp_Mr2300_sessionmanager.cpp_Mr2307
+sessionmanager.cpp_Mr2300 <..up.. sessionmanager.cpp_Mr2300_sessionmanager.cpp_Mr2307
+sessionmanager.cpp_Mr2300_sessionmanager.cpp_Mr2307 ..up.. sessionmanager.cpp_Mr2307
+sessionmanager.cpp_Mr2307 : total cause weight = 0.0
+sessionmanager.cpp_Mr2307 : average cause weight = NaN
+sessionmanager.cpp_Mr2307 : total bug cause weight = 0.0
+sessionmanager.cpp_Mr2307 : average bug cause weight = NaN
+object Mr2308
+Mr2308 : hunks = 8
+Mr2308 : weight factor (bug fix) = 1.0
+Mr2307 - Mr2308
+Mr2308 : total cause weight = 0.0
+Mr2308 : average cause weight = NaN
+Mr2308 : total bug cause weight = 0.0
+Mr2308 : average bug cause weight = NaN
+tabbar.cpp_Mr2308 : hunks = 7
+tabbar.cpp_Mr2308 : weight factor (bug fix) = 1.0
+Mr2308----tabbar.cpp_Mr2308
+tabbar.cpp_Mr2308 : total cause weight = 0.0
+tabbar.cpp_Mr2308 : average cause weight = NaN
+tabbar.cpp_Mr2308 : total bug cause weight = 0.0
+tabbar.cpp_Mr2308 : average bug cause weight = NaN
+tabbar.h_Mr2308 : hunks = 1
+tabbar.h_Mr2308 : weight factor (bug fix) = 1.0
+Mr2308----tabbar.h_Mr2308
+tabbar.h_Mr2308 : total cause weight = 0.0
+tabbar.h_Mr2308 : average cause weight = NaN
+tabbar.h_Mr2308 : total bug cause weight = 0.0
+tabbar.h_Mr2308 : average bug cause weight = NaN
+object Mr2309
+Mr2309 : hunks = 22
+Mr2309 : weight factor (bug fix) = 0.0
+Mr2308 - Mr2309
+Mr2309 : fixes = Mr2307 (1/1)
+note "Mr2309:1/1 -> Mr2307:1/1\nweight: 0.0*1/1=0.0\n\n" as Mr2307_Mr2309
+Mr2307 <..down.. Mr2307_Mr2309
+Mr2307_Mr2309 ..down.. Mr2309
+Mr2309 : total cause weight = 0.0
+Mr2309 : average cause weight = NaN
+Mr2309 : total bug cause weight = 0.0
+Mr2309 : average bug cause weight = NaN
+browserapplication.cpp_Mr2309 : hunks = 1
+browserapplication.cpp_Mr2309 : weight factor (bug fix) = 0.0
+Mr2309----browserapplication.cpp_Mr2309
+browserapplication.cpp_Mr2309 : total cause weight = 0.0
+browserapplication.cpp_Mr2309 : average cause weight = NaN
+browserapplication.cpp_Mr2309 : total bug cause weight = 0.0
+browserapplication.cpp_Mr2309 : average bug cause weight = NaN
+browsermainwindow.cpp_Mr2309 : hunks = 4
+browsermainwindow.cpp_Mr2309 : weight factor (bug fix) = 0.0
+Mr2309----browsermainwindow.cpp_Mr2309
+browsermainwindow.cpp_Mr2309 : total cause weight = 0.0
+browsermainwindow.cpp_Mr2309 : average cause weight = NaN
+browsermainwindow.cpp_Mr2309 : total bug cause weight = 0.0
+browsermainwindow.cpp_Mr2309 : average bug cause weight = NaN
+browsermainwindow.h_Mr2309 : hunks = 2
+browsermainwindow.h_Mr2309 : weight factor (bug fix) = 0.0
+Mr2309----browsermainwindow.h_Mr2309
+browsermainwindow.h_Mr2309 : total cause weight = 0.0
+browsermainwindow.h_Mr2309 : average cause weight = NaN
+browsermainwindow.h_Mr2309 : total bug cause weight = 0.0
+browsermainwindow.h_Mr2309 : average bug cause weight = NaN
+session.cpp_Mr2309 : hunks = 8
+session.cpp_Mr2309 : weight factor (bug fix) = 0.0
+Mr2309----session.cpp_Mr2309
+session.cpp_Mr2309 : fixes = session.cpp_Mr2307 (1/1)
+note "session.cpp_Mr2309:1/1 -> session.cpp_Mr2307:1/1\nweight: 0.0*1/1=0.0" as session.cpp_Mr2307_session.cpp_Mr2309
+session.cpp_Mr2307 <..up.. session.cpp_Mr2307_session.cpp_Mr2309
+session.cpp_Mr2307_session.cpp_Mr2309 ..up.. session.cpp_Mr2309
+session.cpp_Mr2309 : total cause weight = 0.0
+session.cpp_Mr2309 : average cause weight = NaN
+session.cpp_Mr2309 : total bug cause weight = 0.0
+session.cpp_Mr2309 : average bug cause weight = NaN
+session.h_Mr2309 : hunks = 2
+session.h_Mr2309 : weight factor (bug fix) = 0.0
+Mr2309----session.h_Mr2309
+session.h_Mr2309 : total cause weight = 0.0
+session.h_Mr2309 : average cause weight = NaN
+session.h_Mr2309 : total bug cause weight = 0.0
+session.h_Mr2309 : average bug cause weight = NaN
+sessionmanager.cpp_Mr2309 : hunks = 4
+sessionmanager.cpp_Mr2309 : weight factor (bug fix) = 0.0
+Mr2309----sessionmanager.cpp_Mr2309
+sessionmanager.cpp_Mr2309 : total cause weight = 0.0
+sessionmanager.cpp_Mr2309 : average cause weight = NaN
+sessionmanager.cpp_Mr2309 : total bug cause weight = 0.0
+sessionmanager.cpp_Mr2309 : average bug cause weight = NaN
+sessionmanager.h_Mr2309 : hunks = 1
+sessionmanager.h_Mr2309 : weight factor (bug fix) = 0.0
+Mr2309----sessionmanager.h_Mr2309
+sessionmanager.h_Mr2309 : total cause weight = 0.0
+sessionmanager.h_Mr2309 : average cause weight = NaN
+sessionmanager.h_Mr2309 : total bug cause weight = 0.0
+sessionmanager.h_Mr2309 : average bug cause weight = NaN
+object Mr2310
+Mr2310 : hunks = 2
+Mr2310 : weight factor (bug fix) = 0.0
+Mr2309 - Mr2310
+Mr2310 : fixes = Mr2306 (1/1)
+note "Mr2310:1/2 -> Mr2306:1/1\nweight: 0.0*1/1=0.0\n\n\n\n" as Mr2306_Mr2310
+Mr2306 <..down.. Mr2306_Mr2310
+Mr2306_Mr2310 ..down.. Mr2310
+Mr2310 : total cause weight = 0.0
+Mr2310 : average cause weight = NaN
+Mr2310 : total bug cause weight = 0.0
+Mr2310 : average bug cause weight = NaN
+session_Mr2310 : hunks = 1
+session_Mr2310 : weight factor (bug fix) = 0.0
+Mr2310----session_Mr2310
+session_Mr2310 : fixes = session_Mr2306 (1/1)
+note "session_Mr2310:1/1 -> session_Mr2306:1/1\nweight: 0.0*1/1=0.0" as session_Mr2306_session_Mr2310
+session_Mr2306 <..up.. session_Mr2306_session_Mr2310
+session_Mr2306_session_Mr2310 ..up.. session_Mr2310
+session_Mr2310 : total cause weight = 0.0
+session_Mr2310 : average cause weight = NaN
+session_Mr2310 : total bug cause weight = 0.0
+session_Mr2310 : average bug cause weight = NaN
+browserapplication.cpp_Mr2310 : hunks = 1
+browserapplication.cpp_Mr2310 : weight factor (bug fix) = 0.0
+Mr2310----browserapplication.cpp_Mr2310
+browserapplication.cpp_Mr2310 : total cause weight = 0.0
+browserapplication.cpp_Mr2310 : average cause weight = NaN
+browserapplication.cpp_Mr2310 : total bug cause weight = 0.0
+browserapplication.cpp_Mr2310 : average bug cause weight = NaN
 @enduml

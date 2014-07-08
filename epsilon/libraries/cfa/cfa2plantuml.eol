@@ -1,0 +1,158 @@
+
+
+operation Sequence cfaToPlantUMLFile (filename : String) {
+    var file = new Native("java.io.File") (filename);
+    writer = new Native("java.io.FileWriter") (file);
+    self.cfaToPlantUML();
+    writer.close();
+}
+
+
+operation Sequence cfaToPlantUML() {
+    ("visualizing..").println();
+	var output = "";
+	("@startuml").printlno();
+	("skinparam classArrowColor #444488").printlno();
+	("skinparam objectBorderColor #444444").printlno();
+	("skinparam objectBackgroundColor #EDEDED").printlno();
+	("skinparam classArrowFontStyle bold").printlno();
+	("skinparam classArrowFontSize 16").printlno();
+	("skinparam classArrowFontColor #AA4444").printlno();
+	("").printlno();
+	var lastState;
+	for (s in self) {
+		s.~uniqueName = "Mr"+s.ID;
+        ("processing object "+s.~uniqueName).println();
+        var color = "";
+        if (s.totalBugWeight > 0) {
+        	color = " #FFAAAA";
+        }
+        ("object "+s.~uniqueName + color).printlno();
+        
+        (s.~uniqueName+" : hunks = "+s.hunks).printlno();
+        (s.~uniqueName+" : weight factor (bug fix) = "+s.weightFactor).printlno();
+        if (lastState.isDefined()) {
+            (lastState.~uniqueName +" -right- "+s.~uniqueName).printlno();
+        }
+        //files?
+        var offsetDistance = "\\n\\n";
+        
+        for (f in s.fixes){
+        	f.~uniqueName = "Mr"+f.ID;
+        	
+            (s.~uniqueName +" : fixes = "+f.~uniqueName +" ("+1+"/"+s.fixes.size()+")").printlno();
+    		if (f.ID < lowerBound) {
+        		continue;
+    		}
+        	
+            offsetDistance = offsetDistance + "\\n";
+            
+            var distance = "";
+	        var d = 0;
+	        while (d < (s.ID - f.ID)) {
+	            distance = distance + "\\n";
+	            d = d+1;
+	        }
+            var label = "bug cause weight";
+            label = label + ": " + s.weightFactor + "*" + 1 + "/" + s.fixes.size();
+            label = label+"="+(s.weightFactor*(1/s.fixes.size().asDouble()));
+            label = label + "\\nfull cause weight: " + 1 + "/" + s.fixes.size();
+            label = label+"="+((1/s.fixes.size().asDouble()));
+            //label = label + distance;
+            
+/*            (f.~uniqueName + " \"" + s.~uniqueName + ":" + 1 + "/" + f.causes.size() + distance + "\""
+                 + " <... "
+                 + "\"" + offsetDistance + f.~uniqueName + ":" + 1 + "/" + s.fixes.size() + distance + "\" " + s.~uniqueName
+                 + " : " + label).printlno();
+*/                 
+            var notename = f.~uniqueName+"_"+s.~uniqueName;
+			("note \""+s.~uniqueName + ":" + 1 + "/" + f.causes.size()+" -> "+f.~uniqueName + ":" + 1 + "/" + s.fixes.size()+"\\n"+label+"\" as " + notename).printlno();
+			(f.~uniqueName + " <..down.. " + notename).printlno();
+			(notename + " ..down.. " + s.~uniqueName).printlno();
+    
+        }
+        for (c in s.causes) {
+        	c.~uniqueName = "Mr"+s.ID;
+            (s.~uniqueName +" : causes = "+c.~uniqueName +" (c="+1+"/"+s.causes.size()+",f="+1+"/"+c.fixes.size()+",bcw=" +(c.weightFactor*(1/c.fixes.size().asDouble()))+",fcw=" +((1/c.fixes.size().asDouble()))+ ")").printlno();
+        }
+
+        (s.~uniqueName+" : total cause weight = "+s.totalWeight).printlno();
+        (s.~uniqueName+" : average cause weight = "+s.averageWeight).printlno();
+        (s.~uniqueName+" : total bug cause weight = "+s.totalBugWeight).printlno();
+        (s.~uniqueName+" : average bug cause weight = "+s.averageBugWeight).printlno();
+
+
+		//essentially duplicated from above...
+        for (a in s.artifactStates) {
+        	if (a.name <> "src/terminal_splitter.cpp") {
+        		//continue;
+        	}
+        	a.~uniqueName = a.name + "_Mr"+a.ID;
+        	a.~uniqueName = a.~uniqueName.replaceAll("[\\.\\/]", "_");
+	        //("object "+a.~uniqueName).printlno();
+	        var color = "";
+	        if (a.totalBugWeight > 0) {
+	        	color = " #FFAAAA";
+	        }
+	        ("object "+a.~uniqueName + color).printlno();
+	        
+        	(a.~uniqueName+" : hunks = "+a.hunks).printlno();
+        	(a.~uniqueName+" : weight factor (bug fix) = "+a.weightFactor).printlno();
+        	
+        	(s.~uniqueName+" --down-- "+a.~uniqueName).printlno();
+        	for (f in a.fixes) {
+	        	f.~uniqueName = f.name + "_Mr"+f.ID;
+	        	f.~uniqueName = f.~uniqueName.replaceAll("[\\.\\/]", "_");		
+	            (a.~uniqueName +" : fixes = "+f.~uniqueName +" ("+1+"/"+a.fixes.size()+")").printlno();
+        		if (f.ID < lowerBound) {
+	        		continue;
+        		}
+
+	            offsetDistance = offsetDistance + "\\n";
+	            
+	            var distance = "";
+		        var d = 0;
+		        while (d < (a.ID - f.ID)) {
+		            distance = distance + "\\n";
+		            d = d+1;
+		        }
+	            var label = "bug cause weight";
+	            label = label + ": " + a.weightFactor + "*" + 1 + "/" + a.fixes.size();
+	            label = label+"="+(a.weightFactor*(1/a.fixes.size().asDouble()));
+	            label = label + "\\nfull cause weight: " + 1 + "/" + a.fixes.size();
+	            label = label+"="+((1/a.fixes.size().asDouble()));
+	            //label = label + distance;
+	            
+/*	            (f.~uniqueName + " \"" + a.~uniqueName + ":" + 1 + "/" + f.causes.size() + distance + "\""
+	                 + " <.left.. "
+	                 + "\"" + offsetDistance + f.~uniqueName + ":" + 1 + "/" + a.fixes.size() + distance + "\" " + a.~uniqueName
+	                 + " : " + label).printlno();
+*/	            
+				var notename = f.~uniqueName+"_"+a.~uniqueName;
+				("note \""+a.~uniqueName + ":" + 1 + "/" + f.causes.size()+" -> "+f.~uniqueName + ":" + 1 + "/" + a.fixes.size()+"\\n"+label+"\" as " + notename).printlno();
+				(f.~uniqueName + " <..up.. " + notename).printlno();
+				(notename + " ..up.. " + a.~uniqueName).printlno();
+        	}
+	        for (c in a.causes) {
+	        	c.~uniqueName = c.name + "_Mr"+c.ID;
+	        	c.~uniqueName = c.~uniqueName.replaceAll("[\\.\\/]", "_");		
+	            (a.~uniqueName +" : causes = "+c.~uniqueName +" (c="+1+"/"+a.causes.size()+",f="+1+"/"+c.fixes.size()+",bcw=" +(c.weightFactor*(1/c.fixes.size().asDouble()))+",fcw=" +((1/c.fixes.size().asDouble()))+ ")").printlno();
+	        }
+
+	        (a.~uniqueName+" : total cause weight = "+a.totalWeight).printlno();
+	        (a.~uniqueName+" : average cause weight = "+a.averageWeight).printlno();
+	        (a.~uniqueName+" : total bug cause weight = "+a.totalBugWeight).printlno();
+	        (a.~uniqueName+" : average bug cause weight = "+a.averageBugWeight).printlno();
+        }
+
+
+        lastState = s;
+	}
+	("@enduml").printlno();
+	("finishing..").println();
+}
+
+operation String printlno() {
+    writer.write(self.replaceAll("(?:[\\w\\d])-(?:[\\w\\d])", "_") + "\n");
+    writer.flush();
+}	
