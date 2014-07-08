@@ -237,7 +237,7 @@ rule Action2State
     activity.targetState = s;
     activity.state = lastState;            
     activity.date = a.revision.author_date;
-    activity.type = a.type;
+    activity.setActivityType(a.type);
     activity.agent = a.revision.author.equivalent();
 	
     

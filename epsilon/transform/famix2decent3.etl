@@ -1,4 +1,4 @@
-import "../decent/common.eol";
+import "../libraries/decent/common.eol";
 
 pre {
   //Some initialization
