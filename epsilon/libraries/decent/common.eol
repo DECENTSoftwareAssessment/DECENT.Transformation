@@ -70,6 +70,17 @@ operation Any toDays() : Real {
 	return self.asDouble() / (3600*1000*24);
 }
 
+operation DECENT!Activity setActivityType(type : String) {
+	var t = DECENT!ActivityType.allInstances().select(a|a.name = type).first();
+	if (t.isUndefined()) {
+		t = new DECENT!ActivityType();
+		t.name = type;
+		DECENT!Model.allInstances().first().activityTypes.add(t);
+	}
+	self.type.add(t);
+}
+
+
 operation DECENT!Model addAttributes(attributes : Map) : Real {
 	for (a in attributes.keySet()) {
     	if (Model.attributePool.attributes.select(att|att.name = a).size() = 0) {
