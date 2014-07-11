@@ -83,6 +83,7 @@ pre {
 
   ("...transforming states...").println();
   for (s in CFA!ArtifactState.allInstances()) {
+	("  " + s.file.file_name + " @ "+s.ID).println();
   	var fileName = s.file.file_name;
   	var filePath = s.action.current_file_path;
   	var matchedStates = DECENT!State.allInstances().select(m|m.artifact.isMGtype() and m.ID = s.ID and m.values.select(v|v.name = "FilePath").first().content = filePath);
