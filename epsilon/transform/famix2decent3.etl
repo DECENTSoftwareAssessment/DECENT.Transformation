@@ -211,7 +211,6 @@ operation DECENT!State mapAnchoredElement(c : FAMIX!AnchoredElement, artifactTyp
             activity.addDelta(attribute);
         }
     }
-    
 }
 
 rule Class2State
@@ -224,65 +223,6 @@ rule Class2State
     c.~done = true;
     (FAMIX!Class.allInstances().select(c|c.~done == true).size()+"/"+potentiallyAffectedClasses.size() + " done").println();
 
-    //moved to extracted operation
-/*    
-    var fileName = c.sourceAnchor_IN_FileAnchor.fileName;
-    ("  File Anchor at "+fileName).println();
-    //TODO: add backout strategy in case content already exists
-    //TODO: deal with unresolved and unmapped elements
-    //TODO: simplify
-    if (fileName <> "_unknown_path") {
-        var candidateParentStates = DECENT!State.allInstances().select(s|s.ID = c.revisionId and s.values.get(0).content = fileName);
-        ("    Candidate Parent States Count: "+candidateParentStates.size()).println();
-        if (candidateParentStates.size() > 0) {
-            var parent = candidateParentStates.first().artifact;
-            ("      Candidate Parent Artifact: "+parent.name).println();
-            var candidateArtifacts = parent.children.select(child|child.name = c.name);
-            var artifact = null;
-            if (candidateArtifacts.size() > 0) {
-                //TODO: what if more than one?
-                artifact = candidateArtifacts.first();
-            } else {
-                artifact = new DECENT!Artifact;
-                artifact.name = c.name;
-                artifact.type = ClassArtifactType;
-                artifact.parent = parent;
-            }
-            s.name = candidateParentStates.first().name;
-            s.ID = c.revisionId;
-            artifact.states.add(s);
-
-            s.addValue(FileAnchorAttribute, c.sourceAnchor_IN_FileAnchor.fileName+":"+c.sourceAnchor_IN_FileAnchor.startLine+":"+c.sourceAnchor_IN_FileAnchor.endLine);
-            
-            for (attr in c.eClass().getEAllAttributes()) {
-		        var attribute = DECENT!Attribute.allInstances().
-		            select(a|a.name = attr.getName()).first(); 
-		        if (not attribute.isDefined()){
-		            attribute = new DECENT!Attribute;
-		            attribute.name = attr.getName();
-		            
-		            if (Model.attributePool.attributes.select(a|a.name = attr.getName()).size() = 0) {
-		                Model.attributePool.attributes.add(attribute);
-		            }
-		            attribute.artifactTypes.add(ClassArtifactType);
-		        }
-                //TODO: needs to be checked when using multiple revisions to avoid adding multiple instances
-                //OR: try and see whether the "unique" takes care of that => doesn't seem to be the case'
-		        if (artifact.attributes.select(a|a.name = attr.getName()).size() = 0) {
-		            artifact.attributes.add(attribute);
-		        }
-		        
-		        if ((attr.getEAttributeType().getName() == "EDouble")) {
-		            s.addValue(attribute, c.eGet(attr));
-		            //TODO: add activities and deltas
-		        }
-		        
-            }
-            
-        }
-
-    }
-*/
 }
 
 rule Module2State 
@@ -347,131 +287,6 @@ rule Method2State
     s.mapAnchoredElement(m, MethodArtifactType, m.signature);
 
     m.~done = true;
-    (FAMIX!Method.allInstances().select(m|m.~done == true).size()+"/"+potentiallyAffectedMethods.size() + " done").println();
-
-
-    //TODO: clean up legacy code based on incorrect assumptions
-/*
-    var fileName = m.sourceAnchor_IN_FileAnchor.fileName;
-    ("  File Anchor at "+fileName).println();
-
-	if (fileName <> "_unknown_path") {
-	    //TODO: abstract and refactor, mostly identical to Class2State    
-	    var parentState = m.parentType_IN_Class.first().equivalent();
-	    //TODO: for some reason one class state is not assigned to corresponding artifact
-	    //check for commit 11, class CLArgBase and method set
-	    //OK, not created since parent file was not modified and the corresponding state was not found
-	    //it shold be handled in a similar way here as well
-	    //BUT the parent state shouldn't exist either in this case since it is not valid
-	    //=> set a guard?'
-	    ("Parent "+m.parentType_IN_Class.first()).println();
-	    ("Parent "+parentState.isDefined()).println();
-	    ("Parent "+parentState.artifact).println();
-	    var candidateArtifacts = parentState.artifact.children.select(a|a.name = m.name);
-	    ("Candidate artifacts "+candidateArtifacts.size()).println();
-	    var artifact = null;
-	    if (candidateArtifacts.size() > 0) {
-	        //TODO: what if more than one?
-	        artifact = candidateArtifacts.first; 
-	    } else {
-	        artifact = new DECENT!Artifact;
-	        artifact.name = m.name;
-	        artifact.type = MethodArtifactType;
-	        artifact.parent = parentState.artifact;
-	    }
-	    s.name = parentState.name;
-	    s.ID = m.revisionId;
-	    artifact.states.add(s);
-	    
-	    s.addValue(FileAnchorAttribute, m.sourceAnchor_IN_FileAnchor.fileName+":"+m.sourceAnchor_IN_FileAnchor.startLine+":"+m.sourceAnchor_IN_FileAnchor.endLine);
-	    
-	    for (attr in m.eClass().getEAllAttributes()) {
-	        var attribute = DECENT!Attribute.allInstances().
-	            select(a|a.name = attr.getName()).first(); 
-	        if (not attribute.isDefined()){
-	            attribute = new DECENT!Attribute;
-	            attribute.name = attr.getName();
-	            
-	            if (Model.attributePool.attributes.select(a|a.name = attr.getName()).size() = 0) {
-	                Model.attributePool.attributes.add(attribute);
-	            }
-	            attribute.artifactTypes.add(MethodArtifactType);
-	        }
-	        //TODO: see also concerns below
-	        //TODO: needs to be checked when using multiple revisions to avoid adding multiple instances
-	        //OR: try and see whether the "unique" takes care of that => doesn't seem to be the case'
-	        if (artifact.attributes.select(a|a.name = attr.getName()).size() = 0) {
-	            artifact.attributes.add(attribute);
-	        }
-	        
-	        if ((attr.getEAttributeType().getName() == "EDouble")) {
-	            s.addValue(attribute, m.eGet(attr));
-	            //TODO: add activities and deltas
-	        }
-	        
-	    }
-	    
-    }   
-*/
-   //TODO: even older legacy code
-    /************************* methods ****************************/
-/*    
-    for (m in c.Method_OF_parentType) {
-        ("  Transforming method "+m.name).println();
-        var am : new DECENT!Artifact;
-        am.name = m.name;
-        am.type = MethodArtifactType;
-        am.parent = ac;
-        
-        var ams = new DECENT!State;
-        ams.name = "head";
-
-        //TODO: quite a bit of redundancy with attribute handling, consider revision
-        var v : new DECENT!Value;
-        v.content = m.sourceAnchor_IN_FileAnchor.fileName;
-        v.ofAttribute = FileAnchorAttribute;
-        am.attributes.add(FileAnchorAttribute);
-        FileAnchorAttribute.artifactTypes.add(MethodArtifactType);
-        ams.values.add(v);
-        
-        ams.ID = new Native("java.math.BigInteger")(m.revisionId.asString());
-        am.states.add(ams);
-        
-        for (attr in m.eClass().getEAllAttributes()) {
-            //("  Transforming attribute "+attr.getName()).println();
-            //("    type "+attr.getEAttributeType().getName()).println();
-            //("    value "+m.eGet(attr)).println();
-            
-            var attribute = DECENT!Attribute.allInstances().
-                select(a|a.name = attr.getName()).first;
-            if (not attribute.isDefined()){
-                //("  Attribute not defined. Initializing "+attribute+" ").println();
-                attribute = new DECENT!Attribute;
-                attribute.name = attr.getName();
-
-                //if (not Model.attributePool.attributes.select(a|a.name = attr.getName()).first().isDefined()) {
-                    Model.attributePool.attributes.add(attribute);
-                //}
-        
-                attribute.artifactTypes.add(MethodArtifactType);
-                //("  Attribute not defined. Initialized "+attribute.name+" ").println();
-            }
-            //TODO: needs to be checked when using multiple revisions to avoid adding multiple instances
-            //OR: try and see whether the "unique" takes care of that
-            //if (not am.attributes.allInstances().select(a|a.name = attr.getName()).first().isDefined()) {
-               am.attributes.add(attribute);
-            //}
-    
-            
-            if ((attr.getEAttributeType().getName() == "EDouble")) {
-                var amv = new DECENT!Value;
-                amv.content = m.eGet(attr);
-                amv.ofAttribute = attribute;
-                //TODO: add attribute linking
-                
-                ams.values.add(amv);
-            }
-        }
-    }
-*/    
+    (FAMIX!Method.allInstances().select(m|m.~done == true).size()+"/"+potentiallyAffectedMethods.size() + " done").println();   
 }
+
