@@ -24,7 +24,20 @@ post dagInitPost{
 }
 
 //TODO: this should be elsewhere
-//TODO: need to add initial state
+//TODO: may need to add initial state
+//NOTE: given a set of activities resulting in target artifact states with ID=N
+//      an agent is said to be in an agent state with ID=N when they performed 
+//      these activities resulting in them moving to agent state with ID=M after
+//		these activities were peformed while obtaining experience delta(E(M,N) as 
+// 		a result, where E(M) is defined as a set of values describing the agent in 
+//		agent state with ID=M and E(N) is a set of values describing the agent in
+//		agent state with ID=N.
+//		Consequently, an agent does not have "final" state, but rather only a 
+//		state in which they performed the last observed activities, with the 
+//		experience obtained from these activities not being considered as there are
+//		no further activities where this experience would play a role.
+//		However, this experience may need to be considered when evaluating the 
+//		overall experience of a developer.		 
 operation Any assignAgentStatesToActivities() {
   ("Adding agent states to activities... ").println();
   for (s in DECENT!AgentState.allInstances()) {
