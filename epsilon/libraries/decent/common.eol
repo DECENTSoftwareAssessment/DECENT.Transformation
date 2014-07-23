@@ -70,6 +70,11 @@ operation Any toDays() : Real {
 	return self.asDouble() / (3600*1000*24);
 }
 
+operation Any toMinutes() : Real {
+	return self.asDouble() / (60*1000);
+}
+
+
 operation DECENT!Activity setActivityType(type : String) {
 	var t = DECENT!ActivityType.allInstances().select(a|a.name = type).first();
 	if (t.isUndefined()) {
