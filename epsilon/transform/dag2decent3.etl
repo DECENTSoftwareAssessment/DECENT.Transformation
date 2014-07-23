@@ -1,0 +1,108 @@
+pre dagInitPre {
+
+  //Some initialization
+  //More generic (might be simplified)
+  "Running dag2decent v3".println();
+  
+  /********************************** INIT (1x) *******************************/
+}
+
+post dagInitPost{
+  //DONE: Note that this doesn't work as it is a global graph
+  //artifact states are a projection on this graph and it would be 
+  //more appropriate to assemble these projections which would 
+  //probably result in the very same sequence of states as the one
+  //produced by the sequence of actions 
+  
+  //TODO: The DAG is nonetheless potentially relevant for the 
+  //CFA analysis or at least some variations thereof
+  ("Post processing... ").println();
+  //checkCorrectStateSequence();
+  assignAgentStateSequence();
+  assignAgentStatesToActivities();
+  
+}
+
+//TODO: this should be elsewhere
+//TODO: need to add initial state
+operation Any assignAgentStatesToActivities() {
+  ("Adding agent states to activities... ").println();
+  for (s in DECENT!AgentState.allInstances()) {
+  	s.activities.clear();
+  }
+  
+  for (a in DECENT!Agent.allInstances()) {
+  	("  Agent: "+a.name).println();
+  	for (s in a.states) {
+  		if (s.previous.isDefined()) {
+	  		s.previous.activities.addAll(a.activities.select(ax|ax.targetState.ID = s.ID));
+  		}
+  	}
+  }
+}
+
+
+operation DAG!Node findPreviousStateInParentNodes(state : DECENT!AgentState) {
+	state.previous = state.agent.states.select(x|x.name = self.name).first();
+	if (self.parents.size() > 0 and state.previous.isUndefined()) {
+		for (p in self.parents) {
+			p.findPreviousStateInParentNodes(state);
+		}
+	}
+}
+
+operation DAG!Node findPreviousStateNodeInParentNodes(parent : DAG!Node) : DAG!Node {
+	var node;
+	if (self.parents.size() > 0 and self <> parent) {
+		for (p in self.parents) {
+			node = p.findPreviousStateNodeInParentNodes(parent);
+			if (node.isDefined()) {
+				return node; //break;
+			}
+		}
+	} 
+	if (self = parent) {
+		node = self;
+	}
+	return node;
+}
+
+
+operation Any assignAgentStateSequence() {
+  ("Adding agent state sequence... ").println();
+  for (s in DECENT!AgentState.allInstances()) {
+  	s.previous = null;
+  }
+  
+  var nodes = DAG!Graph.allInstances().first.nodes;
+  for (a in DECENT!Agent.allInstances()) {
+  	("  Agent: "+a.name).println();
+  	for (s in a.states) {
+		var node = nodes.select(n|n.name = s.name).first();
+		node.findPreviousStateInParentNodes(s);
+		if (not s.previous.isDefined()) {
+			(    "Failed to assign previous state for state "+s.ID+"!").errln();
+			(    "Corresponding node has "+node.parents.size()+" parents!").errln();
+		}
+  	}
+  }
+}
+
+operation Any checkCorrectStateSequence() {
+  ("Checking correct artifact state sequences... ").println();
+  var nodes = DAG!Graph.allInstances().first.nodes;
+  for (a in DECENT!Artifact.allInstances()) {
+  	("  Artifact: "+a.name).println();
+  	for (s in a.states) {
+		var node = nodes.select(n|n.name = s.name).first();
+		for (p in s.previous) {
+				var parentNode = nodes.select(n|n.name = p.name).first();
+			
+			var currentNodeX = node.findPreviousStateNodeInParentNodes(parentNode);
+			if (not currentNodeX.isDefined()) {
+				(    "Failed to find previous state node in node parents tree for state "+s.ID+"!").errln();
+			}
+		}
+  	}
+  }
+}

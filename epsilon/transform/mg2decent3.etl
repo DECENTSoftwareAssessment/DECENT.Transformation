@@ -187,6 +187,18 @@ rule File2Artifact
 	processedCount = processedCount + 1;
 }
 
+rule Revision2AgentState 
+    transform r : MG!Revision
+    to s : DECENT!AgentState {
+    guard : ruleBased
+    
+    s.agent = r.author.equivalent();
+    ("Transforming revision "+ r.commit_id + " to agent state for " + s.agent.name).println();
+    s.ID = r.commit_id;
+    s.name = r.rev;
+    s.date = r.author_date;
+}
+
 rule Action2State 
     transform a : MG!Action
     to s : DECENT!State {
