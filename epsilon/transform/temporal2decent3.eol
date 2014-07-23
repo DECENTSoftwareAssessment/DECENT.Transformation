@@ -49,6 +49,7 @@ import "../libraries/decent/common.eol";
   var FrequencyAverageAttribute = DECENT!Attribute.allInstances().select(a|a.name = "FrequencyAverage").first();
   var FrequencyDistanceToAverageAttribute = DECENT!Attribute.allInstances().select(a|a.name = "FrequencyDistanceToAverage").first();
 
+  var start = Native("java.lang.System").currentTimeMillis();
 
   //TODO: other temporal dimensions such as cause-fix time, agent time, bug lifetime vs fragment lifetime, etc.
   ("Adding temporal characteristics...").println();
@@ -63,8 +64,40 @@ import "../libraries/decent/common.eol";
   	//thus temporal ordering causes inconsistencies with the rest 
   	//var sortedStates = a.states.sortBy(s|s.fromActivity.first().date.time);
   	var sortedStates = a.states; 
-  	var timeCreated = sortedStates.first().fromActivity.first().date.time;
-  	var lifespan =  sortedStates.last().fromActivity.first().date.time - timeCreated;
+  	sortedStates.addTemporalCharacteristics();
+  }
+
+
+  //temporal characteristics for agents
+  //clean up  
+  for (a in DECENT!Agent.allInstances()) {
+  	("  Agent: "+a.name).println();
+  	
+  	var sortedStates = a.states; 
+  	sortedStates.addAgentTemporalCharacteristics();
+	
+	//TODO: future approach
+	var revisions = 0;
+  	for (s in sortedStates) {
+  		revisions = revisions + 1;
+
+		//TODO: this should be migrated to addValue
+  		var v = new DECENT!DoubleValue();
+  		v.content = revisions.asDouble();
+  		s.valuesMap.put(RevisionsAttribute, v);
+  	}
+  }
+  
+  var end = Native("java.lang.System").currentTimeMillis();
+  var duration = end - start;
+  ("Duration: "+duration.toMinutes().round(5)).println();
+
+  Model.content.add("temporal2decent3");
+
+
+operation OrderedSet addAgentTemporalCharacteristics() {
+  	var timeCreated = self.first().date.time;
+  	var lifespan =  self.last().date.time - timeCreated;
   	var revisions = 0;
   	var previousStateTime = timeCreated;
   	var absoluteTime = new Sequence;
@@ -72,9 +105,80 @@ import "../libraries/decent/common.eol";
   	var distanceTime = new Sequence;
   	var resolution = 24*60*60*1000;//days*hours*minutes*seconds
   	//resolution = 60*1000;//minutes*seconds
-  	
+
   	//TODO: filter hits only 
-  	for (s in sortedStates) {
+  	//TODO: navigate via previous/next
+  	for (s in self) {
+	 	for (a in attributes.keySet()) {
+			s.values.removeAll(s.values.select(v|v.ofAttribute.name = a));
+		}
+  		//TODO: technically lifespan does not need to be included
+  		//TODO: difference can also be inferred from age delta
+  		//TODO: the interesting part would be the deltas in the 
+  		//      frequency as shifting gears between faster and 
+  		//      slower speed occurs
+  		//TODO: keep in mind that changes in temporal order due to branching may create artifacts
+  		
+  		//TODO: this increment may need to be moved to the end or initialized with -1
+  		//      given the logic behind agent states
+  		//TODO: other characteristics may need to be adjusted as well
+  		revisions = revisions + 1;
+  		s.addValue(RevisionsAttribute, revisions.asDouble());
+  		s.addValue(LifespanAttribute, lifespan.asDouble()/resolution);
+
+  		var age = (s.date.time - timeCreated).asDouble()/resolution;
+  		s.addValue(AgeAttribute, age);
+  		
+  		var distance = (s.date.time - previousStateTime).asDouble()/resolution;
+  		s.addValue(DistanceAttribute, distance);
+
+  		var distanceAverage = (lifespan/(self.size().asDouble()-1)).asDouble();
+  		s.addValue(DistanceAverageAttribute, distanceAverage);
+
+  		var distanceRunningAverage = (age/revisions).asDouble();
+  		s.addValue(DistanceRunningAverageAttribute, distanceRunningAverage);
+
+		var frequency = ((revisions.asDouble()-1)/age).asDouble();
+  		s.addValue(FrequencyAttribute, frequency);
+  		
+  		var frequencyAverage = ((self.size().asDouble()-1)/(lifespan.asDouble()/resolution)).asDouble();
+  		s.addValue(FrequencyAverageAttribute, frequencyAverage);
+
+  		s.addValue(FrequencyDistanceToAverageAttribute, frequency-frequencyAverage);
+  		
+  		absoluteTime.add(s.date.time.asDouble()/resolution);
+  		s.addDoubleCollectionValue(AbsoluteTimeAttribute, absoluteTime);
+  		s.addValue(AbsoluteTimeVarianceAttribute, absoluteTime.getVariance());
+
+		relativeTime.add((s.date.time - timeCreated).asDouble()/resolution);
+  		s.addDoubleCollectionValue(RelativeTimeAttribute, relativeTime);
+		s.addValue(RelativeTimeVarianceAttribute, relativeTime.getVariance());
+		
+		distanceTime.add((s.date.time - previousStateTime).asDouble()/resolution);
+  		s.addDoubleCollectionValue(DistanceTimeAttribute, distanceTime);
+		s.addValue(DistanceTimeVarianceAttribute, distanceTime.getVariance());		
+  		
+  		previousStateTime = s.date.time;
+	}
+}
+
+//TODO: add date to states
+//TODO: move deltas outside
+//TODO: unify with agent states
+operation OrderedSet addTemporalCharacteristics() {
+  	var timeCreated = self.first().fromActivity.first().date.time;
+  	var lifespan =  self.last().fromActivity.first().date.time - timeCreated;
+  	var revisions = 0;
+  	var previousStateTime = timeCreated;
+  	var absoluteTime = new Sequence;
+  	var relativeTime = new Sequence;
+  	var distanceTime = new Sequence;
+  	var resolution = 24*60*60*1000;//days*hours*minutes*seconds
+  	//resolution = 60*1000;//minutes*seconds
+
+  	//TODO: filter hits only 
+  	//TODO: navigate via previous/next
+  	for (s in self) {
 	 	for (a in attributes.keySet()) {
 			s.values.removeAll(s.values.select(v|v.ofAttribute.name = a));
 		}
@@ -94,7 +198,7 @@ import "../libraries/decent/common.eol";
   		var distance = (s.fromActivity.first().date.time - previousStateTime).asDouble()/resolution;
   		s.addValue(DistanceAttribute, distance);
 
-  		var distanceAverage = (lifespan/(sortedStates.size().asDouble()-1)).asDouble();
+  		var distanceAverage = (lifespan/(self.size().asDouble()-1)).asDouble();
   		s.addValue(DistanceAverageAttribute, distanceAverage);
 
   		var distanceRunningAverage = (age/revisions).asDouble();
@@ -103,7 +207,7 @@ import "../libraries/decent/common.eol";
 		var frequency = ((revisions.asDouble()-1)/age).asDouble();
   		s.addValue(FrequencyAttribute, frequency);
   		
-  		var frequencyAverage = ((sortedStates.size().asDouble()-1)/(lifespan.asDouble()/resolution)).asDouble();
+  		var frequencyAverage = ((self.size().asDouble()-1)/(lifespan.asDouble()/resolution)).asDouble();
   		s.addValue(FrequencyAverageAttribute, frequencyAverage);
 
   		s.addValue(FrequencyDistanceToAverageAttribute, frequency-frequencyAverage);
@@ -131,10 +235,4 @@ import "../libraries/decent/common.eol";
   		
   		previousStateTime = s.fromActivity.first().date.time;
   	}
-  }
-
-  Model.content.add("temporal2decent3");
-  
-  
-  
-  
+}
