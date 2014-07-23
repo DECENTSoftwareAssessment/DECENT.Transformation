@@ -1,10 +1,13 @@
+import "../libraries/decent/common.eol";
+
 pre dagInitPre {
 
   //Some initialization
   //More generic (might be simplified)
   "Running dag2decent v3".println();
-  
+  var start = Native("java.lang.System").currentTimeMillis();
   /********************************** INIT (1x) *******************************/
+  var Model = DECENT!Model.allInstances().first();
 }
 
 post dagInitPost{
@@ -21,6 +24,13 @@ post dagInitPost{
   assignAgentStateSequence();
   assignAgentStatesToActivities();
   
+  //TODO: add to all other transformations
+  var end = Native("java.lang.System").currentTimeMillis();
+  var duration = end - start;
+  ("Duration: "+duration.toMinutes().round(5)).println();
+  
+  
+  Model.content.add("dag2decent3");
 }
 
 //TODO: this should be elsewhere
