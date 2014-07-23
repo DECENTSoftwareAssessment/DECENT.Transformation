@@ -1,0 +1,84 @@
+import "../libraries/decent/common.eol";
+
+"Running experience2decent ".println();
+
+//TODO: could also be integrated back into famix2decent as inline checking 
+//to further filter out unchanged elements 
+
+var Model = DECENT!Model.allInstances().first();
+
+var attributes = new Map;
+attributes.put("ProjectActivities","");
+attributes.put("TotalProjectActivities","");
+attributes.put("ProjectCommits","");
+attributes.put("DeveloperActivities","");
+attributes.put("TotalDeveloperActivities","");
+attributes.put("DeveloperCommits","");
+attributes.put("ArtifactActivities","");
+attributes.put("TotalArtifactActivities","");
+attributes.put("ArtifactDevelopers","");
+attributes.put("ArtifactDeveloperActivities","");
+
+//TODO: add temporals - to last change, to first change, averages, etc.
+
+Model.addAttributes(attributes);  
+
+var CodeArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "code").first();
+
+var ClassArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "Class").first();
+var MethodArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "Method").first();
+var FunctionArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "Function").first();
+var ModuleArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "Module").first();
+
+var ProjectActivitiesAttribute = DECENT!Attribute.allInstances().select(a|a.name = "ProjectActivities").first();
+var TotalProjectActivitiesAttribute = DECENT!Attribute.allInstances().select(a|a.name = "TotalProjectActivities").first();
+var ProjectCommitsAttribute = DECENT!Attribute.allInstances().select(a|a.name = "ProjectCommits").first();
+var DeveloperActivitiesAttribute = DECENT!Attribute.allInstances().select(a|a.name = "DeveloperActivities").first();
+var TotalDeveloperActivitiesAttribute = DECENT!Attribute.allInstances().select(a|a.name = "TotalDeveloperActivities").first();
+var DeveloperCommitsAttribute = DECENT!Attribute.allInstances().select(a|a.name = "DeveloperCommits").first();
+var ArtifactActivitiesAttribute = DECENT!Attribute.allInstances().select(a|a.name = "ArtifactActivities").first();
+var TotalArtifactActivitiesAttribute = DECENT!Attribute.allInstances().select(a|a.name = "TotalArtifactActivities").first();
+var ArtifactDevelopersAttribute = DECENT!Attribute.allInstances().select(a|a.name = "ArtifactDevelopers").first();
+var ArtifactDeveloperActivitiesAttribute = DECENT!Attribute.allInstances().select(a|a.name = "ArtifactDeveloperActivities").first();
+
+//TODO: this can only be executed prior to FAMIX
+var progress = 0;
+var artifacts = DECENT!Artifact.allInstances().select(x|x.type = CodeArtifactType);
+for (a in artifacts) {
+	progress = progress+1;
+	("Processing "+a.name+" : "+progress+" / "  + artifacts.size()).println();
+	for (s in a.states) {
+		//TODO: this shall likely be activity values
+		//TODO: this is also horribly inefficient
+		//TODO: simplification assumption first
+		var projectActivitiesSoFar = DECENT!Activity.allInstances().select(ax|ax.date.time < s.fromActivity.first().date.time);
+		var paCount = projectActivitiesSoFar.size();
+		s.values.removeAll(s.values.select(v|v.ofAttribute = ProjectActivitiesAttribute));
+		s.addValue(ProjectActivitiesAttribute, paCount);
+
+		var artifactActivitiesSoFar = projectActivitiesSoFar.select(ax|ax.targetState.artifact = a);
+		var aCount = artifactActivitiesSoFar.size();
+		s.values.removeAll(s.values.select(v|v.ofAttribute = ArtifactActivitiesAttribute));
+		s.addValue(ArtifactActivitiesAttribute, aCount);
+		
+		//TODO: activity or fromActivity?
+		//TODO: simplification assumption first
+		var developerActivitiesSoFar = projectActivitiesSoFar.select(ax|ax.agent = s.fromActivity.first().agent);
+		var daCount = developerActivitiesSoFar.size();
+		//var daCount = s.fromActivity.first().agent.activities.select(ax|ax.date.time < s.fromActivity.first().date.time).size();
+		s.values.removeAll(s.values.select(v|v.ofAttribute = DeveloperActivitiesAttribute));
+		s.addValue(DeveloperActivitiesAttribute, daCount);
+
+		//TODO: activity or fromActivity?
+		//TODO: simplification assumption first
+
+		var developerActivitiesOnArtifactSoFar = developerActivitiesSoFar.select(ax|ax.targetState.artifact = a);
+		var adaCount = developerActivitiesOnArtifactSoFar.size();
+		//var adaCount = s.fromActivity.first().agent.activities.select(ax|ax.targetState.artifact = a and ax.date.time < s.fromActivity.first().date.time).size();
+		s.values.removeAll(s.values.select(v|v.ofAttribute = ArtifactDeveloperActivitiesAttribute));
+		s.addValue(ArtifactDeveloperActivitiesAttribute, adaCount);
+
+	}
+}
+
+Model.content.add("experience2decent3");
