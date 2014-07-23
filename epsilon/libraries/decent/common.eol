@@ -74,6 +74,11 @@ operation Any toMinutes() : Real {
 	return self.asDouble() / (60*1000);
 }
 
+operation Real round(places : Integer) : Real {
+	var factor = 10.pow(places).asDouble();
+	return (self.asDouble() * factor).round() / factor;
+}
+
 
 operation DECENT!Activity setActivityType(type : String) {
 	var t = DECENT!ActivityType.allInstances().select(a|a.name = type).first();
