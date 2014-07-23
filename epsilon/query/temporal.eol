@@ -1,0 +1,62 @@
+
+  var AbsoluteTimeAttribute = DECENT!Attribute.allInstances().select(a|a.name = "AbsoluteTime").first();
+  var RelativeTimeAttribute = DECENT!Attribute.allInstances().select(a|a.name = "RelativeTime").first();
+  var DistanceTimeAttribute = DECENT!Attribute.allInstances().select(a|a.name = "DistanceTime").first();
+
+  var AbsoluteTimeVarianceAttribute = DECENT!Attribute.allInstances().select(a|a.name = "AbsoluteTimeVariance").first();
+  var RelativeTimeVarianceAttribute = DECENT!Attribute.allInstances().select(a|a.name = "RelativeTimeVariance").first();
+  var DistanceTimeVarianceAttribute = DECENT!Attribute.allInstances().select(a|a.name = "DistanceTimeVariance").first();
+
+  var RevisionsAttribute = DECENT!Attribute.allInstances().select(a|a.name = "Revisions").first();
+  var LifespanAttribute = DECENT!Attribute.allInstances().select(a|a.name = "Lifespan").first();
+  var AgeAttribute = DECENT!Attribute.allInstances().select(a|a.name = "Age").first();
+  var DistanceAttribute = DECENT!Attribute.allInstances().select(a|a.name = "Distance").first();
+
+  var DistanceAverageAttribute = DECENT!Attribute.allInstances().select(a|a.name = "DistanceAverage").first();
+  var DistanceRunningAverageAttribute = DECENT!Attribute.allInstances().select(a|a.name = "DistanceRunningAverage").first();
+
+  
+  var FrequencyAttribute = DECENT!Attribute.allInstances().select(a|a.name = "Frequency").first();
+  var FrequencyAverageAttribute = DECENT!Attribute.allInstances().select(a|a.name = "FrequencyAverage").first();
+  var FrequencyDistanceToAverageAttribute = DECENT!Attribute.allInstances().select(a|a.name = "FrequencyDistanceToAverage").first();
+  
+  //query -> move to a separte module
+  for (a in DECENT!Artifact.allInstances().select(a|a.states.size > 0)) {
+  	("Artifact: "+a.name).println();
+  	var separator = "\t";
+  	(
+  	 "FrequencyReference" + separator + 
+  	 RevisionsAttribute.name + separator + 
+  	 AgeAttribute.name + separator + 
+  	 DistanceAttribute.name + separator + 
+  	 FrequencyAttribute.name + separator + 
+  	 FrequencyAverageAttribute.name + separator + 
+  	 FrequencyDistanceToAverageAttribute.name + separator + 
+  	 DistanceAverageAttribute.name + separator + 
+  	 DistanceRunningAverageAttribute.name + separator + 
+  	 FrequencyAttribute.name+"(delta)" + separator + 
+  	 FrequencyDistanceToAverageAttribute.name+"(delta)" + separator + 
+  	 DistanceAttribute.name+"(delta)"
+  	).println();
+  	
+  	//TODO: filter hits only 
+   	//var sortedStates = a.states.sortBy(s|s.fromActivity.first().date.time);
+  	var sortedStates = a.states; 
+  	
+    for (s in sortedStates) {
+    	(
+    	   (s.values.select(v|v.ofAttribute = AgeAttribute).first.content*s.values.select(v|v.ofAttribute = FrequencyAverageAttribute).first.content) + separator +
+			s.values.select(v|v.ofAttribute = RevisionsAttribute).first.content + separator +
+			s.values.select(v|v.ofAttribute = AgeAttribute).first.content + separator +
+			s.values.select(v|v.ofAttribute = DistanceAttribute).first.content + separator +
+			s.values.select(v|v.ofAttribute = FrequencyAttribute).first.content + separator +
+			s.values.select(v|v.ofAttribute = FrequencyAverageAttribute).first.content + separator +
+			s.values.select(v|v.ofAttribute = FrequencyDistanceToAverageAttribute).first.content + separator +
+			s.values.select(v|v.ofAttribute = DistanceAverageAttribute).first.content + separator +
+			s.values.select(v|v.ofAttribute = DistanceRunningAverageAttribute).first.content + separator +
+			s.fromActivity.first().deltas.select(d|d.onAttribute = FrequencyAttribute).first.change + separator +
+			s.fromActivity.first().deltas.select(d|d.onAttribute = FrequencyDistanceToAverageAttribute).first.change + separator +
+			s.fromActivity.first().deltas.select(d|d.onAttribute = DistanceAttribute).first.change
+    	).replaceAll("\\.",",").println();
+	}
+  }

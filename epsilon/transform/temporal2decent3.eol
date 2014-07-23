@@ -135,44 +135,6 @@ import "../libraries/decent/common.eol";
 
   Model.content.add("temporal2decent3");
   
-  //query -> move to a separte module
-  for (a in DECENT!Artifact.allInstances().select(a|a.states.size > 0)) {
-  	("Artifact: "+a.name).println();
-  	var separator = "\t";
-  	(
-  	 "FrequencyReference" + separator + 
-  	 RevisionsAttribute.name + separator + 
-  	 AgeAttribute.name + separator + 
-  	 DistanceAttribute.name + separator + 
-  	 FrequencyAttribute.name + separator + 
-  	 FrequencyAverageAttribute.name + separator + 
-  	 FrequencyDistanceToAverageAttribute.name + separator + 
-  	 DistanceAverageAttribute.name + separator + 
-  	 DistanceRunningAverageAttribute.name + separator + 
-  	 FrequencyAttribute.name+"(delta)" + separator + 
-  	 FrequencyDistanceToAverageAttribute.name+"(delta)" + separator + 
-  	 DistanceAttribute.name+"(delta)"
-  	).println();
-  	
-  	//TODO: filter hits only 
-   	//var sortedStates = a.states.sortBy(s|s.fromActivity.first().date.time);
-  	var sortedStates = a.states; 
-  	
-    for (s in sortedStates) {
-    	(
-    	   (s.values.select(v|v.ofAttribute = AgeAttribute).first.content*s.values.select(v|v.ofAttribute = FrequencyAverageAttribute).first.content) + separator +
-			s.values.select(v|v.ofAttribute = RevisionsAttribute).first.content + separator +
-			s.values.select(v|v.ofAttribute = AgeAttribute).first.content + separator +
-			s.values.select(v|v.ofAttribute = DistanceAttribute).first.content + separator +
-			s.values.select(v|v.ofAttribute = FrequencyAttribute).first.content + separator +
-			s.values.select(v|v.ofAttribute = FrequencyAverageAttribute).first.content + separator +
-			s.values.select(v|v.ofAttribute = FrequencyDistanceToAverageAttribute).first.content + separator +
-			s.values.select(v|v.ofAttribute = DistanceAverageAttribute).first.content + separator +
-			s.values.select(v|v.ofAttribute = DistanceRunningAverageAttribute).first.content + separator +
-			s.fromActivity.first().deltas.select(d|d.onAttribute = FrequencyAttribute).first.change + separator +
-			s.fromActivity.first().deltas.select(d|d.onAttribute = FrequencyDistanceToAverageAttribute).first.change + separator +
-			s.fromActivity.first().deltas.select(d|d.onAttribute = DistanceAttribute).first.change
-    	).replaceAll("\\.",",").println();
-	}
-  }
+  
+  
   
