@@ -8,7 +8,8 @@ import "../libraries/decent/common.eol";
 var Model = DECENT!Model.allInstances().first();
 
 var attributes = new Map;
-attributes.put("LinesPostHits","Changed lines within artifact");
+attributes.put("LinesPostHits","Changed lines within artifact in resulting state");
+attributes.put("LinesPreHits","Changed lines within artifact in context state");
 
 Model.addAttributes(attributes);  
 
@@ -21,6 +22,7 @@ var EndLineAttribute = DECENT!Attribute.allInstances().select(a|a.name = "EndLin
 var LinesPreAttribute = DECENT!Attribute.allInstances().select(a|a.name = "LinesPre").first();
 var LinesPostAttribute = DECENT!Attribute.allInstances().select(a|a.name = "LinesPost").first();
 var LinesPostHitsAttribute = DECENT!Attribute.allInstances().select(a|a.name = "LinesPostHits").first();
+var LinesPreHitsAttribute = DECENT!Attribute.allInstances().select(a|a.name = "LinesPreHits").first();
 
 var existingStatesInRevision = DECENT!State.allInstances().select(s|
 									s.artifact.type = ClassArtifactType or 
@@ -34,6 +36,7 @@ for (s in existingStatesInRevision) {
 	var parentState = s.artifact.parent.states.select(p|p.ID = s.ID).first();
 	var linesPost = parentState.values.select(v|v.ofAttribute = LinesPostAttribute).first().content;
 	var linesPostHits = linesPost.select(l|l >= startLine and l <= endLine);
+
 /*
 	("  "+s.artifact.name+"@"+s.ID+":"+startLine+ ":"+endLine).println();
 	("    "+parentState.artifact.name+"@"+parentState.ID+":"+startLine+ ":"+endLine).println();
@@ -42,6 +45,17 @@ for (s in existingStatesInRevision) {
 */	
 	s.values.removeAll(s.values.select(v|v.ofAttribute = LinesPostHitsAttribute));
 	s.addIntegerCollectionValue(LinesPostHitsAttribute, linesPostHits);
+	
+	var p = s.previous.first();
+	if (p.isDefined()) {
+		var p_startLine = p.values.select(v|v.ofAttribute = StartLineAttribute).first().content;
+		var p_endLine = p.values.select(v|v.ofAttribute = EndLineAttribute).first().content;
+	
+		var linesPre = parentState.values.select(v|v.ofAttribute = LinesPreAttribute).first().content;
+		var linesPreHits = linesPre.select(l|l >= p_startLine and l <= p_endLine);
+		s.values.removeAll(s.values.select(v|v.ofAttribute = LinesPreHitsAttribute));
+		s.addIntegerCollectionValue(LinesPreHitsAttribute, linesPreHits);
+	}
 }
 
 Model.content.add("hits2decent3");
