@@ -2,7 +2,7 @@ import "../libraries/decent/common.eol";
 import "../libraries/decent/logging.eol";
 
 "Running hits2decent ".log(1);
-
+var start = Native("java.lang.System").currentTimeMillis();
 //TODO: could also be integrated back into famix2decent as inline checking 
 //to further filter out unchanged elements 
 
@@ -60,3 +60,7 @@ for (s in existingStatesInRevision) {
 }
 
 Model.content.add("hits2decent3");
+
+var end = Native("java.lang.System").currentTimeMillis();
+var duration = end - start;
+("Duration: "+duration.toMinutes().round(5)).log(1);

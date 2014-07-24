@@ -1,6 +1,9 @@
 import "../libraries/mg/hunks.eol";
 import "../libraries/decent/logging.eol";
 
+  ("Running mg2normalized_hunks").log(1);
+  var start = Native("java.lang.System").currentTimeMillis();
+
 //var m : new MGx!Model;
 var files = MG!File.allInstances();
 
@@ -30,3 +33,6 @@ for (f in files) {
    	}
 }
 
+  var end = Native("java.lang.System").currentTimeMillis();
+  var duration = end - start;
+  ("Duration: "+duration.toMinutes().round(5)).log(1);

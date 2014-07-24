@@ -2,6 +2,8 @@ import "../libraries/decent/common.eol";
 import "../libraries/decent/logging.eol";
 
 ("Running trace2decent").log(1);
+var start = Native("java.lang.System").currentTimeMillis();
+
 var Model = DECENT!Model.allInstances().first();
 
 var attributes = new Map;
@@ -50,5 +52,10 @@ for (s in DECENT!State.allInstances().select(s|artifactTypes.includes(s.artifact
 }
 
 Model.content.add("trace2decent3");
-("...done").log(1);
+
+var end = Native("java.lang.System").currentTimeMillis();
+var duration = end - start;
+("Duration: "+duration.toMinutes().round(5)).log(1);
+
+
 

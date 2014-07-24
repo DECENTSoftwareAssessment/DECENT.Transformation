@@ -5,6 +5,7 @@ pre mgbzInitPre {
   //Some initialization
   //More generic (might be simplified)
   "Running mgbz2trace".log(1);
+  var start = Native("java.lang.System").currentTimeMillis();
   
   /********************************** INIT (1x) *******************************/
 
@@ -59,7 +60,7 @@ pre mgbzInitPre {
 }
 
 post mgbzInitPost{
-
-
-
+    var end = Native("java.lang.System").currentTimeMillis();
+    var duration = end - start;
+    ("Duration: "+duration.toMinutes().round(5)).log(1);
 }

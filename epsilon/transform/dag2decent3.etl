@@ -24,14 +24,14 @@ post dagInitPost{
   //checkCorrectStateSequence();
   assignAgentStateSequence();
   assignAgentStatesToActivities();
-  
-  //TODO: add to all other transformations
+   
+ 
+  Model.content.add("dag2decent3");
+
   var end = Native("java.lang.System").currentTimeMillis();
   var duration = end - start;
   ("Duration: "+duration.toMinutes().round(5)).log(1);
   
-  
-  Model.content.add("dag2decent3");
 }
 
 //TODO: this should be elsewhere

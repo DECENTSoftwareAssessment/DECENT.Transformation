@@ -6,7 +6,7 @@ pre mgInitPre {
   //Some initialization
   //More generic (might be simplified)
   "Running mg2cfn".log(1);
-  
+  var start = Native("java.lang.System").currentTimeMillis();
   /********************************** INIT (1x) *******************************/
   var lowerBound = 0;
   var upperBound = 2310;
@@ -36,7 +36,12 @@ post mgInitPost{
 	var writer;
     upperBound = 0;
 	//CFA!GlobalState.allInstances().select(s|s.ID = 65 or s.ID = 72).cfaToPlantUMLFile(filename);
-    //CFA!GlobalState.allInstances().select(s|s.ID <= upperBound and s.ID >= lowerBound).cfaToPlantUMLFile(filename);    
+    //CFA!GlobalState.allInstances().select(s|s.ID <= upperBound and s.ID >= lowerBound).cfaToPlantUMLFile(filename);
+    
+    var end = Native("java.lang.System").currentTimeMillis();
+    var duration = end - start;
+    ("Duration: "+duration.toMinutes().round(5)).log(1);
+        
 }
 
 

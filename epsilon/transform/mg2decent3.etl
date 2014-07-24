@@ -7,7 +7,7 @@ pre mgInitPre {
   //Some initialization
   //More generic (might be simplified)
   "Running mg2decent v3".log(1);
-  
+  var start = Native("java.lang.System").currentTimeMillis();
   /********************************** INIT (1x) *******************************/
   
   var Model : new DECENT!Model;
@@ -131,6 +131,11 @@ post mgInitPost{
 
     //TODO: adjust branching structure
   Model.content.add("mg2decent3");
+  
+  var end = Native("java.lang.System").currentTimeMillis();
+  var duration = end - start;
+  ("Duration: "+duration.toMinutes().round(5)).log(1);
+  
 }
 
 operation String replaceExtension() : String {

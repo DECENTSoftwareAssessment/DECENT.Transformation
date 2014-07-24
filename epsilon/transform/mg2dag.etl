@@ -3,6 +3,7 @@ import "../libraries/decent/logging.eol";
 pre dagInitPre {
   //Some initialization
   "Running mg2dag".log(1);
+  var start = Native("java.lang.System").currentTimeMillis();
   ("Pre processing... ").log(1);
   var nodes = DAG!Graph.allInstances().first().nodes;
   for (r in MG!Revision.allInstances()) {
@@ -31,5 +32,10 @@ post dagInitPost{
 	  		}
   		}
   	}
+  	
+    var end = Native("java.lang.System").currentTimeMillis();
+    var duration = end - start;
+    ("Duration: "+duration.toMinutes().round(5)).log(1);
+  	
 }
 
