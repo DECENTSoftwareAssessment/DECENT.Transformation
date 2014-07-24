@@ -1,0 +1,6 @@
+
+operation String log(level : Integer) {
+	var system = Native("java.lang.System");
+	var t = system.currentTimeMillis();
+	(t+ " : " + level + " : " + self).println();
+}
