@@ -119,6 +119,16 @@ operation Real normalize(min : Real, max : Real) : Real {
 	return ((self - min) / (max - min))*(1-0) + 0;
 }
 
+operation DECENT!Artifact isMGtype() : Boolean {
+	return self.type.name = "code" or 
+		self.type.name = "documentation" or 
+		self.type.name = "image" or 
+		self.type.name = "devel-doc" or 
+		self.type.name = "unknown" or 
+		self.type.name = "build" or 
+		self.type.name = "ui";
+}
+
 operation Collection getVariance() : Real {
 	if (self.size = 1) {
 	    //variance for a set of 1 elememts shall be 0
