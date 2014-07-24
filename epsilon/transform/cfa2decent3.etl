@@ -1,14 +1,15 @@
 //import "cfa-init.etl";
 import "../libraries/decent/common.eol";
+import "../libraries/decent/logging.eol";
 
 pre {
   //Some initialization
-  "Running cfa2decent3".println();
-  ("DECENT States: "+DECENT!State.allInstances().size()).println();
+  "Running cfa2decent3".log(1);
+  ("DECENT States: "+DECENT!State.allInstances().size()).log(1);
   var Model = DECENT!Model.allInstances().first();
 
 
-  ("Initializing CFA definitions").println();
+  ("Initializing CFA definitions").log(1);
   //This should only run once!!!
   
   var attributes = new Map;
@@ -81,19 +82,19 @@ pre {
   //TODO: add ratios, e.g. averageBugWeight/averageWeight, also for totals, define interpretation
   //TODO: add lifespans
 
-  ("...transforming states...").println();
+  ("...transforming states...").log(1);
   for (s in CFA!ArtifactState.allInstances()) {
-	("  " + s.file.file_name + " @ "+s.ID).println();
+	("  " + s.file.file_name + " @ "+s.ID).log(1);
   	var fileName = s.file.file_name;
   	var filePath = s.action.current_file_path;
   	var matchedStates = DECENT!State.allInstances().select(m|m.artifact.isMGtype() and m.ID = s.ID and m.values.select(v|v.name = "FilePath").first().content = filePath);
   	var size = matchedStates.size();
 	//check if correct matches can be found 
   	if (size <> 1) {
-  		("  "+size+" DECENT matches found for: "+fileName+" at "+s.ID).println();
-  		("    Avaliable states at "+s.ID+" are:").println();
+  		("  "+size+" DECENT matches found for: "+fileName+" at "+s.ID).log(1);
+  		("    Avaliable states at "+s.ID+" are:").log(1);
   		for (x in DECENT!State.allInstances().select(x|x.artifact.isMGtype() and x.ID = s.ID)) {
-  			("      "+x.artifact.name+" at "+x.ID+" ("+x.values.select(v|v.name = "FilePath").first().content+")").println();
+  			("      "+x.artifact.name+" at "+x.ID+" ("+x.values.select(v|v.name = "FilePath").first().content+")").log(1);
   		}
   	} else {
   		var state = matchedStates.first();
@@ -185,7 +186,7 @@ pre {
   	}
   	
   }
-  ("...adding carried weights...").println();
+  ("...adding carried weights...").log(1);
   
   for (a in DECENT!Artifact.allInstances().select(x|x.isMGtype())) {
   	var lastWeight = 0.asDouble();
@@ -198,7 +199,7 @@ pre {
   	}
   }
   
-  ("...done!").println();
+  ("...done!").log(1);
 }
 
 post {

@@ -1,10 +1,11 @@
 import "../libraries/decent/common.eol";
+import "../libraries/decent/logging.eol";
 
 pre dagInitPre {
 
   //Some initialization
   //More generic (might be simplified)
-  "Running dag2decent v3".println();
+  "Running dag2decent v3".log(1);
   var start = Native("java.lang.System").currentTimeMillis();
   /********************************** INIT (1x) *******************************/
   var Model = DECENT!Model.allInstances().first();
@@ -19,7 +20,7 @@ post dagInitPost{
   
   //TODO: The DAG is nonetheless potentially relevant for the 
   //CFA analysis or at least some variations thereof
-  ("Post processing... ").println();
+  ("Post processing... ").log(1);
   //checkCorrectStateSequence();
   assignAgentStateSequence();
   assignAgentStatesToActivities();
@@ -27,7 +28,7 @@ post dagInitPost{
   //TODO: add to all other transformations
   var end = Native("java.lang.System").currentTimeMillis();
   var duration = end - start;
-  ("Duration: "+duration.toMinutes().round(5)).println();
+  ("Duration: "+duration.toMinutes().round(5)).log(1);
   
   
   Model.content.add("dag2decent3");
@@ -49,13 +50,13 @@ post dagInitPost{
 //		However, this experience may need to be considered when evaluating the 
 //		overall experience of a developer.		 
 operation Any assignAgentStatesToActivities() {
-  ("Adding agent states to activities... ").println();
+  ("Adding agent states to activities... ").log(1);
   for (s in DECENT!AgentState.allInstances()) {
   	s.activities.clear();
   }
   
   for (a in DECENT!Agent.allInstances()) {
-  	("  Agent: "+a.name).println();
+  	("  Agent: "+a.name).log(1);
   	for (s in a.states) {
   		if (s.previous.isDefined()) {
 	  		s.previous.activities.addAll(a.activities.select(ax|ax.targetState.ID = s.ID));
@@ -92,14 +93,14 @@ operation DAG!Node findPreviousStateNodeInParentNodes(parent : DAG!Node) : DAG!N
 
 
 operation Any assignAgentStateSequence() {
-  ("Adding agent state sequence... ").println();
+  ("Adding agent state sequence... ").log(1);
   for (s in DECENT!AgentState.allInstances()) {
   	s.previous = null;
   }
   
   var nodes = DAG!Graph.allInstances().first.nodes;
   for (a in DECENT!Agent.allInstances()) {
-  	("  Agent: "+a.name).println();
+  	("  Agent: "+a.name).log(1);
   	for (s in a.states) {
 		var node = nodes.select(n|n.name = s.name).first();
 		node.findPreviousStateInParentNodes(s);
@@ -112,10 +113,10 @@ operation Any assignAgentStateSequence() {
 }
 
 operation Any checkCorrectStateSequence() {
-  ("Checking correct artifact state sequences... ").println();
+  ("Checking correct artifact state sequences... ").log(1);
   var nodes = DAG!Graph.allInstances().first.nodes;
   for (a in DECENT!Artifact.allInstances()) {
-  	("  Artifact: "+a.name).println();
+  	("  Artifact: "+a.name).log(1);
   	for (s in a.states) {
 		var node = nodes.select(n|n.name = s.name).first();
 		for (p in s.previous) {

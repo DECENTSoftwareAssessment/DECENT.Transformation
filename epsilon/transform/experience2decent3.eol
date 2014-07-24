@@ -1,6 +1,7 @@
 import "../libraries/decent/common.eol";
+import "../libraries/decent/logging.eol";
 
-"Running experience2decent ".println();
+"Running experience2decent ".log(1);
 
 //TODO: could also be integrated back into famix2decent as inline checking 
 //to further filter out unchanged elements 
@@ -46,7 +47,7 @@ var progress = 0;
 var artifacts = DECENT!Artifact.allInstances().select(x|x.type = CodeArtifactType);
 for (a in artifacts) {
 	progress = progress+1;
-	("Processing "+a.name+" : "+progress+" / "  + artifacts.size()).println();
+	("Processing "+a.name+" : "+progress+" / "  + artifacts.size()).log(1);
 	for (s in a.states) {
 		//TODO: this shall likely be activity values
 		//TODO: this is also horribly inefficient

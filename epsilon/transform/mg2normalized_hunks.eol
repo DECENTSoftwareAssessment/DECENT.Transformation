@@ -1,11 +1,12 @@
 import "../libraries/mg/hunks.eol";
+import "../libraries/decent/logging.eol";
 
 //var m : new MGx!Model;
 var files = MG!File.allInstances();
 
 for (f in files) {
 	var orderedHunks = new OrderedSet;
-    (f.file_name).println();
+    (f.file_name).log(1);
     for (a in f.actions) {
    		var hunks = f.hunks.select(h|h.revision = a.revision);
    		hunks.sortHunks();
@@ -18,14 +19,14 @@ for (f in files) {
 			var on = h.~old_start_line_normalized+":"+h.~old_end_line_normalized+
 				"->"+h.~new_start_line_normalized+":"+h.~new_end_line_normalized;
    		
-   			("  "+h.revision.commit_id +": " +o + " :: "+on).println();
+   			("  "+h.revision.commit_id +": " +o + " :: "+on).log(1);
    		}
    		orderedHunks.addAll(hunks);
 	}
 	f.hunks = orderedHunks;
     f.content = f.content.sortBy(c|c.revision.commit_id);
    	for (c in f.content) {
-    	("  Content: "+c.revision.commit_id).println();  
+    	("  Content: "+c.revision.commit_id).log(1);  
    	}
 }
 

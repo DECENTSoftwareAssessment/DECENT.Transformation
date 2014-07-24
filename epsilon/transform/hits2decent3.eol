@@ -1,6 +1,7 @@
 import "../libraries/decent/common.eol";
+import "../libraries/decent/logging.eol";
 
-"Running hits2decent ".println();
+"Running hits2decent ".log(1);
 
 //TODO: could also be integrated back into famix2decent as inline checking 
 //to further filter out unchanged elements 
@@ -30,7 +31,7 @@ var existingStatesInRevision = DECENT!State.allInstances().select(s|
   									s.artifact.type = ModuleArtifactType or 
   									s.artifact.type = FunctionArtifactType);
 for (s in existingStatesInRevision) {
-	("Processing "+s.artifact.name+" at "+s.ID+" ...").println();
+	("Processing "+s.artifact.name+" at "+s.ID+" ...").log(1);
 	var startLine = s.values.select(v|v.ofAttribute = StartLineAttribute).first().content;
 	var endLine = s.values.select(v|v.ofAttribute = EndLineAttribute).first().content;
 	var parentState = s.artifact.parent.states.select(p|p.ID = s.ID).first();
@@ -38,10 +39,10 @@ for (s in existingStatesInRevision) {
 	var linesPostHits = linesPost.select(l|l >= startLine and l <= endLine);
 
 /*
-	("  "+s.artifact.name+"@"+s.ID+":"+startLine+ ":"+endLine).println();
-	("    "+parentState.artifact.name+"@"+parentState.ID+":"+startLine+ ":"+endLine).println();
-	("      "+linesPost).println();
-	("        "+linesPostHits).println();
+	("  "+s.artifact.name+"@"+s.ID+":"+startLine+ ":"+endLine).log(1);
+	("    "+parentState.artifact.name+"@"+parentState.ID+":"+startLine+ ":"+endLine).log(1);
+	("      "+linesPost).log(1);
+	("        "+linesPostHits).log(1);
 */	
 	s.values.removeAll(s.values.select(v|v.ofAttribute = LinesPostHitsAttribute));
 	s.addIntegerCollectionValue(LinesPostHitsAttribute, linesPostHits);

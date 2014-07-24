@@ -1,18 +1,20 @@
+import "../libraries/decent/logging.eol";
+
 pre dagInitPre {
   //Some initialization
-  "Running mg2dag".println();
-  ("Pre processing... ").println();
+  "Running mg2dag".log(1);
+  ("Pre processing... ").log(1);
   var nodes = DAG!Graph.allInstances().first().nodes;
   for (r in MG!Revision.allInstances()) {
-  	("Processing "+r.rev).println();
+  	("Processing "+r.rev).log(1);
   	nodes.select(n|n.name = r.rev).first().revision = r;
   }
-  (nodes.select(n|not n.revision.isDefined()).size()+" unlinked nodes found!").println();
+  (nodes.select(n|not n.revision.isDefined()).size()+" unlinked nodes found!").log(1);
 }
 
 post dagInitPost{
   	for (f in MG!File.allInstances()) {
-  		("Processing "+f.file_name).println();
+  		("Processing "+f.file_name).log(1);
   		var lastLoc = 0;
   		var lastDate = null;
   		for (a in f.actions) {
@@ -20,9 +22,9 @@ post dagInitPost{
 	  		var pl = r.patchLines.select(l|l.file = a.file).first();
 	  		var c = r.content.select(l|l.file = a.file).first();
 	  		if (c.isDefined() and pl.isDefined()) {
-	  			(r.commit_id + " : " + c.loc + " = " + (lastLoc + (pl.added-pl.removed)) + " = " + lastLoc + " + " + (pl.added-pl.removed)).println();
+	  			(r.commit_id + " : " + c.loc + " = " + (lastLoc + (pl.added-pl.removed)) + " = " + lastLoc + " + " + (pl.added-pl.removed)).log(1);
 	  			if (lastDate <> null) {
-		  			("  " + (r.author_date.time - lastDate.time)).println();
+		  			("  " + (r.author_date.time - lastDate.time)).log(1);
 	  			}
 	  			lastDate = r.author_date;
 	  			lastLoc = c.loc;

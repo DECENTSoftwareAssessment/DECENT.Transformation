@@ -1,6 +1,7 @@
 import "../libraries/decent/common.eol";
+import "../libraries/decent/logging.eol";
 
-("Running trace2decent").println();
+("Running trace2decent").log(1);
 var Model = DECENT!Model.allInstances().first();
 
 var attributes = new Map;
@@ -38,7 +39,7 @@ for (s in DECENT!State.allInstances().select(s|artifactTypes.includes(s.artifact
 		eventCount = eventCount + t.source.events.size().asDouble();
 		resolutionsCount = resolutionsCount + t.source.events.select(x|x.newValue = "FIXED").size().asDouble();
 		lifespan = lifespan + (t.source.lastModifiedOn.time - t.source.reportedOn.time);
-		("  Issue "+t.source.issueId+" mapped to State "+s.ID+ " of " +s.artifact.name+" : "+resolutionsCount + " / " + eventCount + " / "+commentCount).println();
+		("  Issue "+t.source.issueId+" mapped to State "+s.ID+ " of " +s.artifact.name+" : "+resolutionsCount + " / " + eventCount + " / "+commentCount).log(1);
 	}
 	s.addValue(BugCountAttribute, bugCount);
 	s.addValue(BugCommentsAttribute, commentCount);
@@ -49,5 +50,5 @@ for (s in DECENT!State.allInstances().select(s|artifactTypes.includes(s.artifact
 }
 
 Model.content.add("trace2decent3");
-("...done").println();
+("...done").log(1);
 

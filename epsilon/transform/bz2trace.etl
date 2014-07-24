@@ -1,8 +1,10 @@
+import "../libraries/decent/logging.eol";
+
 pre mgbzInitPre {
 
   //Some initialization
   //More generic (might be simplified)
-  "Running mgbz2trace".println();
+  "Running mgbz2trace".log(1);
   
   /********************************** INIT (1x) *******************************/
 
@@ -12,18 +14,18 @@ pre mgbzInitPre {
 		var relatedRevisions = MG!Revision.allInstances().select(r|r.message.contains(""+i.issueId));
 		if (relatedRevisions.size() = 0) {
 			if (i.status.contains("FIXED")) {
-				(" -- Fixed Issue "+i.issueId+" ("+i.status+") cannot be mapped. "+i.issueTitle).println();
+				(" -- Fixed Issue "+i.issueId+" ("+i.status+") cannot be mapped. "+i.issueTitle).log(1);
 				unmappedCount = unmappedCount + 1;
 				for (c in i.comments) {
-					("    + Comment text: "+c.commentText).println();
+					("    + Comment text: "+c.commentText).log(1);
 					if (c.commentText.contains("SVN rev") or c.commentText.contains("SVN commit")) {
-						("      Comment text: "+c.commentText).println();
+						("      Comment text: "+c.commentText).log(1);
 						var m = p.matcher(c.commentText);
 						if (m.find()) {
 					  		var rev = m.group(2);  
-							("   -- Attempting match for SVN revision "+rev+"...").println();
+							("   -- Attempting match for SVN revision "+rev+"...").log(1);
 							relatedRevisions.addAll(MG!Revision.allInstances().select(r|r.message.contains(""+rev)));
-							("     -- "+relatedRevisions.size()+" matches found...").println();
+							("     -- "+relatedRevisions.size()+" matches found...").log(1);
 							if (relatedRevisions.size() = 0) {
 								unmappedCount = unmappedCount + 1;
 							}
@@ -35,25 +37,25 @@ pre mgbzInitPre {
 					for (r in MG!Revision.allInstances()) {
 						for (c in i.comments) {
 							if (c.commentText.contains(""+r.rev)) {
-								("   -- Found backlink for issue "+i.issueId+" ("+i.status+") in comments, mapped to revision "+r.commit_id).println();
+								("   -- Found backlink for issue "+i.issueId+" ("+i.status+") in comments, mapped to revision "+r.commit_id).log(1);
 							}
 						}
 					}
 				}
 			} else {
-				(" -- Issue "+i.issueId+" ("+i.status+") cannot be mapped.").println();
+				(" -- Issue "+i.issueId+" ("+i.status+") cannot be mapped.").log(1);
 			}
 		}
 		
 		for (r in relatedRevisions) {
-			("Issue "+i.issueId+" ("+i.status+") mapped to revision "+r.commit_id+".").println();
+			("Issue "+i.issueId+" ("+i.status+") mapped to revision "+r.commit_id+".").log(1);
 			var t = new TRACE!Trace;
 			t.source = i;
 			t.target = r;
 		}
 	
 	}
-	(unmappedCount+" reportedly fixed issues could not be mapped").println();
+	(unmappedCount+" reportedly fixed issues could not be mapped").log(1);
 }
 
 post mgbzInitPost{

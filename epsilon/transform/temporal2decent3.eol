@@ -1,6 +1,7 @@
 import "../libraries/decent/common.eol";
+import "../libraries/decent/logging.eol";
 
-  "Running temporal2decent".println();
+  "Running temporal2decent".log(1);
 
   var Model = DECENT!Model.allInstances().first();
 
@@ -52,10 +53,10 @@ import "../libraries/decent/common.eol";
   var start = Native("java.lang.System").currentTimeMillis();
 
   //TODO: other temporal dimensions such as cause-fix time, agent time, bug lifetime vs fragment lifetime, etc.
-  ("Adding temporal characteristics...").println();
+  ("Adding temporal characteristics...").log(1);
   for (a in DECENT!Artifact.allInstances().select(a|a.states.size > 0)) {
   	
-  	("..."+a.name).println();
+  	("..."+a.name).log(1);
   	//TODO: may need to convert to days already here at the expense of flexibility downstream
   	//- alternatively, this can be generalized so that the same can be calculated based on hits for other artifacts
   	
@@ -71,7 +72,7 @@ import "../libraries/decent/common.eol";
   //temporal characteristics for agents
   //clean up  
   for (a in DECENT!Agent.allInstances()) {
-  	("  Agent: "+a.name).println();
+  	("  Agent: "+a.name).log(1);
   	
   	var sortedStates = a.states; 
   	sortedStates.addAgentTemporalCharacteristics();
@@ -90,7 +91,7 @@ import "../libraries/decent/common.eol";
   
   var end = Native("java.lang.System").currentTimeMillis();
   var duration = end - start;
-  ("Duration: "+duration.toMinutes().round(5)).println();
+  ("Duration: "+duration.toMinutes().round(5)).log(1);
 
   Model.content.add("temporal2decent3");
 

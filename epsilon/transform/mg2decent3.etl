@@ -1,10 +1,12 @@
 import "../libraries/famix/init.etl";
 import "../libraries/decent/common.eol";
+import "../libraries/decent/logging.eol";
+
 pre mgInitPre {
 
   //Some initialization
   //More generic (might be simplified)
-  "Running mg2decent v3".println();
+  "Running mg2decent v3".log(1);
   
   /********************************** INIT (1x) *******************************/
   
@@ -96,7 +98,7 @@ pre mgInitPre {
   if (not ruleBased) {
 
 	  for (p in MG!People.allInstances()){
-		("Transforming agent "+p.name).println();
+		("Transforming agent "+p.name).log(1);
 		var a = new DECENT!Agent;
 		a.name = p.name;
 		a.eMail = p.email;
@@ -106,23 +108,23 @@ pre mgInitPre {
 
 	  //start preprocessing (building the artifact tree)
 	  var MGRootArtifact = MG!File.allInstances().select(f|f.file_name = 'ROOT');
-	  ("Pre processing "+MGRootArtifact.get(0).file_name+" : " + RootArtifact.name).println();
+	  ("Pre processing "+MGRootArtifact.get(0).file_name+" : " + RootArtifact.name).log(1);
 	  MGRootArtifact.get(0).traverseChildren(RootArtifact);
   }
 }
 
 post mgInitPost{
-  ("Post processing... ").println();
+  ("Post processing... ").log(1);
   //stats for debugging...
   for (a in DECENT!Artifact.allInstances()) {
-  	(""+a.name).println();
+  	(""+a.name).log(1);
   	for (s in a.states) {
   		for (v in s.values.select(v|v.ofAttribute = FileSizeAttribute)) {
-  			("  " + a.name + " in " + s.ID + " : " + v.ofAttribute.name + " = " + v.content).println();
+  			("  " + a.name + " in " + s.ID + " : " + v.ofAttribute.name + " = " + v.content).log(1);
   		}
   		
   		for (p in s.previous) {
-  			("  " +p.ID + " ("+p.artifact.name+")" + " -> " +s.ID +" ("+s.artifact.name+")").println();
+  			("  " +p.ID + " ("+p.artifact.name+")" + " -> " +s.ID +" ("+s.artifact.name+")").log(1);
   		}
   	}
   }
@@ -141,12 +143,12 @@ operation String replaceInclude() : String {
 
 operation dumpFileCopies() {
   for (f in MG!File.allInstances()) {
-    (""+f.file_name).println();
+    (""+f.file_name).log(1);
   
   	for (a in f.actions) {
-  		("  " +a.type + " "+a.revision.commit_id + " " + a.revision.message.trim()).println();
+  		("  " +a.type + " "+a.revision.commit_id + " " + a.revision.message.trim()).log(1);
   		if (a.copy.isDefined()) {
-  			("  "+a.copy.fromRevision.commit_id +" ("+a.copy.fromFile.file_name+")" + " -> "+ a.revision.commit_id+ " ("+f.file_name+")").println();
+  			("  "+a.copy.fromRevision.commit_id +" ("+a.copy.fromFile.file_name+")" + " -> "+ a.revision.commit_id+ " ("+f.file_name+")").log(1);
   		}
   	}
   }
@@ -159,7 +161,7 @@ rule People2Agent
     guard : ruleBased
     
 	a.name = p.name;
-    ("Transforming agent "+a.name).println();
+    ("Transforming agent "+a.name).log(1);
 	a.eMail = p.email;
 	Model.agentPool.agents.add(a);
 	Model.projects.get(0).agents.add(a);
@@ -175,14 +177,14 @@ rule File2Artifact
    	a.setArtifactType(f.file_type);
     var parentName = "ROOT";
     if (f.parentLinks.size()>0) {
-    	//("Adding parents... "+f.parentLinks.size()).println();
+    	//("Adding parents... "+f.parentLinks.size()).log(1);
 	    a.parent = f.parentLinks.get(0).parent.equivalent();
 	    parentName = a.parent.name;
     } else {
     	//TODO: handle branches properly
     	DECENT!Location.allInstances.select(l|l.name = "master").first().rootArtifact=a;
     }
-    ("Transforming artifact "+f.file_name+" ("+f.file_type+") in "+parentName+" ("+processedCount+"/"+artifactCount+" completed)").println();
+    ("Transforming artifact "+f.file_name+" ("+f.file_type+") in "+parentName+" ("+processedCount+"/"+artifactCount+" completed)").log(1);
     
 	processedCount = processedCount + 1;
 }
@@ -193,7 +195,7 @@ rule Revision2AgentState
     guard : ruleBased
     
     s.agent = r.author.equivalent();
-    ("Transforming revision "+ r.commit_id + " to agent state for " + s.agent.name).println();
+    ("Transforming revision "+ r.commit_id + " to agent state for " + s.agent.name).log(1);
     s.ID = r.commit_id;
     s.name = r.rev;
     s.date = r.author_date;
@@ -205,7 +207,7 @@ rule Action2State
     guard : ruleBased
 
 	s.name = a.revision.rev;
-    ("Transforming action "+ a.revision.commit_id + " for " + a.file.file_name).println();
+    ("Transforming action "+ a.revision.commit_id + " for " + a.file.file_name).log(1);
 	s.ID = a.revision.commit_id;
 	s.artifact = a.file.equivalent();
 	
@@ -215,7 +217,7 @@ rule Action2State
 	var lastState = null;
 	var aIndex = a.file.actions.indexOf(a);
 	if (aIndex > 0) {
-		//("  Previous Action "+a.file.actions.at(aIndex-1).revision.commit_id + " mapped to " + a.file.actions.at(aIndex-1).equivalent()).println();
+		//("  Previous Action "+a.file.actions.at(aIndex-1).revision.commit_id + " mapped to " + a.file.actions.at(aIndex-1).equivalent()).log(1);
 		lastState = a.file.actions.at(aIndex-1).equivalent();
 		s.previous.add(lastState);
 	}
@@ -224,7 +226,7 @@ rule Action2State
     //DONE: see notes on this
     //if (a.copy.isDefined()){
     //	var copySourceState = a.copy.fromRevision.actions.select(af|af.file = a.copy.fromFile).first().equivalent();
-    //	("  Copy from "+ a.copy.fromFile.equivalent() + " in state " + copySourceState).println();
+    //	("  Copy from "+ a.copy.fromFile.equivalent() + " in state " + copySourceState).log(1);
     //	s.previous.add(copySourceState);
     //}
     
@@ -358,11 +360,11 @@ operation DECENT!State addSpatialCharacteristics(hunks : Collection) {
 operation MG!File traverseChildren(parent : DECENT!Artifact) {
     //NOTE: parent information refers to target artifact, thus "in" is "target" and not "container"
     //TODO: counter is also off.. => need to check for duplicate artifacts and only create if new?
-    ("Transforming artifact "+self.file_name+" ("+self.file_type+") in "+parent.name+" ("+processedCount+"/"+artifactCount+" completed)").println();
+    ("Transforming artifact "+self.file_name+" ("+self.file_type+") in "+parent.name+" ("+processedCount+"/"+artifactCount+" completed)").log(1);
     
     //processing children
     for (fcl in self.childrenLinks) {
-        //("  Linking child artifact "+fcl.child.file_name+"").println();
+        //("  Linking child artifact "+fcl.child.file_name+"").log(1);
         var a = DECENT!Artifact.allInstances().select(a|a.name = fcl.child.file_name and a.parent = parent).first();
         //TODO: what if size is > 1?
         if (not a.isDefined()){
@@ -408,13 +410,13 @@ operation MG!File traverseChildren(parent : DECENT!Artifact) {
             //TODO: or move in a separate operatation (in post) - set previous state accordingly
             if (ax.copy.isDefined()){
                 var fromFile = ax.copy.fromFile.file_name;
-                //("  Copy of " + fromFile + "").println();
+                //("  Copy of " + fromFile + "").log(1);
                 var sharedStates = DECENT!State.allInstances().select(s|s.ID = ax.copy.fromRevision.commit_id);
                 for (ss in sharedStates){
                     var filePathValue = ss.values.select(v|v.ofAttribute = FilePathAttribute).first();
                     //check 
                     if (ss.artifact.name = fromFile and ss <> s) {
-                        //("  Source Artifact: "+ ss.artifact.name).println();
+                        //("  Source Artifact: "+ ss.artifact.name).log(1);
                         lastState = ss; //state itself or rather the previous?
                         if (ss.fromActivity.notEmpty()) {
                             lastState = ss.fromActivity.first().state;
@@ -449,8 +451,8 @@ operation MG!File traverseChildren(parent : DECENT!Artifact) {
             if (lastState.isDefined()) {
                 var lastFileSizeValueSet = lastState.values->select(v|v.ofAttribute = FileSizeAttribute);
                 if (lastFileSizeValueSet.notEmpty()){
-                    //("*****   Last state "+lastState.ID).println();
-                    //("*****   Last size "+lastFileSizeValueSet.first().content).println();
+                    //("*****   Last state "+lastState.ID).log(1);
+                    //("*****   Last size "+lastFileSizeValueSet.first().content).log(1);
                     fileSize = lastFileSizeValueSet.asOrderedSet().first().content + difference;
                 } else {
                     //no last file size value?
@@ -458,7 +460,7 @@ operation MG!File traverseChildren(parent : DECENT!Artifact) {
             } else {
                 fileSize = difference;
             }
-            ("***** File: " +a.name+" in "+s.ID+": added "+linesAdded+ " removed "+linesRemoved +" size "+fileSize + " difference " + difference + " last state "+lastState.isDefined()).println();
+            ("***** File: " +a.name+" in "+s.ID+": added "+linesAdded+ " removed "+linesRemoved +" size "+fileSize + " difference " + difference + " last state "+lastState.isDefined()).log(1);
 			fileSize = processedCount.asDouble;
             s.addValue(FileSizeAttribute, fileSize);
             
