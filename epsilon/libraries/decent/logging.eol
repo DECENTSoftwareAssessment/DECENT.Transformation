@@ -1,6 +1,9 @@
 
 operation String log(level : Integer) {
-	var system = Native("java.lang.System");
-	var t = system.currentTimeMillis();
-	(t+ " : " + level + " : " + self).println();
+	var levelLimit = 5;
+	if (level < levelLimit) {
+		var system = Native("java.lang.System");
+		var t = system.currentTimeMillis();
+		(t+ " : " + level + " : " + self).println();
+	}
 }
