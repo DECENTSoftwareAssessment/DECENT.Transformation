@@ -7,7 +7,7 @@ pre {
   "Running famix2decent3".log(1);
   var start = Native("java.lang.System").currentTimeMillis();
   
-  ("DECENT States: "+DECENT!State.allInstances().size()).log(1);
+  ("DECENT States: "+DECENT!State.allInstances().size()).log(2);
   var Model = DECENT!Model.allInstances().first();
   
   var CodeArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "code").first();
@@ -44,12 +44,12 @@ pre {
 	  revisionId = FAMIX!FileAnchor.allInstances().first().revisionId;
 	  potentiallyAffectedClasses = FAMIX!Class.getPotentiallyAffectedAnchoredElements();
 	  potentiallyAffectedMethods = FAMIX!Method.getPotentiallyAffectedAnchoredElements();
-	  ("FAMIX Classes in "+revisionId + ": "+potentiallyAffectedClasses.size()+"/"+FAMIX!Class.allInstances().size()).log(1);
-	  ("FAMIX Methods in "+revisionId + ": "+potentiallyAffectedMethods.size()+"/"+FAMIX!Class.allInstances().size()).log(1);
+	  ("FAMIX Classes in "+revisionId + ": "+potentiallyAffectedClasses.size()+"/"+FAMIX!Class.allInstances().size()).log(2);
+	  ("FAMIX Methods in "+revisionId + ": "+potentiallyAffectedMethods.size()+"/"+FAMIX!Class.allInstances().size()).log(2);
 	  codeStatesInRevision = DECENT!State.allInstances().select(s|s.ID = revisionId and s.artifact.type = CodeArtifactType);
-	  ("DECENT Code States in "+revisionId + ": "+codeStatesInRevision.size()).log(1);
+	  ("DECENT Code States in "+revisionId + ": "+codeStatesInRevision.size()).log(2);
 	  for (s in codeStatesInRevision) {
-	    ("  Changed state of Code artifact " + s.values.select(v|v.ofAttribute = FilePathAttribute).first().content).log(1);
+	    ("  Changed state of Code artifact " + s.values.select(v|v.ofAttribute = FilePathAttribute).first().content).log(3);
 	  }
 	
 	  var existingStatesInRevision = DECENT!State.allInstances().select(s|s.ID = revisionId and 
@@ -57,11 +57,11 @@ pre {
 	  									s.artifact.type = MethodArtifactType or 
 	  									s.artifact.type = ModuleArtifactType or 
 	  									s.artifact.type = FunctionArtifactType));
-	  ("Existing DECENT Anchored Element States in "+revisionId + ": "+existingStatesInRevision.size()).log(1);
+	  ("Existing DECENT Anchored Element States in "+revisionId + ": "+existingStatesInRevision.size()).log(2);
 	  var fromActivities = new OrderedSet;
 	  for (s in existingStatesInRevision) {
 	  	cleaned = true;
-	    ("  Cleaning up existing state " + s.ID +" of artifact " + s.artifact.name + " ("+s.artifact.type.name+")").log(1);
+	    ("  Cleaning up existing state " + s.ID +" of artifact " + s.artifact.name + " ("+s.artifact.type.name+")").log(3);
 	    for (a in s.fromActivity) {
 	    	fromActivities.add(a);
 	    }
@@ -76,31 +76,31 @@ pre {
 }
 
 post {
-	("Updating broken activities...").log(1);
-	("DECENT Code States in "+revisionId + ": "+codeStatesInRevision.size()).log(1);
+	("Updating broken activities...").log(2);
+	("DECENT Code States in "+revisionId + ": "+codeStatesInRevision.size()).log(2);
 	
 	//top down approach potentially inefficient
 	if (cleaned) { 
 	    //for all states of affected code artifacts
 	    for (cs in codeStatesInRevision) {
-			("  State of "+cs.artifact.name + " at " + cs.ID).log(1);
+			("  State of "+cs.artifact.name + " at " + cs.ID).log(3);
 		    //for all next states of an affected code artifact
 		  	for (next in cs.next) {
-		  		("    Next state of "+next.artifact.name + " at " + next.ID).log(1);
+		  		("    Next state of "+next.artifact.name + " at " + next.ID).log(4);
 		  		//for all children of affected code artifact 
 		  		for (child in cs.artifact.children) {
-		  			("      Child of "+next.artifact.name + " - " + child.name).log(1);
+		  			("      Child of "+next.artifact.name + " - " + child.name).log(4);
 		  			//get newly added state of child
 		  			for (current in child.states.select(s|s.ID = revisionId).first()) {
 		  				if (current.isDefined()) {
-			  				("        State of "+current.artifact.name + " at " + current.ID).log(1);
+			  				("        State of "+current.artifact.name + " at " + current.ID).log(4);
 				  			//for all states of the child of the affected artifact corresponding to the next state of that artifact
 				  			for (s in child.states.select(s|s.ID = next.ID)) {
-				  				("          Next state of "+s.artifact.name + " at " + s.ID).log(1);
+				  				("          Next state of "+s.artifact.name + " at " + s.ID).log(4);
 				  				s.previous.add(current);
 				  				//update broken activities
 							    for (a in s.fromActivity.select(a|a.state = null)) {
-							    	("            Fixing activity on "+current.ID +" to "+s.ID + " of "+s.artifact.name).log(1);
+							    	("            Fixing activity on "+current.ID +" to "+s.ID + " of "+s.artifact.name).log(4);
 							    	a.state = current;
 							    	for (d in a.deltas) {
 							    		d.sourceValue = current.values.select(v|v.ofAttribute = d.onAttribute).first();
@@ -143,7 +143,7 @@ operation checkParentArtifactStateExists(stateId : Integer, filePath : String) :
 
 operation DECENT!State mapAnchoredElement(c : FAMIX!AnchoredElement, artifactType : DECENT!ArtifactType, name : String) {
     var fileName = c.sourceAnchor_IN_FileAnchor.fileName;
-    ("Transforming "+artifactType.name+" " +name +" at revision "+c.revisionId+" located in "+fileName).log(1);
+    ("Transforming "+artifactType.name+" " +name +" at revision "+c.revisionId+" located in "+fileName).log(3);
 
     //("  File Anchor at "+fileName).log(1);
     var candidateParentStates = DECENT!State.allInstances().select(s|s.ID = c.revisionId  and s.artifact.type = CodeArtifactType and s.values.select(v|v.ofAttribute = FilePathAttribute).first().content = fileName);

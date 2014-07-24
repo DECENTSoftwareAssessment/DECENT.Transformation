@@ -50,13 +50,13 @@ post dagInitPost{
 //		However, this experience may need to be considered when evaluating the 
 //		overall experience of a developer.		 
 operation Any assignAgentStatesToActivities() {
-  ("Adding agent states to activities... ").log(1);
+  ("Adding agent states to activities... ").log(2);
   for (s in DECENT!AgentState.allInstances()) {
   	s.activities.clear();
   }
   
   for (a in DECENT!Agent.allInstances()) {
-  	("  Agent: "+a.name).log(1);
+  	("  Agent: "+a.name).log(3);
   	for (s in a.states) {
   		if (s.previous.isDefined()) {
 	  		s.previous.activities.addAll(a.activities.select(ax|ax.targetState.ID = s.ID));
@@ -93,30 +93,30 @@ operation DAG!Node findPreviousStateNodeInParentNodes(parent : DAG!Node) : DAG!N
 
 
 operation Any assignAgentStateSequence() {
-  ("Adding agent state sequence... ").log(1);
+  ("Adding agent state sequence... ").log(2);
   for (s in DECENT!AgentState.allInstances()) {
   	s.previous = null;
   }
   
   var nodes = DAG!Graph.allInstances().first.nodes;
   for (a in DECENT!Agent.allInstances()) {
-  	("  Agent: "+a.name).log(1);
+  	("  Agent: "+a.name).log(3);
   	for (s in a.states) {
 		var node = nodes.select(n|n.name = s.name).first();
 		node.findPreviousStateInParentNodes(s);
 		if (not s.previous.isDefined()) {
-			(    "Failed to assign previous state for state "+s.ID+"!").errln();
-			(    "Corresponding node has "+node.parents.size()+" parents!").errln();
+			(    "Failed to assign previous state for state "+s.ID+"!").log(1);
+			(    "Corresponding node has "+node.parents.size()+" parents!").log(1);
 		}
   	}
   }
 }
 
 operation Any checkCorrectStateSequence() {
-  ("Checking correct artifact state sequences... ").log(1);
+  ("Checking correct artifact state sequences... ").log(2);
   var nodes = DAG!Graph.allInstances().first.nodes;
   for (a in DECENT!Artifact.allInstances()) {
-  	("  Artifact: "+a.name).log(1);
+  	("  Artifact: "+a.name).log(3);
   	for (s in a.states) {
 		var node = nodes.select(n|n.name = s.name).first();
 		for (p in s.previous) {
@@ -124,7 +124,7 @@ operation Any checkCorrectStateSequence() {
 			
 			var currentNodeX = node.findPreviousStateNodeInParentNodes(parentNode);
 			if (not currentNodeX.isDefined()) {
-				(    "Failed to find previous state node in node parents tree for state "+s.ID+"!").errln();
+				(    "Failed to find previous state node in node parents tree for state "+s.ID+"!").log(1);
 			}
 		}
   	}

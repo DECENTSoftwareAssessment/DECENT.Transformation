@@ -31,7 +31,7 @@ var existingStatesInRevision = DECENT!State.allInstances().select(s|
   									s.artifact.type = ModuleArtifactType or 
   									s.artifact.type = FunctionArtifactType);
 for (s in existingStatesInRevision) {
-	("Processing "+s.artifact.name+" at "+s.ID+" ...").log(1);
+	("Processing "+s.artifact.name+" at "+s.ID+" ...").log(3);
 	var startLine = s.values.select(v|v.ofAttribute = StartLineAttribute).first().content;
 	var endLine = s.values.select(v|v.ofAttribute = EndLineAttribute).first().content;
 	var parentState = s.artifact.parent.states.select(p|p.ID = s.ID).first();

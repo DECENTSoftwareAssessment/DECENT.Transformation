@@ -14,7 +14,7 @@ pre mgInitPre {
 }
 
 post mgInitPost{
-    ("Post processing... ").log(1);
+    ("Post processing... ").log(2);
     for (s in CFA!State.allInstances()) {
         for (f in s.fixes) {
             f.totalWeight = f.totalWeight + (1/s.fixes.size().asDouble());
@@ -48,7 +48,7 @@ post mgInitPost{
 rule Models
     transform s : MG!Model 
     to t : CFA!CFN {
-    ("Transforming model "+ s.name +", URI: " +s.uri).log(1);    
+    ("Transforming model "+ s.name +", URI: " +s.uri).log(3);    
     t.name = s.name;
 }
 
@@ -57,7 +57,7 @@ rule Revisions
     to s : CFA!GlobalState {
     
     guard : /*r.is_bug_fix <> 0 and*/ (r.commit_id <= upperBound and r.commit_id >= lowerBound )
-    ("Transforming "+ r.commit_id +" Fix: " +r.is_bug_fix).log(1);
+    ("Transforming "+ r.commit_id +" Fix: " +r.is_bug_fix).log(3);
     s.cfn = r.repository.equivalent();
     s.revision = r;
     s.ID = r.commit_id;
@@ -149,7 +149,7 @@ rule Actions
 			            s.fixes.add(cause);
 			            cause.causes.add(s);
 		            } else {
-		            	("  Cause link for File "+a.file.file_name+" from Revision "+h.revision.commit_id+" to Revision "+hb.lastRevision.commit_id+" still cannot be resolved.. Investigate!").log(1);
+		            	("  Cause link for File "+a.file.file_name+" from Revision "+h.revision.commit_id+" to Revision "+hb.lastRevision.commit_id+" still cannot be resolved.. Investigate!").log(2);
 		            } 
 	            	
 	            }

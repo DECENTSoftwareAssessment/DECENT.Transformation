@@ -22,14 +22,14 @@ for (f in files) {
 			var on = h.~old_start_line_normalized+":"+h.~old_end_line_normalized+
 				"->"+h.~new_start_line_normalized+":"+h.~new_end_line_normalized;
    		
-   			("  "+h.revision.commit_id +": " +o + " :: "+on).log(1);
+   			("  "+h.revision.commit_id +": " +o + " :: "+on).log(3);
    		}
    		orderedHunks.addAll(hunks);
 	}
 	f.hunks = orderedHunks;
     f.content = f.content.sortBy(c|c.revision.commit_id);
    	for (c in f.content) {
-    	("  Content: "+c.revision.commit_id).log(1);  
+    	("  Content: "+c.revision.commit_id).log(3);  
    	}
 }
 

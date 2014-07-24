@@ -7,11 +7,11 @@ pre {
   "Running cfa2decent3".log(1);
   var start = Native("java.lang.System").currentTimeMillis();
   
-  ("DECENT States: "+DECENT!State.allInstances().size()).log(1);
+  ("DECENT States: "+DECENT!State.allInstances().size()).log(2);
   var Model = DECENT!Model.allInstances().first();
 
 
-  ("Initializing CFA definitions").log(1);
+  ("Initializing CFA definitions").log(2);
   //This should only run once!!!
   
   var attributes = new Map;
@@ -84,19 +84,19 @@ pre {
   //TODO: add ratios, e.g. averageBugWeight/averageWeight, also for totals, define interpretation
   //TODO: add lifespans
 
-  ("...transforming states...").log(1);
+  ("...transforming states...").log(2);
   for (s in CFA!ArtifactState.allInstances()) {
-	("  " + s.file.file_name + " @ "+s.ID).log(1);
+	("  " + s.file.file_name + " @ "+s.ID).log(3);
   	var fileName = s.file.file_name;
   	var filePath = s.action.current_file_path;
   	var matchedStates = DECENT!State.allInstances().select(m|m.artifact.isMGtype() and m.ID = s.ID and m.values.select(v|v.name = "FilePath").first().content = filePath);
   	var size = matchedStates.size();
 	//check if correct matches can be found 
   	if (size <> 1) {
-  		("  "+size+" DECENT matches found for: "+fileName+" at "+s.ID).log(1);
-  		("    Avaliable states at "+s.ID+" are:").log(1);
+  		("  "+size+" DECENT matches found for: "+fileName+" at "+s.ID).log(4);
+  		("    Avaliable states at "+s.ID+" are:").log(4);
   		for (x in DECENT!State.allInstances().select(x|x.artifact.isMGtype() and x.ID = s.ID)) {
-  			("      "+x.artifact.name+" at "+x.ID+" ("+x.values.select(v|v.name = "FilePath").first().content+")").log(1);
+  			("      "+x.artifact.name+" at "+x.ID+" ("+x.values.select(v|v.name = "FilePath").first().content+")").log(4);
   		}
   	} else {
   		var state = matchedStates.first();
@@ -188,7 +188,7 @@ pre {
   	}
   	
   }
-  ("...adding carried weights...").log(1);
+  ("...adding carried weights...").log(2);
   
   for (a in DECENT!Artifact.allInstances().select(x|x.isMGtype())) {
   	var lastWeight = 0.asDouble();
@@ -201,7 +201,7 @@ pre {
   	}
   }
   
-  ("...done!").log(1);
+  ("...done!").log(2);
 }
 
 post {
@@ -211,14 +211,4 @@ post {
     var duration = end - start;
     ("Duration: "+duration.toMinutes().round(5)).log(1);
   
-}
-
-operation DECENT!Artifact isMGtype() : Boolean {
-	return self.type.name = "code" or 
-		self.type.name = "documentation" or 
-		self.type.name = "image" or 
-		self.type.name = "devel-doc" or 
-		self.type.name = "unknown" or 
-		self.type.name = "build" or 
-		self.type.name = "ui";
 }

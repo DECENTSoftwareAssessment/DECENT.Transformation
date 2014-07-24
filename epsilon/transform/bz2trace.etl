@@ -15,18 +15,18 @@ pre mgbzInitPre {
 		var relatedRevisions = MG!Revision.allInstances().select(r|r.message.contains(""+i.issueId));
 		if (relatedRevisions.size() = 0) {
 			if (i.status.contains("FIXED")) {
-				(" -- Fixed Issue "+i.issueId+" ("+i.status+") cannot be mapped. "+i.issueTitle).log(1);
+				(" -- Fixed Issue "+i.issueId+" ("+i.status+") cannot be mapped. "+i.issueTitle).log(3);
 				unmappedCount = unmappedCount + 1;
 				for (c in i.comments) {
-					("    + Comment text: "+c.commentText).log(1);
+					("    + Comment text: "+c.commentText).log(4);
 					if (c.commentText.contains("SVN rev") or c.commentText.contains("SVN commit")) {
-						("      Comment text: "+c.commentText).log(1);
+						("      Comment text: "+c.commentText).log(4);
 						var m = p.matcher(c.commentText);
 						if (m.find()) {
 					  		var rev = m.group(2);  
-							("   -- Attempting match for SVN revision "+rev+"...").log(1);
+							("   -- Attempting match for SVN revision "+rev+"...").log(4);
 							relatedRevisions.addAll(MG!Revision.allInstances().select(r|r.message.contains(""+rev)));
-							("     -- "+relatedRevisions.size()+" matches found...").log(1);
+							("     -- "+relatedRevisions.size()+" matches found...").log(4);
 							if (relatedRevisions.size() = 0) {
 								unmappedCount = unmappedCount + 1;
 							}
@@ -38,25 +38,25 @@ pre mgbzInitPre {
 					for (r in MG!Revision.allInstances()) {
 						for (c in i.comments) {
 							if (c.commentText.contains(""+r.rev)) {
-								("   -- Found backlink for issue "+i.issueId+" ("+i.status+") in comments, mapped to revision "+r.commit_id).log(1);
+								("   -- Found backlink for issue "+i.issueId+" ("+i.status+") in comments, mapped to revision "+r.commit_id).log(4);
 							}
 						}
 					}
 				}
 			} else {
-				(" -- Issue "+i.issueId+" ("+i.status+") cannot be mapped.").log(1);
+				(" -- Issue "+i.issueId+" ("+i.status+") cannot be mapped.").log(3);
 			}
 		}
 		
 		for (r in relatedRevisions) {
-			("Issue "+i.issueId+" ("+i.status+") mapped to revision "+r.commit_id+".").log(1);
+			("Issue "+i.issueId+" ("+i.status+") mapped to revision "+r.commit_id+".").log(3);
 			var t = new TRACE!Trace;
 			t.source = i;
 			t.target = r;
 		}
 	
 	}
-	(unmappedCount+" reportedly fixed issues could not be mapped").log(1);
+	(unmappedCount+" reportedly fixed issues could not be mapped").log(2);
 }
 
 post mgbzInitPost{
