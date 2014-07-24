@@ -1,5 +1,7 @@
+import "../decent/logging.eol";
+
 post famixInitPost {
-  ("Initializing FAMIX definitions").println();
+  ("Initializing FAMIX definitions").log(1);
   //This should only run once!!!
   var ClassArtifactType = new DECENT!ArtifactType;
   ClassArtifactType.name = "Class";
