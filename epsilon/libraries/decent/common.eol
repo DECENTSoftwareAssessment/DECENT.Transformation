@@ -91,7 +91,7 @@ operation DECENT!Activity setActivityType(type : String) {
 }
 
 
-operation DECENT!Model addAttributes(attributes : Map) : Real {
+operation DECENT!Model addAttributes(attributes : Map) {
 	for (a in attributes.keySet()) {
     	if (Model.attributePool.attributes.select(att|att.name = a).size() = 0) {
 		  	var Attribute = new DECENT!Attribute;
