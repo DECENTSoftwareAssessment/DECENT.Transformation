@@ -124,7 +124,7 @@ post mgInitPost{
   		}
   		
   		for (p in s.previous) {
-  			("  " +p.ID + " ("+p.artifact.name+")" + " -> " +s.ID +" ("+s.artifact.name+")").log(4);
+  			//("  " +p.ID + " ("+p.artifact.name+")" + " -> " +s.ID +" ("+s.artifact.name+")").log(4);
   		}
   	}
   }
@@ -183,8 +183,10 @@ rule File2Artifact
     var parentName = "ROOT";
     if (f.parentLinks.size()>0) {
     	//("Adding parents... "+f.parentLinks.size()).log(1);
-	    a.parent = f.parentLinks.get(0).parent.equivalent();
-	    parentName = a.parent.name;
+    	("Adding parents... "+f.parentLinks.get(0).parent.equivalent().name).log(4);
+	    var parentArtifact = f.parentLinks.get(0).parent.equivalent();
+	    a.parent = parentArtifact;
+	    parentName = parentArtifact.name;
     } else {
     	//TODO: handle branches properly
     	DECENT!Location.allInstances.select(l|l.name = "master").first().rootArtifact=a;
@@ -199,8 +201,9 @@ rule Revision2AgentState
     to s : DECENT!AgentState {
     guard : ruleBased
     
-    s.agent = r.author.equivalent();
-    ("Transforming revision "+ r.commit_id + " to agent state for " + s.agent.name).log(3);
+    var agent = r.author.equivalent(); 
+    s.agent = agent;
+    ("Transforming revision "+ r.commit_id + " to agent state for " + agent.name).log(3);
     s.ID = r.commit_id;
     s.name = r.rev;
     s.date = r.author_date;
