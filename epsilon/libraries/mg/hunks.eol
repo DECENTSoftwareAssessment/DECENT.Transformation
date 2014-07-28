@@ -41,32 +41,32 @@ operation OrderedSet sortHunks() {
             while (d.isDefined() and d.old_start_line + difference < i.new_start_line) {
                 self.add(d);
                 difference = difference + d.~difference;
-                ("  Adding d1 ("+difference+") "+d).log(1);
+                ("  Adding d1 ("+difference+") "+d).log(4);
                 deletions.remove(d);
                 d = deletions.first();
             }
             
             self.add(i);
             difference = difference + i.~difference;
-            ("  Adding i1 ("+difference+") "+i).log(1);
+            ("  Adding i1 ("+difference+") "+i).log(4);
             insertions.remove(i);
             i = insertions.first();
         }
 
         d = deletions.first();
         while (d.isDefined() and d.old_start_line < m.old_start_line) {
-	        ("    About to add d2:" + (d.~difference)).log(1);
-	        ("    ::  "+d.old_start_line+" + "+difference+" < " + m.old_start_line).log(1);
+	        ("    About to add d2:" + (d.~difference)).log(4);
+	        ("    ::  "+d.old_start_line+" + "+difference+" < " + m.old_start_line).log(4);
             self.add(d);
             difference = difference + d.~difference;
-            ("  Adding d2 ("+difference+") "+d).log(1);
+            ("  Adding d2 ("+difference+") "+d).log(4);
             deletions.remove(d);
             d = deletions.first();
         }
         
         self.add(m);
         difference = difference + m.~difference;
-        ("  Adding m ("+difference+") "+m).log(1);    
+        ("  Adding m ("+difference+") "+m).log(4);    
     }
     
     i = insertions.first();
@@ -75,14 +75,14 @@ operation OrderedSet sortHunks() {
         while (d.isDefined() and d.old_start_line + difference < i.new_start_line) {
             self.add(d);
 			difference = difference + d.~difference;
-            ("  Adding d3 ("+difference+") "+d).log(1);
+            ("  Adding d3 ("+difference+") "+d).log(4);
             deletions.remove(d);
             d = deletions.first();
         }
         
         self.add(i);
         difference = difference + i.~difference;
-        ("  Adding i2 ("+difference+") "+i).log(1);
+        ("  Adding i2 ("+difference+") "+i).log(4);
         insertions.remove(i);
         i = insertions.first();
     }
@@ -91,7 +91,7 @@ operation OrderedSet sortHunks() {
     while (d.isDefined()) {
         self.add(d);
         difference = difference + d.~difference;
-        ("  Adding d4 ("+difference+")"+d).log(1);
+        ("  Adding d4 ("+difference+")"+d).log(4);
         deletions.remove(d);
         d = deletions.first();
     }
