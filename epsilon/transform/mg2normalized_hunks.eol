@@ -1,4 +1,5 @@
 import "../libraries/mg/hunks.eol";
+import "../libraries/decent/common.eol";
 import "../libraries/decent/logging.eol";
 
   ("Running mg2normalized_hunks").log(1);
