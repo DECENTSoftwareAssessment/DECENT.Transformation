@@ -10,7 +10,7 @@ var files = MG!File.allInstances();
 
 for (f in files) {
 	var orderedHunks = new OrderedSet;
-    (f.file_name).log(1);
+    (f.file_name).log(3);
     for (a in f.actions) {
    		var hunks = f.hunks.select(h|h.revision = a.revision);
    		hunks.sortHunks();
