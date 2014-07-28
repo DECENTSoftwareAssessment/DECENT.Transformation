@@ -200,6 +200,52 @@ pre {
   		s.addValue(CarriedTotalBugWeightAttribute, lastWeight);
   	}
   }
+
+  ("...adding deltas...").log(2);
+
+  for (a in DECENT!Artifact.allInstances().select(x|x.isMGtype())) {
+  	var lastWeight = 0.asDouble();
+  	for (s in a.states) {
+  		s.addValue(CarriedTotalBugWeightAttribute, lastWeight);
+  		for (v in s.values.select(v|v.isTypeOf(DECENT!DoubleValue) or v.isTypeOf(DECENT!IntegerValue))) {
+  			s.fromActivity.get(0).addDelta(v.ofAttribute);
+  		}
+  	}
+  }
+
+  ("...adding agent state values...").log(1);
+
+  for (s in CFA!GlobalState.allInstances()) {
+	("  " + " @ "+s.ID).log(1);
+  	var authorName = s.revision.author.name;
+  	var matchedStates = DECENT!AgentState.allInstances().select(m|m.agemt.name = authorName);
+  	var size = matchedStates.size();
+	//check if correct matches can be found 
+  	if (size <> 1) {
+  		("  "+size+" DECENT matches found for: "+authorName+" at "+s.ID).log(1);
+  	} else {
+  		var state = matchedStates.first();
+  		
+  		for (a in attributes.keySet()) {
+			state.values.removeAll(state.values.select(v|v.ofAttribute.name = a));
+		}
+  		
+  		state.addValue(BugFixAttribute, s.bugFix);
+  		state.addValue(WeightFactorAttribute, s.weightFactor);
+  		state.addValue(TotalWeightAttribute, s.totalWeight);
+  		state.addValue(TotalBugWeightAttribute, s.totalBugWeight);
+  		state.addValue(AverageWeightAttribute, s.averageWeight);
+  		state.addValue(AverageBugWeightAttribute, s.averageBugWeight);
+  		state.addValue(CausesCountAttribute, s.causes.size().asDouble());
+  		state.addValue(FixesCountAttribute, s.fixes.size().asDouble());
+  		
+  		var clearedBugWeight = 0.asDouble();
+  		if (s.fixes.size()>0) {
+  			clearedBugWeight = s.weightFactor * (s.fixes.size().asDouble()/s.fixes.size().asDouble());
+  		}
+   		state.addValue(ClearedTotalBugWeightAttribute, clearedBugWeight);
+	}
+  }
   
   ("...done!").log(2);
 }
