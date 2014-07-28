@@ -101,12 +101,8 @@ post mgInitPost{
   for (a in DECENT!Artifact.allInstances()) {
   	(""+a.name).log(3);
   	for (s in a.states) {
-  		for (v in s.values.select(v|v.ofAttribute = FileSizeAttribute)) {
-  			("  " + a.name + " in " + s.ID + " : " + v.ofAttribute.name + " = " + v.content).log(4);
-  		}
-  		
-  		for (p in s.previous) {
-  			//("  " +p.ID + " ("+p.artifact.name+")" + " -> " +s.ID +" ("+s.artifact.name+")").log(4);
+  		for (v in s.values.select(v|v.isTypeOf(DoubleValue) or v.isTypeOf(IntegerValue))) {
+  			s.fromActivity.get(0).addDelta(v.ofAttribute);
   		}
   	}
   }
