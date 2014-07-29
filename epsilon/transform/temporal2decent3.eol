@@ -65,7 +65,7 @@ import "../libraries/decent/logging.eol";
   	//thus temporal ordering causes inconsistencies with the rest 
   	//var sortedStates = a.states.sortBy(s|s.fromActivity.first().date.time);
   	var sortedStates = a.states; 
-  	sortedStates.addTemporalCharacteristics();
+  	sortedStates.addArtifactTemporalCharacteristics();
   }
 
 
@@ -167,7 +167,7 @@ operation OrderedSet addAgentTemporalCharacteristics() {
 //TODO: add date to states
 //TODO: move deltas outside
 //TODO: unify with agent states
-operation OrderedSet addTemporalCharacteristics() {
+operation OrderedSet addArtifactTemporalCharacteristics() {
   	var timeCreated = self.first().fromActivity.first().date.time;
   	var lifespan =  self.last().fromActivity.first().date.time - timeCreated;
   	var revisions = 0;

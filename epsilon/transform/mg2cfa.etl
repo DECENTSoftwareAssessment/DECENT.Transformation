@@ -6,7 +6,7 @@ pre mgInitPre {
 
   //Some initialization
   //More generic (might be simplified)
-  "Running mg2cfn".log(1);
+  "Running mg2cfa".log(1);
   var start = Native("java.lang.System").currentTimeMillis();
   /********************************** INIT (1x) *******************************/
   var lowerBound = 0;
