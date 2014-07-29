@@ -65,7 +65,7 @@ public class MassEpsilonLauncher extends EpsilonStandaloneLauncher {
 //		launcher.getBinaryDECENTModel(args[0], true, false);
 //		launcher.convertDECENTModelToBinary(args[0]);
 //		launcher.convertDECENTModelToXMI(args[0]);
-		launcher.executeAll();
+//		launcher.executeAll();
 		launcher.executeSteps();
 	}
 	
