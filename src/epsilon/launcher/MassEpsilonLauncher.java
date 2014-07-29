@@ -12,12 +12,16 @@ package epsilon.launcher;
 
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Properties;
 
 import org.eclipse.emf.common.util.URI;
 import org.eclipse.emf.ecore.EPackage;
@@ -51,33 +55,93 @@ public class MassEpsilonLauncher extends EpsilonStandaloneLauncher {
 	
 	private HashMap<String, Object> metaModelCache = new HashMap<>();
 	private boolean useDECENTBinary = true;
+	private Properties properties = new Properties();
+
 
 	public static void main(String[] args) throws Exception {
 		MassEpsilonLauncher launcher = new MassEpsilonLauncher();
+		launcher.loadProperties(args[0]);
 		launcher.registerMetaModels();
 //		launcher.getBinaryDECENTModel(args[0], true, false);
 //		launcher.convertDECENTModelToBinary(args[0]);
 //		launcher.convertDECENTModelToXMI(args[0]);
-		launcher.execute(args[0]);
+		launcher.executeAll();
+		launcher.executeSteps();
 	}
 	
 	public IEolExecutableModule createModule() {
 		return new EtlModule();
 	}
 
-	public void execute(String location) throws Exception {
+	public void loadProperties(String propertiesFilename) throws Exception {
+		System.out.println("INIT: Loading settings...");
+		properties.load(new FileInputStream(propertiesFilename));
+	}
+
+	public void executeSteps() throws Exception {
+		String dataLocation = properties.getProperty("dataLocation");
+		String project = properties.getProperty("project");
+		String location = dataLocation+project;
+		for (String step : properties.getProperty("steps").split(",")) {
+			executeTransformation(step, location);
+		}
+	}	
+	public void executeTransformation(String step, String location) throws Exception {
+		switch (step) {
+		case "MG2NORMALIZEDHUNKS":
+			executeMG2NORMALIZEDHUNKS(location);
+			break;
+		case "MG2DECENT":
+			executeMG2DECENT(location);
+			break;
+		case "MG2CFA":
+			executeMG2CFA(location);
+			break;
+		case "CFA2DECENT":
+			executeCFA2DECENT(location);
+			break;
+		case "EXPERIENCE2DECENT":
+			executeEXPERIENCE2DECENT(location);
+			break;
+		case "TEMPORAL2DECENT":
+			executeTEMPORAL2DECENT(location);
+			break;
+		case "BZ2TRACE":
+			executeBZ2TRACE(location);
+			break;
+		case "TRACE2DECENT":
+			executeTRACE2DECENT(location);
+			break;
+		case "FAMIX2DECENT":
+			String lowerBound = properties.getProperty("famixLower");
+			String upperBound = properties.getProperty("famixUpper");
+			useDECENTBinary=Boolean.parseBoolean(properties.getProperty("useBinary"));
+			executeFAMIX2DECENT(location, lowerBound, upperBound); //reloads only famix model instances
+			break;
+		case "HITS2DECENT":
+			executeHITS2DECENT(location);
+			break;
+		default:
+			break;
+		}
+	}
+	
+	public void executeAll() throws Exception {
+		String dataLocation = properties.getProperty("dataLocation");
+		String project = properties.getProperty("project");
+		String location = dataLocation+project;
 		//TODO: check if resources are available
-//		executeMG2NORMALIZEDHUNKS(location);
-//		executeMG2DECENT(location);
-//		executeMG2CFA(location);
-//		executeCFA2DECENT(location);
+		executeMG2NORMALIZEDHUNKS(location);
+		executeMG2DECENT(location);
+		executeMG2CFA(location);
+		executeCFA2DECENT(location);
 //		executeEXPERIENCE2DECENT(location);
 //		executeTEMPORAL2DECENT(location);
 //		executeBZ2TRACE(location);
 //		executeTRACE2DECENT(location);
 		String lowerBound = "0";
 		String upperBound = "0";
-		executeFAMIX2DECENT(location, lowerBound, upperBound); //reloads only famix model instances
+//		executeFAMIX2DECENT(location, lowerBound, upperBound); //reloads only famix model instances
 //		executeHITS2DECENT(location);
 	}
 
