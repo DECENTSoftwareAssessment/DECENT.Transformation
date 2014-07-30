@@ -121,6 +121,9 @@ public class MassEpsilonLauncher extends EpsilonStandaloneLauncher {
 		case "HITS2DECENT":
 			executeHITS2DECENT(location);
 			break;
+		case "QUERY":
+			executeQUERY(location);
+			break;
 		default:
 			break;
 		}
@@ -284,6 +287,18 @@ public class MassEpsilonLauncher extends EpsilonStandaloneLauncher {
 		module.reset();
 	}
 
+	private void executeQUERY(String location) throws Exception,
+			URISyntaxException, EolModelLoadingException, EolRuntimeException {
+		String source = "epsilon/query/decent.eol";
+		IEolExecutableModule module = loadModule(source);
+		IModel decentModel = getBinaryDECENTModel(location, true, false);
+		// decentModel.load();
+		module.getContext().getModelRepository().addModel(decentModel);
+		module.execute();
+		decentModel.dispose();
+		// can be stored and retained alternatively
+		module.reset();
+	}
 	
 	private void executeMG2NORMALIZEDHUNKS(String location) throws Exception, URISyntaxException,
 			EolModelLoadingException, EolRuntimeException {
