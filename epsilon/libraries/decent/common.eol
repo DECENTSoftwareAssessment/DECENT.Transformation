@@ -9,6 +9,10 @@ operation Any addValue(attribute : DECENT!Attribute, content : Any, value : DECE
     return value;
 }
 
+operation Any getValue(attribute : DECENT!Attribute) : DECENT!Value {
+    return self.values.select(v|v.ofAttribute() = attribute).first();
+}
+
 operation Any addValue(attribute : DECENT!Attribute, content : String) : DECENT!Value {
     var value : new DECENT!StringValue;
     return self.addValue(attribute, content, value);
