@@ -1,7 +1,7 @@
 
 operation String log(level : Integer) {
-	var levelLimit = 5;
-	if (level < levelLimit) {
+	var levelLimit = 1;
+	if (level <= levelLimit) {
 		var system = Native("java.lang.System");
 		var t = system.currentTimeMillis();
 		(t+ " : " + level + " : " + self).println();
