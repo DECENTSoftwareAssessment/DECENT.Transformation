@@ -8,6 +8,6 @@ upperBound = 15;
 
     //visualization
 var projectName = CFA!CFN.allInstances().first().name;
-var filename = "/Users/philip-iii/Dev/workspaces/emf/DECENT.Transformations/plantuml/cfa.model.generated."+projectName+"-"+lowerBound+"-"+upperBound+".plantuml";
+var filename = "/Users/philip-iii/Dev/workspaces/emf/DECENT.Data/output/cfa.model.generated."+projectName+"-"+lowerBound+"-"+upperBound+".plantuml";
 var writer;
 CFA!GlobalState.allInstances().select(s|s.ID <= upperBound and s.ID >= lowerBound).cfaToPlantUMLFile(filename);    
