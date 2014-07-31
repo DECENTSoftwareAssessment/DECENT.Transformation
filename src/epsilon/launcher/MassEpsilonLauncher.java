@@ -291,7 +291,12 @@ public class MassEpsilonLauncher extends EpsilonStandaloneLauncher {
 			URISyntaxException, EolModelLoadingException, EolRuntimeException {
 		String source = "epsilon/query/decent.eol";
 		IEolExecutableModule module = loadModule(source);
-		IModel decentModel = getBinaryDECENTModel(location, true, false);
+		IModel decentModel;
+		if (useDECENTBinary) {
+			decentModel = getBinaryDECENTModel(location, true, false);
+		} else {
+			decentModel = getDECENTModel(location, true, false);
+		}
 		// decentModel.load();
 		module.getContext().getModelRepository().addModel(decentModel);
 		module.execute();
