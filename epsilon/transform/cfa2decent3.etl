@@ -16,6 +16,16 @@ pre {
   
   var attributes = new Map;
   
+  for (f in CFA!Factor.allInstances()) {
+  	//TODO: add dimension
+  	for (a in CFA!Attribute.allInstances()) {
+  		//TODO: assign dimensions
+		attributes.put(f.name+"."+a.name+".Local","Local/Artifact: "+a.description+" ("+f.name+")");
+		attributes.put(f.name+"."+a.name+".Global","Global/Agent: "+a.description+" ("+f.name+")");
+  	}
+  }
+  //TODO: initialize attributes automagically?
+  
   attributes.put("BugFix","Local (artifact) label as bug fix from revision message");
   attributes.put("WeightFactor","Local (artifact) weight factor from CFA analysis");
   attributes.put("TotalWeight","Total local (artifact) cause weight from CFA analysis (total weight for caused changes)");
@@ -183,6 +193,28 @@ operation transformArtifactStates() {
 			state.values.removeAll(state.values.select(v|v.ofAttribute.name = a));
 		}
   		
+  		for (f in s.factors.keySet()) {
+		  	var factorValues = s.factors.get(f);
+		  	var globalStateFactorValues = s.globalState.factors.get(f);
+		  	for (a in factorValues.keySet()) {
+	  			var LocalAttribute = DECENT!Attribute.allInstances().select(x|x.name = f.name+"."+a.name+".Local").first();
+	  			var GlobalAttribute = DECENT!Attribute.allInstances().select(x|x.name = f.name+"."+a.name+".Global").first();
+	  			state.values.removeAll(state.values.select(v|v.ofAttribute.name = LocalAttribute));
+	  			state.values.removeAll(state.values.select(v|v.ofAttribute.name = GlobalAttribute));
+	  			state.addValue(LocalAttribute,factorValues.get(a));
+	  			state.addValue(GlobalAttribute,globalStateFactorValues.get(a));
+		  	}
+		  	
+  	  		var clearedBugWeight = 0.asDouble();
+	  		if (s.fixes.size()>0) {
+	  			var WeightFactor = CFA!Attribute.allInstances().select(a|a.name = "WeightFactor").first();
+	  			//TODO: what's the sense behind the multiplication below???
+	  			clearedBugWeight = factorValues.get(WeightFactor) * (s.fixes.size().asDouble()/s.fixes.size().asDouble());
+	  		}
+	   		state.addValue(ClearedTotalBugWeightAttribute, clearedBugWeight);
+		}
+  		
+  		//TODO: legacy
   		state.addValue(BugFixAttribute, s.bugFix);
   		state.addValue(WeightFactorAttribute, s.weightFactor);
   		state.addValue(TotalWeightAttribute, s.totalWeight);
@@ -204,11 +236,13 @@ operation transformArtifactStates() {
   		
   		var clearedBugWeight = 0.asDouble();
   		if (s.fixes.size()>0) {
+  			//TODO: what's the sense behind the multiplicaiton below?!
   			clearedBugWeight = s.weightFactor * (s.fixes.size().asDouble()/s.fixes.size().asDouble());
   		}
    		state.addValue(ClearedTotalBugWeightAttribute, clearedBugWeight);
    		
-   		//temporal
+   		//temporals
+   		//TODO: EXTRACT
    		//TODO: consider moving to mg2cfa 
    		//TODO: consider filtering by weight
    		//TODO: considering adding further temporals
@@ -371,6 +405,25 @@ operation transformAgentStates() {
 			state.values.removeAll(state.values.select(v|v.ofAttribute.name = a));
 		}
   		
+  		for (f in s.factors.keySet()) {
+		  	var factorValues = s.factors.get(f);
+		  	for (a in factorValues.keySet()) {
+	  			var GlobalAttribute = DECENT!Attribute.allInstances().select(x|x.name = f.name+"."+a.name+".Global").first();
+	  			state.values.removeAll(state.values.select(v|v.ofAttribute.name = GlobalAttribute));
+	  			
+	  			state.addValue(GlobalAttribute,factorValues.get(a));
+		  	}
+		  	
+  	  		var clearedBugWeight = 0.asDouble();
+	  		if (s.fixes.size()>0) {
+	  			var WeightFactor = CFA!Attribute.allInstances().select(a|a.name = "WeightFactor").first();
+	  			//TODO: what's the sense behind the multiplication below???
+	  			clearedBugWeight = factorValues.get(WeightFactor) * (s.fixes.size().asDouble()/s.fixes.size().asDouble());
+	  		}
+	   		state.addValue(ClearedTotalBugWeightAttribute, clearedBugWeight);
+		}
+  		
+  		//TODO: legacy
   		state.addValue(BugFixAttribute, s.bugFix);
   		state.addValue(WeightFactorAttribute, s.weightFactor);
   		state.addValue(TotalWeightAttribute, s.totalWeight);
@@ -382,10 +435,13 @@ operation transformAgentStates() {
   		
   		var clearedBugWeight = 0.asDouble();
   		if (s.fixes.size()>0) {
+  			//TODO: what's the sense behind the multiplicaiton below?!
   			clearedBugWeight = s.weightFactor * (s.fixes.size().asDouble()/s.fixes.size().asDouble());
   		}
    		state.addValue(ClearedTotalBugWeightAttribute, clearedBugWeight);
 
+
+		//TODO: extract temporals
    		var averageFixedLifespan = 0.asDouble();
    		var averageFixedBugLifespan = 0.asDouble();
    		var averageCausedLifespan = 0.asDouble();

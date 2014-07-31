@@ -12,14 +12,76 @@ pre mgInitPre {
   var lowerBound = 0;
   var upperBound = 2310;
   upperBound = 600;
+
+  var attributes = new Map;
+  attributes.put("Hunks","Number of changed fragments");
+  attributes.put("BugFix","Bug Fix revision label based on regular expressions applied to revision messages");
+  attributes.put("WeightFactor","Weight factor for state used in calculating weights for causes");
+  attributes.put("TotalWeight","Calculated total weight reflecting all caused states disregarding whether they were labelled as states of interest and assigned a corresponding weight factor");
+  attributes.put("TotalBugWeight","Calculated total bug weight reflecting all caused states that were labelled as states of interest and assigned a corresponding weight factor");
+  attributes.put("AverageWeight","Calculated average weight by dividing the total weight by the number of caused states");
+  attributes.put("AverageBugWeight","Calculated average bug weight by dividing the total bug weight by the number of caused states");
+  
+  for (a in attributes.keySet()) {
+	var Attribute = new CFA!Attribute;
+	Attribute.name = a;
+	Attribute.description = attributes.get(a);
+  }
+
+  var HunksAttribute = CFA!Attribute.allInstances().select(a|a.name = "Hunks").first();
+  var BugFixAttribute = CFA!Attribute.allInstances().select(a|a.name = "BugFix").first();
+  var WeightFactorAttribute = CFA!Attribute.allInstances().select(a|a.name = "WeightFactor").first();
+  var TotalWeightAttribute = CFA!Attribute.allInstances().select(a|a.name = "TotalWeight").first();
+  var TotalBugWeightAttribute = CFA!Attribute.allInstances().select(a|a.name = "TotalBugWeight").first();
+  var AverageBugWeightAttribute = CFA!Attribute.allInstances().select(a|a.name = "AverageBugWeight").first();
+  var AverageWeightAttribute = CFA!Attribute.allInstances().select(a|a.name = "AverageWeight").first();
+  
+
+  var factors = new Map;
+  factors.put("BugFix","Bug Fix factor derived from revision label based on regular expressions applied to revision messages");
+  for (a in factors.keySet()) {
+	var factor = new CFA!Factor;
+	factor.name = a;
+	factor.description = factors.get(a);
+  }
+  
+  var BugFixFactor = CFA!Factor.allInstances().select(a|a.name = "BugFix").first();
+  
+
+
 }
 
 post mgInitPost{
     ("Post processing... ").log(2);
+    //initialize all attributes to 0?
+	var defaultValue = 0.asDouble();
     for (s in CFA!State.allInstances()) {
+		for (factor in s.factors.values) {
+			factor.put(TotalWeightAttribute,defaultValue);
+			factor.put(TotalBugWeightAttribute,defaultValue);
+			factor.put(AverageWeightAttribute,defaultValue);
+			factor.put(AverageBugWeightAttribute,defaultValue);
+    	}
+    }
+    for (s in CFA!State.allInstances()) {
+    	var fixes = s.fixes.size();
+    	if (fixes = 0) {
+    		fixes = 1.asDouble();
+    	}
         for (f in s.fixes) {
-            f.totalWeight = f.totalWeight + (1/s.fixes.size().asDouble());
-            f.totalBugWeight = f.totalBugWeight + s.weightFactor * (1/s.fixes.size().asDouble());
+        	//TODO:Handle other factors as well
+        	//TODO:Consider moving the hard attributes to the attribute entry to avoid the mess
+        	var value; 
+        	for (factor in f.factors.values) {
+        		value = factor.get(TotalWeightAttribute) + (1/fixes);
+        		factor.put(TotalWeightAttribute,value);
+        		value = factor.get(TotalBugWeightAttribute) + factor.get(WeightFactorAttribute) * (1/fixes);
+        		factor.put(TotalBugWeightAttribute,value);
+        	}
+        	
+        	//TODO: legacy
+            f.totalWeight = f.totalWeight + (1/fixes);
+            f.totalBugWeight = f.totalBugWeight + s.weightFactor * (1/fixes);
         }
     }
     for (s in CFA!State.allInstances()) {
@@ -27,10 +89,21 @@ post mgInitPost{
     	if (causes = 0) {
     		causes = 1.asDouble();
     	}
+    	var value; 
+    	for (factor in s.factors.values) {
+    		value = factor.get(TotalWeightAttribute) / causes;
+    		factor.put(AverageWeightAttribute,value);
+    		//TODO: differentiate between bug causes?
+    		value = factor.get(TotalBugWeightAttribute) / causes;
+    		factor.put(AverageBugWeightAttribute,value);
+    	}
+    	
+    	//TODO: legacy
         s.averageWeight = s.totalWeight / causes;
         s.averageBugWeight = s.totalBugWeight / causes;
     }
     
+    //TODO: update visualisation
     //visualization
     var projectName = MG!Model.allInstances().first().name;
     var filename = "/Users/philip-iii/Dev/workspaces/emf/DECENT.Transformations/plantuml/cfa.model.generated."+projectName+"-"+lowerBound+"-"+upperBound+".plantuml";
@@ -51,18 +124,34 @@ rule Models
     to t : CFA!CFN {
     ("Transforming model "+ s.name +", URI: " +s.uri).log(3);    
     t.name = s.name;
+    for (a in attributes.keySet()) {
+		var Attribute = CFA!Attribute.allInstances().select(x|x.name = a).first();
+		t.attributes.add(Attribute);
+ 	}
+    for (a in factors.keySet()) {
+		var factor = CFA!Factor.allInstances().select(x|x.name = a).first();
+		t.factors.add(factor);
+ 	}
+    
 }
 
 rule Revisions
     transform r : MG!Revision 
     to s : CFA!GlobalState {
-    
+    //TODO: remove limits
     guard : /*r.is_bug_fix <> 0 and*/ (r.commit_id <= upperBound and r.commit_id >= lowerBound )
     ("Transforming "+ r.commit_id +" Fix: " +r.is_bug_fix).log(3);
     s.cfn = r.repository.equivalent();
     s.revision = r;
     s.ID = r.commit_id;
     s.name = ""+r.commit_id;
+    
+    s.factors.put(BugFixFactor,new Map);
+    s.factors.get(BugFixFactor).put(HunksAttribute, r.hunks.size().asDouble());
+    s.factors.get(BugFixFactor).put(BugFixAttribute, r.is_bug_fix.asDouble());
+    s.factors.get(BugFixFactor).put(WeightFactorAttribute, r.is_bug_fix.asDouble());
+
+	//TODO: legacy
     s.hunks = r.hunks.size();
     s.bugFix = r.is_bug_fix.asDouble();
     s.weightFactor = r.is_bug_fix.asDouble();
@@ -107,6 +196,13 @@ rule Actions
     s.ID = a.revision.commit_id;
     
     var hunks = a.revision.hunks.select(h|h.file = a.file);
+    
+    s.factors.put(BugFixFactor,new Map);
+    s.factors.get(BugFixFactor).put(HunksAttribute, hunks.size().asDouble());
+    s.factors.get(BugFixFactor).put(BugFixAttribute, a.revision.is_bug_fix.asDouble());
+    s.factors.get(BugFixFactor).put(WeightFactorAttribute, a.revision.is_bug_fix.asDouble());
+    
+    //TODO: legacy
     s.hunks = hunks.size();
     s.bugFix = a.revision.is_bug_fix.asDouble();
     s.weightFactor = a.revision.is_bug_fix.asDouble();
