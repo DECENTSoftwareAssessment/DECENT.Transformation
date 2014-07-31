@@ -81,6 +81,8 @@ pre {
   Model.addAttributes(attributes);
   
   var CFAWeightFactor = CFA!Attribute.allInstances().select(a|a.name = "WeightFactor").first();
+  var FilePathAttribute = DECENT!Attribute.allInstances().select(a|a.name = "FilePath").first();
+  
   
   var BugFixAttribute = DECENT!Attribute.allInstances().select(a|a.name = "BugFix").first();
   var WeightFactorAttribute = DECENT!Attribute.allInstances().select(a|a.name = "WeightFactor").first();
@@ -179,14 +181,14 @@ operation transformArtifactStates() {
 	("  " + s.file.file_name + " @ "+s.ID).log(3);
   	var fileName = s.file.file_name;
   	var filePath = s.action.current_file_path;
-  	var matchedStates = DECENT!State.allInstances().select(m|m.artifact.isMGtype() and m.ID = s.ID and m.values.select(v|v.name = "FilePath").first().content = filePath);
+  	var matchedStates = DECENT!State.allInstances().select(m|m.artifact.isMGtype() and m.ID = s.ID and m.getValue(FilePathAttribute).content = filePath);
   	var size = matchedStates.size();
 	//check if correct matches can be found 
   	if (size <> 1) {
   		("  "+size+" DECENT matches found for: "+fileName+" at "+s.ID).log(4);
   		("    Avaliable states at "+s.ID+" are:").log(4);
   		for (x in DECENT!State.allInstances().select(x|x.artifact.isMGtype() and x.ID = s.ID)) {
-  			("      "+x.artifact.name+" at "+x.ID+" ("+x.values.select(v|v.name = "FilePath").first().content+")").log(4);
+  			("      "+x.artifact.name+" at "+x.ID+" ("+x.getValue(FilePathAttribute).content+")").log(4);
   		}
   	} else {
   		var state = matchedStates.first();
@@ -358,9 +360,9 @@ operation addCarriedWeights() {
   for (a in DECENT!Artifact.allInstances().select(x|x.isMGtype())) {
   	var lastWeight = 0.asDouble();
   	for (s in a.states) {
-  		var totalBugWeight = s.values.select(v|v.ofAttribute = TotalBugWeightAttribute).first().content;
+  		var totalBugWeight = s.getValue(TotalBugWeightAttribute).content;
   		lastWeight = lastWeight + totalBugWeight;
-  		var clearedBugWeight = s.values.select(v|v.ofAttribute = ClearedTotalBugWeightAttribute).first().content;
+  		var clearedBugWeight = s.getValue(ClearedTotalBugWeightAttribute).content;
   		lastWeight = lastWeight - clearedBugWeight;
   		s.addValue(CarriedTotalBugWeightAttribute, lastWeight);
   	}
