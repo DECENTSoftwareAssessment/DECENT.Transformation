@@ -9,9 +9,6 @@ pre mgInitPre {
   "Running mg2cfa".log(1);
   var start = Native("java.lang.System").currentTimeMillis();
   /********************************** INIT (1x) *******************************/
-  var lowerBound = 0;
-  var upperBound = 2310;
-  upperBound = 600;
 
   var attributes = new Map;
   attributes.put("Hunks","Number of changed fragments");
@@ -102,16 +99,7 @@ post mgInitPost{
         s.averageWeight = s.totalWeight / causes;
         s.averageBugWeight = s.totalBugWeight / causes;
     }
-    
-    //TODO: update visualisation
-    //visualization
-    var projectName = MG!Model.allInstances().first().name;
-    var filename = "/Users/philip-iii/Dev/workspaces/emf/DECENT.Transformations/plantuml/cfa.model.generated."+projectName+"-"+lowerBound+"-"+upperBound+".plantuml";
-	var writer;
-    upperBound = 0;
-	//CFA!GlobalState.allInstances().select(s|s.ID = 65 or s.ID = 72).cfaToPlantUMLFile(filename);
-    //CFA!GlobalState.allInstances().select(s|s.ID <= upperBound and s.ID >= lowerBound).cfaToPlantUMLFile(filename);
-    
+        
     var end = Native("java.lang.System").currentTimeMillis();
     var duration = end - start;
     ("Duration: "+duration.toMinutes().round(5)).log(1);
@@ -139,7 +127,6 @@ rule Revisions
     transform r : MG!Revision 
     to s : CFA!GlobalState {
     //TODO: remove limits
-    guard : /*r.is_bug_fix <> 0 and*/ (r.commit_id <= upperBound and r.commit_id >= lowerBound )
     ("Transforming "+ r.commit_id +" Fix: " +r.is_bug_fix).log(3);
     s.cfn = r.repository.equivalent();
     s.revision = r;
@@ -166,16 +153,14 @@ rule Revisions
     
     for (h in r.hunks) {
         for (hb in h.hunkBlame) {
-            if (hb.lastRevision.commit_id >= lowerBound) {
-	            var cause = hb.lastRevision.equivalent(); 
-	            s.fixes.add(cause);
-	            cause.causes.add(s); 
-	            
-	            //necessary?
-	            //var weight = 1/totalFixCount.asDouble();
-	            //cause.totalWeight = cause.totalWeight + weight;
-	            //cause.totalBugWeight = cause.totalBugWeight + s.weightFactor*weight;
-            }
+            var cause = hb.lastRevision.equivalent(); 
+            s.fixes.add(cause);
+            cause.causes.add(s); 
+            
+            //necessary?
+            //var weight = 1/totalFixCount.asDouble();
+            //cause.totalWeight = cause.totalWeight + weight;
+            //cause.totalBugWeight = cause.totalBugWeight + s.weightFactor*weight;
         }
     }        
 }
@@ -187,8 +172,8 @@ rule Actions
     //-> keep in mind potential odd issues with svn-bridges and such 
     //-> use different projects for the time being (yakuake?)
     //-> disregard these problems for the time being
-    guard : /*r.is_bug_fix <> 0 and*/ (a.revision.commit_id <= upperBound and a.revision.commit_id >= lowerBound )
-    //("Transforming "+ a.file.file_name+"_Mr"+a.revision.commit_id+" Fix: " +a.revision.is_bug_fix).log(1);
+
+    ("Transforming "+ a.file.file_name+"_Mr"+a.revision.commit_id+" Fix: " +a.revision.is_bug_fix).log(3);
     s.file = a.file;
     s.action = a;
     //s.name = a.file.file_name+"_Mr"+a.revision.commit_id;
@@ -218,22 +203,21 @@ rule Actions
 	//consider moving to post for performance
     for (h in hunks) {
         for (hb in h.hunkBlame) {
-            if (hb.lastRevision.commit_id >= lowerBound) {
-            	//NOTE: using the file name rather than the file seems to fix resolution issues
-	            var cause = hb.lastRevision.actions.select(ax|ax.file.file_name = a.file.file_name).first().equivalent();
+        	//NOTE: using the file name rather than the file seems to fix resolution issues
+            var cause = hb.lastRevision.actions.select(ax|ax.file.file_name = a.file.file_name).first().equivalent();
 
-				if (cause.isUndefined()) {
-	            	//NOTE: file name may still be a problem with renaming, try backup approach with file itself
-	            	cause = hb.lastRevision.actions.select(ax|ax.file = a.file).first().equivalent();
-				}
+			if (cause.isUndefined()) {
+            	//NOTE: file name may still be a problem with renaming, try backup approach with file itself
+            	cause = hb.lastRevision.actions.select(ax|ax.file = a.file).first().equivalent();
+			}
 
-	            if (cause.isDefined()) {
-		            s.fixes.add(cause);
-		            cause.causes.add(s); 
-	            } 
-	            else {
-	            	//log and investigate errors (wrong blames or copied/renamed files?)
-	            	//("  Cause link for File "+a.file.file_name+" from Revision "+h.revision.commit_id+" to Revision "+hb.lastRevision.commit_id+" cannot be resolved.. Investigate!").log(1);
+            if (cause.isDefined()) {
+	            s.fixes.add(cause);
+	            cause.causes.add(s); 
+            } 
+            else {
+            	//log and investigate errors (wrong blames or copied/renamed files?)
+            	//("  Cause link for File "+a.file.file_name+" from Revision "+h.revision.commit_id+" to Revision "+hb.lastRevision.commit_id+" cannot be resolved.. Investigate!").log(1);
 /*	            	if (a.file.~copyFrom.isUndefined()) {
 	            		if (a.copy.isDefined()) {
 				            a.file.~copyFrom = a.copy.fromFile;
@@ -242,20 +226,19 @@ rule Actions
 	            		}
 	            	}
 */	            	cause = hb.lastRevision.actions.select(ax|ax.file = a.file.~copyFrom).first().equivalent();
-		            if (cause.isDefined()) {
-			            s.fixes.add(cause);
-			            cause.causes.add(s);
-		            } else {
-		            	("  Cause link for File "+a.file.file_name+" from Revision "+h.revision.commit_id+" to Revision "+hb.lastRevision.commit_id+" still cannot be resolved.. Investigate!").log(2);
-		            } 
-	            	
-	            }
-	            
-	            //necessary?
-	            //var weight = 1/totalFixCount.asDouble();
-	            //cause.totalWeight = cause.totalWeight + weight;
-	            //cause.totalBugWeight = cause.totalBugWeight + s.weightFactor*weight;
+	            if (cause.isDefined()) {
+		            s.fixes.add(cause);
+		            cause.causes.add(s);
+	            } else {
+	            	("  Cause link for File "+a.file.file_name+" from Revision "+h.revision.commit_id+" to Revision "+hb.lastRevision.commit_id+" still cannot be resolved.. Investigate!").log(2);
+	            } 
+            	
             }
+	            
+            //necessary?
+            //var weight = 1/totalFixCount.asDouble();
+            //cause.totalWeight = cause.totalWeight + weight;
+            //cause.totalBugWeight = cause.totalBugWeight + s.weightFactor*weight;
         }
     }        
 
