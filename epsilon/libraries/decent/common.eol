@@ -59,12 +59,17 @@ operation DECENT!Activity addDelta(attribute : DECENT!Attribute) : DECENT!Delta 
 operation DECENT!Activity addDelta(attribute : DECENT!Attribute, value : DECENT!Value) : DECENT!Delta {
     var delta : new DECENT!Delta;
     delta.onAttribute = attribute;
-    delta.targetValue = value;
+	//TODO: see if there is any impact of removing these
+	// probably only on loading and saving times
+	// ***slighly negative performance impact for whatever reason*** 
+    //delta.targetValue = value;
     if (self.state.isDefined()){
-	    delta.sourceValue = self.state.values.select(v|v.ofAttribute = attribute).first();
-        delta.change = delta.targetValue.content - delta.sourceValue.content;
+    	//delta.sourceValue = self.state.getValue(attribute);
+    	//delta.change = delta.targetValue.content - delta.sourceValue.content;
+        delta.change = value.content - self.state.getValue(attribute);
     } else {
-        delta.change = delta.targetValue.content;
+    	//delta.change = delta.targetValue.content;
+        delta.change = value.content;
     }
     self.deltas.add(delta);
     return delta;
