@@ -234,7 +234,6 @@ operation OrderedSet addArtifactTemporalCharacteristics() {
 		activity.addDelta(FrequencyAttribute); 
 		activity.addDelta(FrequencyDistanceToAverageAttribute); 
 		
-  		
   		previousStateTime = s.fromActivity.first().date.time;
   	}
 }

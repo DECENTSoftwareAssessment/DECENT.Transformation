@@ -6,6 +6,8 @@ pre mgInitPre {
 
   //Some initialization
   //More generic (might be simplified)
+  //TODO: may be exported to a separate module
+  //("System "+System.getContext().getModule()).log(1);
   "Running mg2decent v3".log(1);
   var start = Native("java.lang.System").currentTimeMillis();
   /********************************** INIT (1x) *******************************/
@@ -97,6 +99,7 @@ pre mgInitPre {
 
 post mgInitPost{
   ("Post processing... ").log(2);
+  //TODO: move to a separate standalone module?
   //stats for debugging...
   for (a in DECENT!Artifact.allInstances()) {
   	(""+a.name).log(3);

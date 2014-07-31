@@ -2,6 +2,7 @@ import "../libraries/decent/logging.eol";
 
 pre dagInitPre {
   //Some initialization
+  //TODO: does this do anything ?
   "Running mg2dag".log(1);
   var start = Native("java.lang.System").currentTimeMillis();
   ("Pre processing... ").log(2);

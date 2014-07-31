@@ -50,6 +50,7 @@ for (a in artifacts) {
 	progress = progress+1;
 	("Processing "+a.name+" : "+progress+" / "  + artifacts.size()).log(3);
 	for (s in a.states) {
+		//TODO: unify clean-up of existing values and deltas (a separate procedure?)
 		//TODO: this shall likely be activity values
 		//TODO: this is also horribly inefficient
 		//TODO: simplification assumption first

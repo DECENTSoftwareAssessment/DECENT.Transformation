@@ -59,6 +59,8 @@ pre {
 	  									s.artifact.type = FunctionArtifactType));
 	  ("Existing DECENT Anchored Element States in "+revisionId + ": "+existingStatesInRevision.size()).log(2);
 	  var fromActivities = new OrderedSet;
+	  
+	  //TODO: this is a potentially faulty approach...
 	  for (s in existingStatesInRevision) {
 	  	cleaned = true;
 	    ("  Cleaning up existing state " + s.ID +" of artifact " + s.artifact.name + " ("+s.artifact.type.name+")").log(3);
@@ -79,6 +81,7 @@ post {
 	("Updating broken activities...").log(2);
 	("DECENT Code States in "+revisionId + ": "+codeStatesInRevision.size()).log(2);
 	
+	//TODO: this may be a faulty approach
 	//top down approach potentially inefficient
 	if (cleaned) { 
 	    //for all states of affected code artifacts
