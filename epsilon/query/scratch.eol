@@ -1,0 +1,14 @@
+("Running scratch").println();
+var Model = DECENT!Model.allInstances().first();
+
+for (v in DECENT!Value.allInstances.select(v|v.ofAttribute.name = "BugCount" and v.content <> 0.0)) {
+	(v.eContainer.artifact.name+ " in " +v.eContainer.ID +" : " +v.name+" = "+v.content).println();
+
+}
+
+
+for (a in DECENT!Agent.allInstances) {
+	(a.name + " " + a.activities.size()).println();
+	a.attributes.put(DECENT!Attribute.allInstances.first(),DECENT!DoubleValue.allInstances.first());
+
+}

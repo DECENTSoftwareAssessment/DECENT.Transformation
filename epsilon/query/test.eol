@@ -1,0 +1,26 @@
+import "../libraries/decent/logging.eol";
+
+  "Running test decent v3".log(1);
+  /********************************** INIT (1x) *******************************/
+  ("Models: "+DECENT!Model.allInstances().size()).log(1);
+  var Model : new DECENT!Model;
+  var a : new DECENT!ArtifactTypeHierarchy;
+  Model.artifactTypeHierarchy = a;
+  Model.agentPool = new DECENT!AgentPool;
+  Model.attributePool = new DECENT!AttributePool;
+  //Model.projects = new List;
+  
+  var BranchArtifactType : new DECENT!ArtifactType;
+  BranchArtifactType.name = "Branch";
+  ("Branch: "+BranchArtifactType.name).log(1);
+  ("Model: "+Model).log(1);
+  ("ATH: "+Model.artifactTypeHierarchy).log(1);
+  ("X : " + DECENT!Model.allInstances().get(0).artifactTypeHierarchy).log(1);
+  //var b = DECENT!Model.allInstances().get(0).artifactTypeHierarchy.types;
+  var b = a.types;
+  ("Y : "+b).log(1);
+  b.add(BranchArtifactType);
+  ("Z : "+b.get(0).name).log(1);  
+  var FilePathAttribute = new DECENT!Attribute;
+  FilePathAttribute.name = "FilePath";
+  Model.attributePool.attributes.add(FilePathAttribute);
