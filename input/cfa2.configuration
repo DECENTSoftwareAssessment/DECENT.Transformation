@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="ASCII"?>
-<Configuration:Setting xmlns:Configuration="http://Configuration/1.0" name="dbConf">
-  <settings name="dbName" value="mg_cfa2"/>
-  <settings name="dbUser" value="root"/>
-  <settings name="dbPass" value="root"/>
-  <settings name="dbPort" value="3306"/>
-  <settings name="dbServer" value="localhost"/>
-</Configuration:Setting>
