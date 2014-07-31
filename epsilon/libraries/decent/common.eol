@@ -10,7 +10,7 @@ operation Any addValue(attribute : DECENT!Attribute, content : Any, value : DECE
 }
 
 operation Any getValue(attribute : DECENT!Attribute) : DECENT!Value {
-    return self.values.select(v|v.ofAttribute() = attribute).first();
+    return self.values.select(v|v.ofAttribute = attribute).first();
 }
 
 operation Any addValue(attribute : DECENT!Attribute, content : String) : DECENT!Value {
