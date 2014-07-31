@@ -8,9 +8,12 @@ var FunctionArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = 
 var ModuleArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "Module").first();
 var StartLineAttribute = DECENT!Attribute.allInstances().select(a|a.name = "StartLine").first();
 var EndLineAttribute = DECENT!Attribute.allInstances().select(a|a.name = "EndLine").first();
+
 var LinesPreAttribute = DECENT!Attribute.allInstances().select(a|a.name = "LinesPre").first();
 var LinesPostAttribute = DECENT!Attribute.allInstances().select(a|a.name = "LinesPost").first();
+
 var LinesPostHitsAttribute = DECENT!Attribute.allInstances().select(a|a.name = "LinesPostHits").first();
+var LinesPreHitsAttribute = DECENT!Attribute.allInstances().select(a|a.name = "LinesPreHits").first();
   
 
 
@@ -39,12 +42,12 @@ for (a in Agent.allInstances()) {
 */
 
 
-//iterateOverArtifacts(Type);
+iterateOverAffectedArtifacts(MethodArtifactType);
 
 writer.close();
 
 
-validateFAMIXCoverage(CodeArtifactType);
+//validateFAMIXCoverage(CodeArtifactType);
 
 
 operation String printlno() {
@@ -109,6 +112,71 @@ operation iterateOverAgents (type:DECENT!ArtifactType) {
     }
 
 }
+
+operation DECENT!State isHit() : Boolean {
+	var pre = self.getValue(LinesPostHitsAttribute);
+	var post = self.getValue(LinesPreHitsAttribute);
+	return ((pre.isDefined() and pre.content.isDefined() and pre.content.size() > 0) 
+	     or (post.isDefined() and post.content.isDefined() and post.content.size() > 0));
+}
+
+
+operation DECENT!Activity dumpNonZeroDeltas() : String {
+	var output = "Deltas";
+	for (v in self.deltas.select(d|d.change <> 0)) {
+		output= output + ", " + v.onAttribute.name + " = " + v.change;
+	}
+	return output;
+}
+
+
+operation DECENT!Activity dumpDeltas() : String {
+	var output = "Deltas";
+	for (v in self.deltas) {
+		output= output + ", " + v.onAttribute.name + " = " + v.change;
+	}
+	return output;
+}
+
+operation Any dumpValues() : String {
+	var output = "Values";
+	for (v in self.values) {
+		output= output + ", " + v.ofAttribute.name + " = " + v.content;
+	}
+	return output;
+}
+
+operation iterateOverAffectedArtifacts (type:DECENT!ArtifactType) {
+	//TODO: need some safety checks...
+	var h = false;
+	var separator = "\t";
+	for (a in Artifact.allInstances().select(x|x.type = type).sortBy(x|x.name)) {
+	    var header = "";
+	    var affectedStates = a.states.select(x|x.isHit()).sortBy(x|x.ID);
+	    (a.name+" : Affected States "+affectedStates.size()+ " / "+a.states.size()).println();
+	    //TODO: check for non-zero deltas in unaffected states
+	    //  =>  occasional occurences -> how to deal with them?
+	    var non_affectedStates = a.states.excludingAll(affectedStates);
+	    for (s in non_affectedStates) {
+	    	("  "+a.name+" @Affected State "+s.ID).println();
+	    	("    From Activity " + s.fromActivity.first().dumpNonZeroDeltas()).println();
+	    	if (false) {
+		    	("    State " + s.dumpValues()).println();
+		    	//TODO: add agent states to lower-level activities
+		    	var agentState = s.fromActivity.first().agent.states.select(x|x.ID = s.ID).first();
+		    	//("  Agent State " + s.fromActivity.first().agentState.dumpValues()).println();
+		    	("    Agent State " + agentState.dumpValues()).println();
+		    	("    From Activity " + s.fromActivity.first().dumpValues()).println();
+		    	("    From Activity " + s.fromActivity.first().dumpDeltas()).println();
+		    	if (s.activity.size()>0) {
+			    	("    Activity " + s.activity.first().dumpValues()).println();
+			    	("    Activity " + s.activity.first().dumpDeltas()).println();
+		    	}
+	    	}
+	    }
+	}
+}
+
 
 operation iterateOverArtifacts (type:DECENT!ArtifactType) {
 	//TODO: need some safety checks...
