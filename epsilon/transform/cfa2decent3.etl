@@ -80,6 +80,8 @@ pre {
 
   Model.addAttributes(attributes);
   
+  var CFAWeightFactor = CFA!Attribute.allInstances().select(a|a.name = "WeightFactor").first();
+  
   var BugFixAttribute = DECENT!Attribute.allInstances().select(a|a.name = "BugFix").first();
   var WeightFactorAttribute = DECENT!Attribute.allInstances().select(a|a.name = "WeightFactor").first();
   var TotalWeightAttribute = DECENT!Attribute.allInstances().select(a|a.name = "TotalWeight").first();
@@ -199,17 +201,16 @@ operation transformArtifactStates() {
 		  	for (a in factorValues.keySet()) {
 	  			var LocalAttribute = DECENT!Attribute.allInstances().select(x|x.name = f.name+"."+a.name+".Local").first();
 	  			var GlobalAttribute = DECENT!Attribute.allInstances().select(x|x.name = f.name+"."+a.name+".Global").first();
-	  			state.values.removeAll(state.values.select(v|v.ofAttribute.name = LocalAttribute));
-	  			state.values.removeAll(state.values.select(v|v.ofAttribute.name = GlobalAttribute));
+	  			//state.values.removeAll(state.values.select(v|v.ofAttribute.name = LocalAttribute));
+	  			//state.values.removeAll(state.values.select(v|v.ofAttribute.name = GlobalAttribute));
 	  			state.addValue(LocalAttribute,factorValues.get(a));
 	  			state.addValue(GlobalAttribute,globalStateFactorValues.get(a));
 		  	}
 		  	
   	  		var clearedBugWeight = 0.asDouble();
 	  		if (s.fixes.size()>0) {
-	  			var WeightFactor = CFA!Attribute.allInstances().select(a|a.name = "WeightFactor").first();
 	  			//TODO: what's the sense behind the multiplication below???
-	  			clearedBugWeight = factorValues.get(WeightFactor) * (s.fixes.size().asDouble()/s.fixes.size().asDouble());
+	  			clearedBugWeight = factorValues.get(CFAWeightFactor) * (s.fixes.size().asDouble()/s.fixes.size().asDouble());
 	  		}
 	   		state.addValue(ClearedTotalBugWeightAttribute, clearedBugWeight);
 		}
@@ -409,16 +410,15 @@ operation transformAgentStates() {
 		  	var factorValues = s.factors.get(f);
 		  	for (a in factorValues.keySet()) {
 	  			var GlobalAttribute = DECENT!Attribute.allInstances().select(x|x.name = f.name+"."+a.name+".Global").first();
-	  			state.values.removeAll(state.values.select(v|v.ofAttribute.name = GlobalAttribute));
+	  			//state.values.removeAll(state.values.select(v|v.ofAttribute.name = GlobalAttribute));
 	  			
 	  			state.addValue(GlobalAttribute,factorValues.get(a));
 		  	}
 		  	
   	  		var clearedBugWeight = 0.asDouble();
 	  		if (s.fixes.size()>0) {
-	  			var WeightFactor = CFA!Attribute.allInstances().select(a|a.name = "WeightFactor").first();
 	  			//TODO: what's the sense behind the multiplication below???
-	  			clearedBugWeight = factorValues.get(WeightFactor) * (s.fixes.size().asDouble()/s.fixes.size().asDouble());
+	  			clearedBugWeight = factorValues.get(CFAWeightFactor) * (s.fixes.size().asDouble()/s.fixes.size().asDouble());
 	  		}
 	   		state.addValue(ClearedTotalBugWeightAttribute, clearedBugWeight);
 		}
