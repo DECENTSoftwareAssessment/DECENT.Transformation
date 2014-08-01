@@ -31,6 +31,11 @@ pre {
  	attributes.put(f.name+".AverageFixedLifespan","");
   	attributes.put(f.name+".AverageCausedLifespan","");
 
+ 	attributes.put(f.name+".FixedRelativeDistanceVariance","Variance of distance divided by relative time");
+  	attributes.put(f.name+".CausedRelativeDistanceVariance","Variance of distance divided by relative time");
+ 	attributes.put(f.name+".FixedRelativeDistanceAverage","Average of distance divided by relative time");
+  	attributes.put(f.name+".CausedRelativeDistanceAverage","Average of distance divided by relative time");
+
   	attributes.put(f.name+".CausesAbsoluteTime","Set of distances for causing states to the beginning of time");
   	attributes.put(f.name+".CausesRelativeTime","Set of distances for causing states to the first state");
   	attributes.put(f.name+".CausesDistanceTime","Set of distances for causing states to fixing state");
@@ -108,8 +113,8 @@ pre {
   addCarriedWeights();
   
   //TODO: this needs to be rethought tho, as it is now it is providing too much noise
-  //addArtifactTemporals();
-  //addAgentTemporals();
+  addArtifactTemporals();
+  addAgentTemporals();
   
   var separator = "\t";
   var h = false;
@@ -128,7 +133,7 @@ pre {
   		
   		o = o + v.content + separator;
   	}
-  	o.println();
+  	o.replaceAll("\\.",",").println();
   }
   
   ("...done!").log(2);
@@ -152,23 +157,15 @@ operation addArtifactTemporals() {
   		var AverageFixedLifespanAttribute = DECENT!Attribute.allInstances().select(a|a.name = f.name+".AverageFixedLifespan").first();
   		var AverageCausedLifespanAttribute = DECENT!Attribute.allInstances().select(a|a.name = f.name+".AverageCausedLifespan").first();
 
-  		var CausesAbsoluteTimeAttribute = DECENT!Attribute.allInstances().select(a|a.name = f.name+".CausesAbsoluteTime").first();
-  		var CausesRelativeTimeAttribute = DECENT!Attribute.allInstances().select(a|a.name = f.name+".CausesRelativeTime").first();
-  		var CausesDistanceTimeAttribute = DECENT!Attribute.allInstances().select(a|a.name = f.name+".CausesDistanceTime").first();
+  		var FixedRelativeDistanceVarianceAttribute = DECENT!Attribute.allInstances().select(a|a.name = f.name+".FixedRelativeDistanceVariance").first();
+  		var CausedRelativeDistanceVarianceAttribute = DECENT!Attribute.allInstances().select(a|a.name = f.name+".CausedRelativeDistanceVariance").first();
 
-  		var CausesAbsoluteTimeVarianceAttribute = DECENT!Attribute.allInstances().select(a|a.name = f.name+".CausesAbsoluteTimeVariance").first();
-  		var CausesRelativeTimeVarianceAttribute = DECENT!Attribute.allInstances().select(a|a.name = f.name+".CausesRelativeTimeVariance").first();
+  		var FixedRelativeDistanceAverageAttribute = DECENT!Attribute.allInstances().select(a|a.name = f.name+".FixedRelativeDistanceAverage").first();
+  		var CausedRelativeDistanceAverageAttribute = DECENT!Attribute.allInstances().select(a|a.name = f.name+".CausedRelativeDistanceAverage").first();
+
   		var CausesDistanceTimeVarianceAttribute = DECENT!Attribute.allInstances().select(a|a.name = f.name+".CausesDistanceTimeVariance").first();
-
-  		var FixesAbsoluteTimeAttribute = DECENT!Attribute.allInstances().select(a|a.name = f.name+".FixesAbsoluteTime").first();
-  		var FixesRelativeTimeAttribute = DECENT!Attribute.allInstances().select(a|a.name = f.name+".FixesRelativeTime").first();
-  		var FixesDistanceTimeAttribute = DECENT!Attribute.allInstances().select(a|a.name = f.name+".FixesDistanceTime").first();
-
-  		var FixesAbsoluteTimeVarianceAttribute = DECENT!Attribute.allInstances().select(a|a.name = f.name+".FixesAbsoluteTimeVariance").first();
-  		var FixesRelativeTimeVarianceAttribute = DECENT!Attribute.allInstances().select(a|a.name = f.name+".FixesRelativeTimeVariance").first();
   		var FixesDistanceTimeVarianceAttribute = DECENT!Attribute.allInstances().select(a|a.name = f.name+".FixesDistanceTimeVariance").first();
 
-		var absoluteTime = new Sequence;
 		var relativeTime = new Sequence;
 		var distanceTime = new Sequence;
 		var resolution = 24*60*60*1000;//days*hours*minutes*seconds
@@ -210,7 +207,6 @@ operation addArtifactTemporals() {
 		   		var averageFixedLifespan = 0.asDouble();
 		   		var averageCausedLifespan = 0.asDouble();
 		
-				absoluteTime.clear();
 				relativeTime.clear();
 				distanceTime.clear();
 		
@@ -219,24 +215,17 @@ operation addArtifactTemporals() {
 				for (c in s.fixes) {
 					var causeTime = c.action.revision.author_date.time;
 					totalFixedTime = totalFixedTime + (time - causeTime);
-					absoluteTime.add(causeTime.asDouble()/resolution);
-					relativeTime.add((causeTime - start).asDouble()/resolution);
+					relativeTime.add(((time - causeTime).asDouble()/(time - start).asDouble()));
 					distanceTime.add((time - causeTime).asDouble()/resolution);
 				}
 				if (s.fixes.size() > 0) {
 					averageFixedLifespan = s.factors.get(f).get(CFAWeightFactor)*(totalFixedTime / s.fixes.size().asDouble()).toDays();
 				}
-				
-		  		state.addDoubleCollectionValue(CausesAbsoluteTimeAttribute, absoluteTime);
-		  		state.addValue(CausesAbsoluteTimeVarianceAttribute, absoluteTime.getVariance());
-		
-		  		state.addDoubleCollectionValue(CausesRelativeTimeAttribute, relativeTime);
-				state.addValue(CausesRelativeTimeVarianceAttribute, relativeTime.getVariance());
-				
-		  		state.addDoubleCollectionValue(CausesDistanceTimeAttribute, distanceTime);
+
+				state.addValue(CausedRelativeDistanceVarianceAttribute, relativeTime.getVariance());
+				state.addValue(CausedRelativeDistanceAverageAttribute, relativeTime.getMean());
 				state.addValue(CausesDistanceTimeVarianceAttribute, distanceTime.getVariance());
 		
-				absoluteTime.clear();
 				relativeTime.clear();
 				distanceTime.clear();
 				
@@ -245,21 +234,15 @@ operation addArtifactTemporals() {
 				for (f in selectedCauses) {
 					var fixTime = f.action.revision.author_date.time;
 					totalCausedTime = totalCausedTime + (fixTime - time);
-					absoluteTime.add(fixTime.asDouble()/resolution);
-					relativeTime.add((fixTime - start).asDouble()/resolution);
+					relativeTime.add(((fixTime - time).asDouble()/(fixTime - start).asDouble()));
 					distanceTime.add((fixTime - time).asDouble()/resolution);
 				}
 				if (selectedCauses.size() > 0) {
 					averageCausedLifespan = (totalCausedTime / selectedCauses.size().asDouble()).toDays();
 				}
 				
-		  		state.addDoubleCollectionValue(FixesAbsoluteTimeAttribute, absoluteTime);
-		  		state.addValue(FixesAbsoluteTimeVarianceAttribute, absoluteTime.getVariance());
-		
-		  		state.addDoubleCollectionValue(FixesRelativeTimeAttribute, relativeTime);
-				state.addValue(FixesRelativeTimeVarianceAttribute, relativeTime.getVariance());
-				
-		  		state.addDoubleCollectionValue(FixesDistanceTimeAttribute, distanceTime);
+				state.addValue(FixedRelativeDistanceVarianceAttribute, relativeTime.getVariance());
+				state.addValue(FixedRelativeDistanceAverageAttribute, relativeTime.getMean());
 				state.addValue(FixesDistanceTimeVarianceAttribute, distanceTime.getVariance());
 				
 		   		state.addValue(AverageFixedLifespanAttribute, averageFixedLifespan);
@@ -276,23 +259,15 @@ operation addAgentTemporals() {
   		var AverageFixedLifespanAttribute = DECENT!Attribute.allInstances().select(a|a.name = f.name+".AverageFixedLifespan").first();
   		var AverageCausedLifespanAttribute = DECENT!Attribute.allInstances().select(a|a.name = f.name+".AverageCausedLifespan").first();
 
-  		var CausesAbsoluteTimeAttribute = DECENT!Attribute.allInstances().select(a|a.name = f.name+".CausesAbsoluteTime").first();
-  		var CausesRelativeTimeAttribute = DECENT!Attribute.allInstances().select(a|a.name = f.name+".CausesRelativeTime").first();
-  		var CausesDistanceTimeAttribute = DECENT!Attribute.allInstances().select(a|a.name = f.name+".CausesDistanceTime").first();
+  		var FixedRelativeDistanceVarianceAttribute = DECENT!Attribute.allInstances().select(a|a.name = f.name+".FixedRelativeDistanceVariance").first();
+  		var CausedRelativeDistanceVarianceAttribute = DECENT!Attribute.allInstances().select(a|a.name = f.name+".CausedRelativeDistanceVariance").first();
 
-  		var CausesAbsoluteTimeVarianceAttribute = DECENT!Attribute.allInstances().select(a|a.name = f.name+".CausesAbsoluteTimeVariance").first();
-  		var CausesRelativeTimeVarianceAttribute = DECENT!Attribute.allInstances().select(a|a.name = f.name+".CausesRelativeTimeVariance").first();
+  		var FixedRelativeDistanceAverageAttribute = DECENT!Attribute.allInstances().select(a|a.name = f.name+".FixedRelativeDistanceAverage").first();
+  		var CausedRelativeDistanceAverageAttribute = DECENT!Attribute.allInstances().select(a|a.name = f.name+".CausedRelativeDistanceAverage").first();
+
   		var CausesDistanceTimeVarianceAttribute = DECENT!Attribute.allInstances().select(a|a.name = f.name+".CausesDistanceTimeVariance").first();
-
-  		var FixesAbsoluteTimeAttribute = DECENT!Attribute.allInstances().select(a|a.name = f.name+".FixesAbsoluteTime").first();
-  		var FixesRelativeTimeAttribute = DECENT!Attribute.allInstances().select(a|a.name = f.name+".FixesRelativeTime").first();
-  		var FixesDistanceTimeAttribute = DECENT!Attribute.allInstances().select(a|a.name = f.name+".FixesDistanceTime").first();
-
-  		var FixesAbsoluteTimeVarianceAttribute = DECENT!Attribute.allInstances().select(a|a.name = f.name+".FixesAbsoluteTimeVariance").first();
-  		var FixesRelativeTimeVarianceAttribute = DECENT!Attribute.allInstances().select(a|a.name = f.name+".FixesRelativeTimeVariance").first();
   		var FixesDistanceTimeVarianceAttribute = DECENT!Attribute.allInstances().select(a|a.name = f.name+".FixesDistanceTimeVariance").first();
   
-	  	var absoluteTime = new Sequence;
 	  	var relativeTime = new Sequence;
 	  	var distanceTime = new Sequence;
 	  	var resolution = 24*60*60*1000;//days*hours*minutes*seconds
@@ -317,55 +292,23 @@ operation addAgentTemporals() {
 				var time = s.revision.author_date.time;
 				var totalFixedTime = 0;
 				
-				absoluteTime.clear();
 				relativeTime.clear();
 				distanceTime.clear();
 				
 				for (c in s.fixes) {
 					var causeTime = c.revision.author_date.time;
 					totalFixedTime = totalFixedTime + (time - causeTime);
-					absoluteTime.add(causeTime.asDouble()/resolution);
-					relativeTime.add((causeTime - start).asDouble()/resolution);
+					relativeTime.add(((time - causeTime).asDouble()/(time - start).asDouble()));
 					distanceTime.add((time - causeTime).asDouble()/resolution);
 				}
 				if (s.fixes.size() > 0) {
 					averageFixedLifespan = s.factors.get(f).get(CFAWeightFactor)*(totalFixedTime / s.fixes.size().asDouble()).toDays();
 				}
-		  		state.addDoubleCollectionValue(CausesAbsoluteTimeAttribute, absoluteTime);
-		  		state.addValue(CausesAbsoluteTimeVarianceAttribute, absoluteTime.getVariance());
-		
-		  		state.addDoubleCollectionValue(CausesRelativeTimeAttribute, relativeTime);
-				state.addValue(CausesRelativeTimeVarianceAttribute, relativeTime.getVariance());
-				
-		  		state.addDoubleCollectionValue(CausesDistanceTimeAttribute, distanceTime);
+
+				state.addValue(CausedRelativeDistanceVarianceAttribute, relativeTime.getVariance());
+				state.addValue(CausedRelativeDistanceAverageAttribute, relativeTime.getMean());
 				state.addValue(CausesDistanceTimeVarianceAttribute, distanceTime.getVariance());
 				
-				absoluteTime.clear();
-				relativeTime.clear();
-				distanceTime.clear();
-				
-				var totalCausedTime = 0;
-				for (f in s.causes) {
-					var fixTime = f.revision.author_date.time;
-					totalCausedTime = totalCausedTime + (fixTime - time);
-					absoluteTime.add(fixTime.asDouble()/resolution);
-					relativeTime.add((fixTime - start).asDouble()/resolution);
-					distanceTime.add((fixTime - time).asDouble()/resolution);
-				}
-				if (s.causes.size() > 0) {
-					averageCausedLifespan = (totalCausedTime / s.causes.size().asDouble()).toDays();
-				}
-		
-		  		state.addDoubleCollectionValue(FixesAbsoluteTimeAttribute, absoluteTime);
-		  		state.addValue(FixesAbsoluteTimeVarianceAttribute, absoluteTime.getVariance());
-		
-		  		state.addDoubleCollectionValue(FixesRelativeTimeAttribute, relativeTime);
-				state.addValue(FixesRelativeTimeVarianceAttribute, relativeTime.getVariance());
-				
-		  		state.addDoubleCollectionValue(FixesDistanceTimeAttribute, distanceTime);
-				state.addValue(FixesDistanceTimeVarianceAttribute, distanceTime.getVariance());
-		
-				absoluteTime.clear();
 				relativeTime.clear();
 				distanceTime.clear();
 				
@@ -374,21 +317,15 @@ operation addAgentTemporals() {
 				for (f in selectedCauses) {
 					var fixTime = f.revision.author_date.time;
 					totalCausedTime = totalCausedTime + (fixTime - time);
-					absoluteTime.add(fixTime.asDouble()/resolution);
-					relativeTime.add((fixTime - start).asDouble()/resolution);
+					relativeTime.add(((fixTime - time).asDouble()/(fixTime - start).asDouble()));
 					distanceTime.add((fixTime - time).asDouble()/resolution);
 				}
 				if (selectedCauses.size() > 0) {
 					averageCausedLifespan = (totalCausedTime / selectedCauses.size().asDouble()).toDays();
 				}
-		
-		  		state.addDoubleCollectionValue(FixesAbsoluteTimeAttribute, absoluteTime);
-		  		state.addValue(FixesAbsoluteTimeVarianceAttribute, absoluteTime.getVariance());
-		
-		  		state.addDoubleCollectionValue(FixesRelativeTimeAttribute, relativeTime);
-				state.addValue(FixesRelativeTimeVarianceAttribute, relativeTime.getVariance());
-				
-		  		state.addDoubleCollectionValue(FixesDistanceTimeAttribute, distanceTime);
+
+				state.addValue(FixedRelativeDistanceVarianceAttribute, relativeTime.getVariance());
+				state.addValue(FixedRelativeDistanceAverageAttribute, relativeTime.getMean());
 				state.addValue(FixesDistanceTimeVarianceAttribute, distanceTime.getVariance());
 		
 		   		state.addValue(AverageFixedLifespanAttribute, averageFixedLifespan);
