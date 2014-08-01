@@ -1,0 +1,28 @@
+import "../libraries/cfa/common.eol";
+
+  	var factors = new Map;
+  	factors.put("IssueCount","Related issues count");
+  	
+  	for (a in factors.keySet()) {
+		var factor = new CFA!Factor;
+		factor.name = a;
+		factor.description = factors.get(a);
+  	}
+
+  	var IssueCountFactor = CFA!Factor.allInstances().select(a|a.name = "IssueCount").first();
+
+	addFactors();
+	calculateTotalFactorWeights(IssueCountFactor);
+	calculateAverageFactorWeights();
+
+
+operation addFactors() {
+	for (s in CFA!State.allInstances) {
+		s.addFactor(IssueCountFactor, s.ID.getBZReferenceWeight());
+	}
+}
+	
+operation Integer getBZReferenceWeight() : Real {
+	return TRACE!Trace.allInstances().select(x|x.target.commit_id = self).size().asDouble();	
+}
+	
