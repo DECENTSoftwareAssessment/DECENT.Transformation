@@ -1,3 +1,4 @@
+import "../libraries/decent/common.eol";
 import "../libraries/decent/logging.eol";
 
 pre mgbzInitPre {
