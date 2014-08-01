@@ -139,7 +139,7 @@ operation DECENT!Artifact isMGtype() : Boolean {
 }
 
 operation Collection getVariance() : Real {
-	if (self.size = 1) {
+	if (self.size <= 1) {
 	    //variance for a set of 1 elememts shall be 0
 		return 0.asReal();
 	}

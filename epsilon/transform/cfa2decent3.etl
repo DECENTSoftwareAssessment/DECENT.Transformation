@@ -27,7 +27,32 @@ pre {
   	attributes.put(f.name+".CarriedWeight.Local","Local/Artifact: Carried weight ("+f.name+")");
   	attributes.put(f.name+".ClearedWeight.Global","Global/Agent: Cleared weight ("+f.name+")");
   	attributes.put(f.name+".CarriedWeight.Global","Global/Agent: Carried weight ("+f.name+")");
+
+ 	attributes.put(f.name+".AverageFixedLifespan","");
+  	attributes.put(f.name+".AverageCausedLifespan","");
+
+  	attributes.put(f.name+".CausesAbsoluteTime","Set of distances for causing states to the beginning of time");
+  	attributes.put(f.name+".CausesRelativeTime","Set of distances for causing states to the first state");
+  	attributes.put(f.name+".CausesDistanceTime","Set of distances for causing states to fixing state");
+
+  	attributes.put(f.name+".CausesAbsoluteTimeVariance","Variance of distances for causing states to the beginning of time");
+  	attributes.put(f.name+".CausesRelativeTimeVariance","Variance of distances for causing states to the first state");
+  	attributes.put(f.name+".CausesDistanceTimeVariance","Variance of distances for causing states to fixing state");
+
+  	attributes.put(f.name+".FixesAbsoluteTime","Set of distances for fixing states to the beginning of time");
+  	attributes.put(f.name+".FixesRelativeTime","Set of distances for fixing states to the first state");
+  	attributes.put(f.name+".FixesDistanceTime","Set of distances for fixing states to causing states");
+
+  	attributes.put(f.name+".FixesAbsoluteTimeVariance","Variance of distances for fixing states to the beginning of time");
+  	attributes.put(f.name+".FixesRelativeTimeVariance","Variance of distances for fixing states to the first state");
+  	attributes.put(f.name+".FixesDistanceTimeVariance","Variance of distances for fixing states to causing state");
+  	
+  	attributes.put(f.name+".CausesCount.Local","Number of caused changes in future states of artifact");
+  	attributes.put(f.name+".FixesCount.Local","Number of causing past states of artifact");
+  	attributes.put(f.name+".CausesCount.Global","Number of caused changes in future states of artifact");
+  	attributes.put(f.name+".FixesCount.Global","Number of causing past states of artifact");
   }
+
   //TODO: initialize attributes automagically?
   //TODO: cleanup
   attributes.put("BugFix","Local (artifact) label as bug fix from revision message");
@@ -51,37 +76,6 @@ pre {
   attributes.put("ClearedTotalBugWeight","Cleared total local (artifact) bug cause weight");
 
   //TODO: these may need to be pre-calculated in mg2cfa
-  attributes.put("AverageFixedLifespan","");
-  attributes.put("AverageFixedBugLifespan","");
-  attributes.put("AverageCausedLifespan","");
-  attributes.put("AverageCausedBugLifespan","");
-
-
-  attributes.put("CausesAbsoluteTime","Set of distances for causing states to the beginning of time");
-  attributes.put("CausesRelativeTime","Set of distances for causing states to the first state");
-  attributes.put("CausesDistanceTime","Set of distances for causing states to fixing state");
-
-  attributes.put("CausesAbsoluteTimeVariance","Variance of distances for causing states to the beginning of time");
-  attributes.put("CausesRelativeTimeVariance","Variance of distances for causing states to the first state");
-  attributes.put("CausesDistanceTimeVariance","Variance of distances for causing states to fixing state");
-
-  attributes.put("FixesAbsoluteTime","Set of distances for fixing states to the beginning of time");
-  attributes.put("FixesRelativeTime","Set of distances for fixing states to the first state");
-  attributes.put("FixesDistanceTime","Set of distances for fixing states to causing state");
-
-  attributes.put("FixesAbsoluteTimeVariance","Variance of distances for fixing states to the beginning of time");
-  attributes.put("FixesRelativeTimeVariance","Variance of distances for fixing states to the first state");
-  attributes.put("FixesDistanceTimeVariance","Variance of distances for fixing states to causing state");
-
-  attributes.put("BugFixesAbsoluteTime","Set of distances for bug fixing states to the beginning of time");
-  attributes.put("BugFixesRelativeTime","Set of distances for bug fixing states to the first state");
-  attributes.put("BugFixesDistanceTime","Set of distances for bug fixing states to causing states");
-
-  attributes.put("BugFixesAbsoluteTimeVariance","Variance of distances for bug fixing states to the beginning of time");
-  attributes.put("BugFixesRelativeTimeVariance","Variance of distances for bug fixing states to the first state");
-  attributes.put("BugFixesDistanceTimeVariance","Variance of distances for bug fixing states to causing state");
-
-
   Model.addAttributes(attributes);
   
   var CFAWeightFactor = CFA!Attribute.allInstances().select(a|a.name = "WeightFactor").first();
@@ -93,35 +87,6 @@ pre {
 
   var GlobalCausesCountAttribute = DECENT!Attribute.allInstances().select(a|a.name = "GlobalCausesCount").first();
   var GlobalFixesCountAttribute = DECENT!Attribute.allInstances().select(a|a.name = "GlobalFixesCount").first();
-
-  var AverageFixedLifespanAttribute = DECENT!Attribute.allInstances().select(a|a.name = "AverageFixedLifespan").first();
-  var AverageFixedBugLifespanAttribute = DECENT!Attribute.allInstances().select(a|a.name = "AverageFixedBugLifespan").first();
-  var AverageCausedLifespanAttribute = DECENT!Attribute.allInstances().select(a|a.name = "AverageCausedLifespan").first();
-  var AverageCausedBugLifespanAttribute = DECENT!Attribute.allInstances().select(a|a.name = "AverageCausedBugLifespan").first();
-
-  var CausesAbsoluteTimeAttribute = DECENT!Attribute.allInstances().select(a|a.name = "CausesAbsoluteTime").first();
-  var CausesRelativeTimeAttribute = DECENT!Attribute.allInstances().select(a|a.name = "CausesRelativeTime").first();
-  var CausesDistanceTimeAttribute = DECENT!Attribute.allInstances().select(a|a.name = "CausesDistanceTime").first();
-
-  var CausesAbsoluteTimeVarianceAttribute = DECENT!Attribute.allInstances().select(a|a.name = "CausesAbsoluteTimeVariance").first();
-  var CausesRelativeTimeVarianceAttribute = DECENT!Attribute.allInstances().select(a|a.name = "CausesRelativeTimeVariance").first();
-  var CausesDistanceTimeVarianceAttribute = DECENT!Attribute.allInstances().select(a|a.name = "CausesDistanceTimeVariance").first();
-
-  var FixesAbsoluteTimeAttribute = DECENT!Attribute.allInstances().select(a|a.name = "FixesAbsoluteTime").first();
-  var FixesRelativeTimeAttribute = DECENT!Attribute.allInstances().select(a|a.name = "FixesRelativeTime").first();
-  var FixesDistanceTimeAttribute = DECENT!Attribute.allInstances().select(a|a.name = "FixesDistanceTime").first();
-
-  var FixesAbsoluteTimeVarianceAttribute = DECENT!Attribute.allInstances().select(a|a.name = "FixesAbsoluteTimeVariance").first();
-  var FixesRelativeTimeVarianceAttribute = DECENT!Attribute.allInstances().select(a|a.name = "FixesRelativeTimeVariance").first();
-  var FixesDistanceTimeVarianceAttribute = DECENT!Attribute.allInstances().select(a|a.name = "FixesDistanceTimeVariance").first();
-
-  var BugFixesAbsoluteTimeAttribute = DECENT!Attribute.allInstances().select(a|a.name = "BugFixesAbsoluteTime").first();
-  var BugFixesRelativeTimeAttribute = DECENT!Attribute.allInstances().select(a|a.name = "BugFixesRelativeTime").first();
-  var BugFixesDistanceTimeAttribute = DECENT!Attribute.allInstances().select(a|a.name = "BugFixesDistanceTime").first();
-
-  var BugFixesAbsoluteTimeVarianceAttribute = DECENT!Attribute.allInstances().select(a|a.name = "BugFixesAbsoluteTimeVariance").first();
-  var BugFixesRelativeTimeVarianceAttribute = DECENT!Attribute.allInstances().select(a|a.name = "BugFixesRelativeTimeVariance").first();
-  var BugFixesDistanceTimeVarianceAttribute = DECENT!Attribute.allInstances().select(a|a.name = "BugFixesDistanceTimeVariance").first();
 
   //TODO: need to accumulate a value? i.e. keep a balance of sorts? bug cause adds, bug fix removes
   // - or do we focus only on the states that introduce a bug and the activities that lead to them??
@@ -142,8 +107,29 @@ pre {
   transformAgentStates();
   addCarriedWeights();
   
+  //TODO: this needs to be rethought tho, as it is now it is providing too much noise
   addArtifactTemporals();
   addAgentTemporals();
+  
+  var separator = "\t";
+  var h = false;
+  
+  for (s in DECENT!AgentState.allInstances()) {
+  	var o = ""+s.ID+separator;
+  	var header = ""+"State"+separator;
+	if (not h) {
+	  	for (v in s.values) {
+	  		header = header + v.ofAttribute.name + separator;
+		}
+		header.println();
+		h = true;
+	}
+  	for (v in s.values) {
+  		
+  		o = o + v.content + separator;
+  	}
+  	o.println();
+  }
   
   ("...done!").log(2);
 }
@@ -154,257 +140,262 @@ post {
     var end = Native("java.lang.System").currentTimeMillis();
     var duration = end - start;
     ("Duration: "+duration.toMinutes().round(5)).log(1);
-  
+    //TODO: use this check to enable BZ based processing
+  	("Meta "+System.getContext().getModelRepository().getModelByNameSafe("BZ").isDefined()).println();
 }
 
 operation addArtifactTemporals() {
-  ("...adding artifact temporals...").log(2);
-  var absoluteTime = new Sequence;
-  var relativeTime = new Sequence;
-  var distanceTime = new Sequence;
-  var resolution = 24*60*60*1000;//days*hours*minutes*seconds
-  //resolution = 60*1000;//minutes*seconds
-  
-  var start = CFA!GlobalState.allInstances().sortBy(x|x.revision.author_date.time).first().revision.author_date.time;
-  
-  for (s in CFA!ArtifactState.allInstances()) {
-	("  " + s.file.file_name + " @ "+s.ID).log(3);
-  	var fileName = s.file.file_name;
-  	var filePath = s.action.current_file_path;
-  	var matchedStates = DECENT!State.allInstances().select(m|m.artifact.isMGtype() and m.ID = s.ID and m.getValue(FilePathAttribute).content = filePath);
-  	var size = matchedStates.size();
-	//check if correct matches can be found 
-  	if (size <> 1) {
-  		("  "+size+" DECENT matches found for: "+fileName+" at "+s.ID).log(4);
-  		("    Avaliable states at "+s.ID+" are:").log(4);
-  		//for (x in DECENT!State.allInstances().select(x|x.artifact.isMGtype() and x.ID = s.ID)) {
-  			//("      "+x.artifact.name+" at "+x.ID+" ("+x.getValue(FilePathAttribute).content+")").log(4);
-  		//}
-  	} else {
-  		var state = matchedStates.first();
-  
-   		//TODO: consider moving to mg2cfa 
-   		//TODO: consider filtering by weight
-   		//TODO: considering adding further temporals
-   		//TODO: describe intuitions (in particular for average caused lifespans):
-   		// - average caused lifespan indicates the lifespan of the changes / lines changed in the state
-   		// - average caused bug lifespan indicates the lifespan of the buggy changes / buggy lines changed in the state
-   		// - difference between the two above would indicate that buggy parts were removed faster 
-   		//   it would also create bias thus needs to be hidden for machine learning
-   		//   but could be used for statistics, filtering, comparison with issue lifetimes and other purposes
-   		//   could also be used as target for prediction (whether a piece looks like it may soon be changed, 
-   		//   or perhaps also contain a bug that will survive a given number of days)
-   		// - not sure what to make out of the average fixed lifespan - i.e. the age of the changed lines
-   		//TODO: add for the global states as well for reference
-   		//TODO: also consider projecting on the project, agent, and artifact lifespans
-   		// - separate values can be calculated for agents
-   		var averageFixedLifespan = 0.asDouble();
-   		var averageFixedBugLifespan = 0.asDouble();
-   		var averageCausedLifespan = 0.asDouble();
-   		var averageCausedBugLifespan = 0.asDouble();
+	//TODO: these should be factor specific as well
+  	("...adding artifact temporals...").log(2);
 
-		absoluteTime.clear();
-		relativeTime.clear();
-		distanceTime.clear();
+  	for (f in CFA!Factor.allInstances()) {
+  		var AverageFixedLifespanAttribute = DECENT!Attribute.allInstances().select(a|a.name = f.name+".AverageFixedLifespan").first();
+  		var AverageCausedLifespanAttribute = DECENT!Attribute.allInstances().select(a|a.name = f.name+".AverageCausedLifespan").first();
 
-		var time = s.action.revision.author_date.time;
-		var totalFixedTime = 0;
-		for (c in s.fixes) {
-			var causeTime = c.action.revision.author_date.time;
-			totalFixedTime = totalFixedTime + (time - causeTime);
-			absoluteTime.add(causeTime.asDouble()/resolution);
-			relativeTime.add((causeTime - start).asDouble()/resolution);
-			distanceTime.add((time - causeTime).asDouble()/resolution);
+  		var CausesAbsoluteTimeAttribute = DECENT!Attribute.allInstances().select(a|a.name = f.name+".CausesAbsoluteTime").first();
+  		var CausesRelativeTimeAttribute = DECENT!Attribute.allInstances().select(a|a.name = f.name+".CausesRelativeTime").first();
+  		var CausesDistanceTimeAttribute = DECENT!Attribute.allInstances().select(a|a.name = f.name+".CausesDistanceTime").first();
+
+  		var CausesAbsoluteTimeVarianceAttribute = DECENT!Attribute.allInstances().select(a|a.name = f.name+".CausesAbsoluteTimeVariance").first();
+  		var CausesRelativeTimeVarianceAttribute = DECENT!Attribute.allInstances().select(a|a.name = f.name+".CausesRelativeTimeVariance").first();
+  		var CausesDistanceTimeVarianceAttribute = DECENT!Attribute.allInstances().select(a|a.name = f.name+".CausesDistanceTimeVariance").first();
+
+  		var FixesAbsoluteTimeAttribute = DECENT!Attribute.allInstances().select(a|a.name = f.name+".FixesAbsoluteTime").first();
+  		var FixesRelativeTimeAttribute = DECENT!Attribute.allInstances().select(a|a.name = f.name+".FixesRelativeTime").first();
+  		var FixesDistanceTimeAttribute = DECENT!Attribute.allInstances().select(a|a.name = f.name+".FixesDistanceTime").first();
+
+  		var FixesAbsoluteTimeVarianceAttribute = DECENT!Attribute.allInstances().select(a|a.name = f.name+".FixesAbsoluteTimeVariance").first();
+  		var FixesRelativeTimeVarianceAttribute = DECENT!Attribute.allInstances().select(a|a.name = f.name+".FixesRelativeTimeVariance").first();
+  		var FixesDistanceTimeVarianceAttribute = DECENT!Attribute.allInstances().select(a|a.name = f.name+".FixesDistanceTimeVariance").first();
+
+		var absoluteTime = new Sequence;
+		var relativeTime = new Sequence;
+		var distanceTime = new Sequence;
+		var resolution = 24*60*60*1000;//days*hours*minutes*seconds
+		//resolution = 60*1000;//minutes*seconds
+		  
+		var start = CFA!GlobalState.allInstances().sortBy(x|x.revision.author_date.time).first().revision.author_date.time;
+		  
+		for (s in CFA!ArtifactState.allInstances()) {
+			("  " + s.file.file_name + " @ "+s.ID).log(3);
+		  	var fileName = s.file.file_name;
+		  	var filePath = s.action.current_file_path;
+		  	var matchedStates = DECENT!State.allInstances().select(m|m.artifact.isMGtype() and m.ID = s.ID and m.getValue(FilePathAttribute).content = filePath);
+		  	var size = matchedStates.size();
+			//check if correct matches can be found 
+		  	if (size <> 1) {
+		  		("  "+size+" DECENT matches found for: "+fileName+" at "+s.ID).log(4);
+		  		("    Avaliable states at "+s.ID+" are:").log(4);
+		  		//for (x in DECENT!State.allInstances().select(x|x.artifact.isMGtype() and x.ID = s.ID)) {
+		  			//("      "+x.artifact.name+" at "+x.ID+" ("+x.getValue(FilePathAttribute).content+")").log(4);
+		  		//}
+		  	} else {
+		  		var state = matchedStates.first();
+		  
+		   		//TODO: consider moving to mg2cfa 
+		   		//TODO: consider filtering by weight
+		   		//TODO: considering adding further temporals
+		   		//TODO: describe intuitions (in particular for average caused lifespans):
+		   		// - average caused lifespan indicates the lifespan of the changes / lines changed in the state
+		   		// - average caused bug lifespan indicates the lifespan of the buggy changes / buggy lines changed in the state
+		   		// - difference between the two above would indicate that buggy parts were removed faster 
+		   		//   it would also create bias thus needs to be hidden for machine learning
+		   		//   but could be used for statistics, filtering, comparison with issue lifetimes and other purposes
+		   		//   could also be used as target for prediction (whether a piece looks like it may soon be changed, 
+		   		//   or perhaps also contain a bug that will survive a given number of days)
+		   		// - not sure what to make out of the average fixed lifespan - i.e. the age of the changed lines
+		   		//TODO: add for the global states as well for reference
+		   		//TODO: also consider projecting on the project, agent, and artifact lifespans
+		   		// - separate values can be calculated for agents
+		   		var averageFixedLifespan = 0.asDouble();
+		   		var averageCausedLifespan = 0.asDouble();
+		
+				absoluteTime.clear();
+				relativeTime.clear();
+				distanceTime.clear();
+		
+				var time = s.action.revision.author_date.time;
+				var totalFixedTime = 0;
+				for (c in s.fixes) {
+					var causeTime = c.action.revision.author_date.time;
+					totalFixedTime = totalFixedTime + (time - causeTime);
+					absoluteTime.add(causeTime.asDouble()/resolution);
+					relativeTime.add((causeTime - start).asDouble()/resolution);
+					distanceTime.add((time - causeTime).asDouble()/resolution);
+				}
+				if (s.fixes.size() > 0) {
+					averageFixedLifespan = s.factors.get(f).get(CFAWeightFactor)*(totalFixedTime / s.fixes.size().asDouble()).toDays();
+				}
+				
+		  		state.addDoubleCollectionValue(CausesAbsoluteTimeAttribute, absoluteTime);
+		  		state.addValue(CausesAbsoluteTimeVarianceAttribute, absoluteTime.getVariance());
+		
+		  		state.addDoubleCollectionValue(CausesRelativeTimeAttribute, relativeTime);
+				state.addValue(CausesRelativeTimeVarianceAttribute, relativeTime.getVariance());
+				
+		  		state.addDoubleCollectionValue(CausesDistanceTimeAttribute, distanceTime);
+				state.addValue(CausesDistanceTimeVarianceAttribute, distanceTime.getVariance());
+		
+				absoluteTime.clear();
+				relativeTime.clear();
+				distanceTime.clear();
+				
+				var totalCausedTime = 0;
+				var selectedCauses = s.causes.select(c|c.factors.get(f).get(CFAWeightFactor) > 0);
+				for (f in selectedCauses) {
+					var fixTime = f.action.revision.author_date.time;
+					totalCausedTime = totalCausedTime + (fixTime - time);
+					absoluteTime.add(fixTime.asDouble()/resolution);
+					relativeTime.add((fixTime - start).asDouble()/resolution);
+					distanceTime.add((fixTime - time).asDouble()/resolution);
+				}
+				if (selectedCauses.size() > 0) {
+					averageCausedLifespan = (totalCausedTime / selectedCauses.size().asDouble()).toDays();
+				}
+				
+		  		state.addDoubleCollectionValue(FixesAbsoluteTimeAttribute, absoluteTime);
+		  		state.addValue(FixesAbsoluteTimeVarianceAttribute, absoluteTime.getVariance());
+		
+		  		state.addDoubleCollectionValue(FixesRelativeTimeAttribute, relativeTime);
+				state.addValue(FixesRelativeTimeVarianceAttribute, relativeTime.getVariance());
+				
+		  		state.addDoubleCollectionValue(FixesDistanceTimeAttribute, distanceTime);
+				state.addValue(FixesDistanceTimeVarianceAttribute, distanceTime.getVariance());
+				
+		   		state.addValue(AverageFixedLifespanAttribute, averageFixedLifespan);
+		   		state.addValue(AverageCausedLifespanAttribute, averageCausedLifespan);
+			}
 		}
-		if (s.fixes.size() > 0) {
-			averageFixedLifespan = (totalFixedTime / s.fixes.size().asDouble()).toDays();
-			averageFixedBugLifespan = s.weightFactor*(totalFixedTime / s.fixes.size().asDouble()).toDays();
-		}
-		
-  		state.addDoubleCollectionValue(CausesAbsoluteTimeAttribute, absoluteTime);
-  		state.addValue(CausesAbsoluteTimeVarianceAttribute, absoluteTime.getVariance());
-
-  		state.addDoubleCollectionValue(CausesRelativeTimeAttribute, relativeTime);
-		state.addValue(CausesRelativeTimeVarianceAttribute, relativeTime.getVariance());
-		
-  		state.addDoubleCollectionValue(CausesDistanceTimeAttribute, distanceTime);
-		state.addValue(CausesDistanceTimeVarianceAttribute, distanceTime.getVariance());
-
-		
-		absoluteTime.clear();
-		relativeTime.clear();
-		distanceTime.clear();
-		
-		var totalCausedTime = 0;
-		for (f in s.causes) {
-			var fixTime = f.action.revision.author_date.time;
-			totalCausedTime = totalCausedTime + (fixTime - time);
-			absoluteTime.add(fixTime.asDouble()/resolution);
-			relativeTime.add((fixTime - start).asDouble()/resolution);
-			distanceTime.add((fixTime - time).asDouble()/resolution);
-		}
-		if (s.causes.size() > 0) {
-			averageCausedLifespan = (totalCausedTime / s.causes.size().asDouble()).toDays();
-		}
-		
-  		state.addDoubleCollectionValue(FixesAbsoluteTimeAttribute, absoluteTime);
-  		state.addValue(FixesAbsoluteTimeVarianceAttribute, absoluteTime.getVariance());
-
-  		state.addDoubleCollectionValue(FixesRelativeTimeAttribute, relativeTime);
-		state.addValue(FixesRelativeTimeVarianceAttribute, relativeTime.getVariance());
-		
-  		state.addDoubleCollectionValue(FixesDistanceTimeAttribute, distanceTime);
-		state.addValue(FixesDistanceTimeVarianceAttribute, distanceTime.getVariance());
-
-		absoluteTime.clear();
-		relativeTime.clear();
-		distanceTime.clear();
-
-
-		var totalCausedBugTime = 0;
-		var selectedCauses = s.causes.select(c|c.weightFactor > 0);
-		for (f in selectedCauses) {
-			var fixTime = f.action.revision.author_date.time;
-			totalCausedBugTime = totalCausedBugTime + (fixTime - time);
-			absoluteTime.add(fixTime.asDouble()/resolution);
-			relativeTime.add((fixTime - start).asDouble()/resolution);
-			distanceTime.add((fixTime - time).asDouble()/resolution);
-		}
-		if (selectedCauses.size() > 0) {
-			averageCausedBugLifespan = (totalCausedBugTime / selectedCauses.size().asDouble()).toDays();
-		}
-		
-  		state.addDoubleCollectionValue(BugFixesAbsoluteTimeAttribute, absoluteTime);
-  		state.addValue(BugFixesAbsoluteTimeVarianceAttribute, absoluteTime.getVariance());
-
-  		state.addDoubleCollectionValue(BugFixesRelativeTimeAttribute, relativeTime);
-		state.addValue(BugFixesRelativeTimeVarianceAttribute, relativeTime.getVariance());
-		
-  		state.addDoubleCollectionValue(BugFixesDistanceTimeAttribute, distanceTime);
-		state.addValue(BugFixesDistanceTimeVarianceAttribute, distanceTime.getVariance());
-
-		
-   		state.addValue(AverageFixedLifespanAttribute, averageFixedLifespan);
-   		state.addValue(AverageFixedBugLifespanAttribute, averageFixedBugLifespan);
-   		state.addValue(AverageCausedLifespanAttribute, averageCausedLifespan);
-   		state.addValue(AverageCausedBugLifespanAttribute, averageCausedBugLifespan);
 	}
-  }
 }
 
 operation addAgentTemporals() {
-  ("...adding agent temporals...").log(2);
-  var absoluteTime = new Sequence;
-  var relativeTime = new Sequence;
-  var distanceTime = new Sequence;
-  var resolution = 24*60*60*1000;//days*hours*minutes*seconds
-  //resolution = 60*1000;//minutes*seconds
+  	("...adding agent temporals...").log(2);
   
-  var start = CFA!GlobalState.allInstances().sortBy(x|x.revision.author_date.time).first().revision.author_date.time;
+    for (f in CFA!Factor.allInstances()) {
+  		var AverageFixedLifespanAttribute = DECENT!Attribute.allInstances().select(a|a.name = f.name+".AverageFixedLifespan").first();
+  		var AverageCausedLifespanAttribute = DECENT!Attribute.allInstances().select(a|a.name = f.name+".AverageCausedLifespan").first();
+
+  		var CausesAbsoluteTimeAttribute = DECENT!Attribute.allInstances().select(a|a.name = f.name+".CausesAbsoluteTime").first();
+  		var CausesRelativeTimeAttribute = DECENT!Attribute.allInstances().select(a|a.name = f.name+".CausesRelativeTime").first();
+  		var CausesDistanceTimeAttribute = DECENT!Attribute.allInstances().select(a|a.name = f.name+".CausesDistanceTime").first();
+
+  		var CausesAbsoluteTimeVarianceAttribute = DECENT!Attribute.allInstances().select(a|a.name = f.name+".CausesAbsoluteTimeVariance").first();
+  		var CausesRelativeTimeVarianceAttribute = DECENT!Attribute.allInstances().select(a|a.name = f.name+".CausesRelativeTimeVariance").first();
+  		var CausesDistanceTimeVarianceAttribute = DECENT!Attribute.allInstances().select(a|a.name = f.name+".CausesDistanceTimeVariance").first();
+
+  		var FixesAbsoluteTimeAttribute = DECENT!Attribute.allInstances().select(a|a.name = f.name+".FixesAbsoluteTime").first();
+  		var FixesRelativeTimeAttribute = DECENT!Attribute.allInstances().select(a|a.name = f.name+".FixesRelativeTime").first();
+  		var FixesDistanceTimeAttribute = DECENT!Attribute.allInstances().select(a|a.name = f.name+".FixesDistanceTime").first();
+
+  		var FixesAbsoluteTimeVarianceAttribute = DECENT!Attribute.allInstances().select(a|a.name = f.name+".FixesAbsoluteTimeVariance").first();
+  		var FixesRelativeTimeVarianceAttribute = DECENT!Attribute.allInstances().select(a|a.name = f.name+".FixesRelativeTimeVariance").first();
+  		var FixesDistanceTimeVarianceAttribute = DECENT!Attribute.allInstances().select(a|a.name = f.name+".FixesDistanceTimeVariance").first();
   
-  for (s in CFA!GlobalState.allInstances()) {
-	("  " + " @ "+s.ID).log(3);
-  	var authorName = s.revision.author.name;
-  	var matchedStates = DECENT!AgentState.allInstances().select(m|m.ID = s.ID);
-  	var size = matchedStates.size();
-	//check if correct matches can be found 
-  	if (size <> 1) {
-  		("  "+size+" DECENT matches found for: "+authorName+" at "+s.ID).log(1);
-  	} else {
-  		var state = matchedStates.first();
-  		
-   		var averageFixedLifespan = 0.asDouble();
-   		var averageFixedBugLifespan = 0.asDouble();
-   		var averageCausedLifespan = 0.asDouble();
-   		var averageCausedBugLifespan = 0.asDouble();
-
-		var time = s.revision.author_date.time;
-		var totalFixedTime = 0;
+	  	var absoluteTime = new Sequence;
+	  	var relativeTime = new Sequence;
+	  	var distanceTime = new Sequence;
+	  	var resolution = 24*60*60*1000;//days*hours*minutes*seconds
+	  	//resolution = 60*1000;//minutes*seconds
+	  
+	  	var start = CFA!GlobalState.allInstances().sortBy(x|x.revision.author_date.time).first().revision.author_date.time;
+	  
+	  	for (s in CFA!GlobalState.allInstances()) {
+			("  " + " @ "+s.ID).log(3);
+		  	var authorName = s.revision.author.name;
+		  	var matchedStates = DECENT!AgentState.allInstances().select(m|m.ID = s.ID);
+		  	var size = matchedStates.size();
+			//check if correct matches can be found 
+		  	if (size <> 1) {
+		  		("  "+size+" DECENT matches found for: "+authorName+" at "+s.ID).log(1);
+		  	} else {
+		  		var state = matchedStates.first();
+		  		
+		   		var averageFixedLifespan = 0.asDouble();
+		   		var averageCausedLifespan = 0.asDouble();
 		
-		absoluteTime.clear();
-		relativeTime.clear();
-		distanceTime.clear();
+				var time = s.revision.author_date.time;
+				var totalFixedTime = 0;
+				
+				absoluteTime.clear();
+				relativeTime.clear();
+				distanceTime.clear();
+				
+				for (c in s.fixes) {
+					var causeTime = c.revision.author_date.time;
+					totalFixedTime = totalFixedTime + (time - causeTime);
+					absoluteTime.add(causeTime.asDouble()/resolution);
+					relativeTime.add((causeTime - start).asDouble()/resolution);
+					distanceTime.add((time - causeTime).asDouble()/resolution);
+				}
+				if (s.fixes.size() > 0) {
+					averageFixedLifespan = s.factors.get(f).get(CFAWeightFactor)*(totalFixedTime / s.fixes.size().asDouble()).toDays();
+				}
+		  		state.addDoubleCollectionValue(CausesAbsoluteTimeAttribute, absoluteTime);
+		  		state.addValue(CausesAbsoluteTimeVarianceAttribute, absoluteTime.getVariance());
 		
-		for (c in s.fixes) {
-			var causeTime = c.revision.author_date.time;
-			totalFixedTime = totalFixedTime + (time - causeTime);
-			absoluteTime.add(causeTime.asDouble()/resolution);
-			relativeTime.add((causeTime - start).asDouble()/resolution);
-			distanceTime.add((time - causeTime).asDouble()/resolution);
+		  		state.addDoubleCollectionValue(CausesRelativeTimeAttribute, relativeTime);
+				state.addValue(CausesRelativeTimeVarianceAttribute, relativeTime.getVariance());
+				
+		  		state.addDoubleCollectionValue(CausesDistanceTimeAttribute, distanceTime);
+				state.addValue(CausesDistanceTimeVarianceAttribute, distanceTime.getVariance());
+				
+				absoluteTime.clear();
+				relativeTime.clear();
+				distanceTime.clear();
+				
+				var totalCausedTime = 0;
+				for (f in s.causes) {
+					var fixTime = f.revision.author_date.time;
+					totalCausedTime = totalCausedTime + (fixTime - time);
+					absoluteTime.add(fixTime.asDouble()/resolution);
+					relativeTime.add((fixTime - start).asDouble()/resolution);
+					distanceTime.add((fixTime - time).asDouble()/resolution);
+				}
+				if (s.causes.size() > 0) {
+					averageCausedLifespan = (totalCausedTime / s.causes.size().asDouble()).toDays();
+				}
+		
+		  		state.addDoubleCollectionValue(FixesAbsoluteTimeAttribute, absoluteTime);
+		  		state.addValue(FixesAbsoluteTimeVarianceAttribute, absoluteTime.getVariance());
+		
+		  		state.addDoubleCollectionValue(FixesRelativeTimeAttribute, relativeTime);
+				state.addValue(FixesRelativeTimeVarianceAttribute, relativeTime.getVariance());
+				
+		  		state.addDoubleCollectionValue(FixesDistanceTimeAttribute, distanceTime);
+				state.addValue(FixesDistanceTimeVarianceAttribute, distanceTime.getVariance());
+		
+				absoluteTime.clear();
+				relativeTime.clear();
+				distanceTime.clear();
+				
+				var totalCausedTime = 0;
+				var selectedCauses = s.causes.select(c|c.factors.get(f).get(CFAWeightFactor) > 0);
+				for (f in selectedCauses) {
+					var fixTime = f.revision.author_date.time;
+					totalCausedTime = totalCausedTime + (fixTime - time);
+					absoluteTime.add(fixTime.asDouble()/resolution);
+					relativeTime.add((fixTime - start).asDouble()/resolution);
+					distanceTime.add((fixTime - time).asDouble()/resolution);
+				}
+				if (selectedCauses.size() > 0) {
+					averageCausedLifespan = (totalCausedTime / selectedCauses.size().asDouble()).toDays();
+				}
+		
+		  		state.addDoubleCollectionValue(FixesAbsoluteTimeAttribute, absoluteTime);
+		  		state.addValue(FixesAbsoluteTimeVarianceAttribute, absoluteTime.getVariance());
+		
+		  		state.addDoubleCollectionValue(FixesRelativeTimeAttribute, relativeTime);
+				state.addValue(FixesRelativeTimeVarianceAttribute, relativeTime.getVariance());
+				
+		  		state.addDoubleCollectionValue(FixesDistanceTimeAttribute, distanceTime);
+				state.addValue(FixesDistanceTimeVarianceAttribute, distanceTime.getVariance());
+		
+		   		state.addValue(AverageFixedLifespanAttribute, averageFixedLifespan);
+		   		state.addValue(AverageCausedLifespanAttribute, averageCausedLifespan);
+			}	   		
 		}
-		if (s.fixes.size() > 0) {
-			averageFixedLifespan = (totalFixedTime / s.fixes.size().asDouble()).toDays();
-			averageFixedBugLifespan = s.weightFactor*(totalFixedTime / s.fixes.size().asDouble()).toDays();
-		}
-  		state.addDoubleCollectionValue(CausesAbsoluteTimeAttribute, absoluteTime);
-  		state.addValue(CausesAbsoluteTimeVarianceAttribute, absoluteTime.getVariance());
-
-  		state.addDoubleCollectionValue(CausesRelativeTimeAttribute, relativeTime);
-		state.addValue(CausesRelativeTimeVarianceAttribute, relativeTime.getVariance());
-		
-  		state.addDoubleCollectionValue(CausesDistanceTimeAttribute, distanceTime);
-		state.addValue(CausesDistanceTimeVarianceAttribute, distanceTime.getVariance());
-
-		
-		absoluteTime.clear();
-		relativeTime.clear();
-		distanceTime.clear();
-		
-		var totalCausedTime = 0;
-		for (f in s.causes) {
-			var fixTime = f.revision.author_date.time;
-			totalCausedTime = totalCausedTime + (fixTime - time);
-			absoluteTime.add(fixTime.asDouble()/resolution);
-			relativeTime.add((fixTime - start).asDouble()/resolution);
-			distanceTime.add((fixTime - time).asDouble()/resolution);
-		}
-		if (s.causes.size() > 0) {
-			averageCausedLifespan = (totalCausedTime / s.causes.size().asDouble()).toDays();
-		}
-
-  		state.addDoubleCollectionValue(FixesAbsoluteTimeAttribute, absoluteTime);
-  		state.addValue(FixesAbsoluteTimeVarianceAttribute, absoluteTime.getVariance());
-
-  		state.addDoubleCollectionValue(FixesRelativeTimeAttribute, relativeTime);
-		state.addValue(FixesRelativeTimeVarianceAttribute, relativeTime.getVariance());
-		
-  		state.addDoubleCollectionValue(FixesDistanceTimeAttribute, distanceTime);
-		state.addValue(FixesDistanceTimeVarianceAttribute, distanceTime.getVariance());
-
-		absoluteTime.clear();
-		relativeTime.clear();
-		distanceTime.clear();
-		
-		var totalCausedBugTime = 0;
-		var selectedCauses = s.causes.select(c|c.weightFactor > 0);
-		for (f in selectedCauses) {
-			var fixTime = f.revision.author_date.time;
-			totalCausedBugTime = totalCausedBugTime + (fixTime - time);
-			absoluteTime.add(fixTime.asDouble()/resolution);
-			relativeTime.add((fixTime - start).asDouble()/resolution);
-			distanceTime.add((fixTime - time).asDouble()/resolution);
-		}
-		if (selectedCauses.size() > 0) {
-			averageCausedBugLifespan = (totalCausedBugTime / selectedCauses.size().asDouble()).toDays();
-		}
-
-  		state.addDoubleCollectionValue(BugFixesAbsoluteTimeAttribute, absoluteTime);
-  		state.addValue(BugFixesAbsoluteTimeVarianceAttribute, absoluteTime.getVariance());
-
-  		state.addDoubleCollectionValue(BugFixesRelativeTimeAttribute, relativeTime);
-		state.addValue(BugFixesRelativeTimeVarianceAttribute, relativeTime.getVariance());
-		
-  		state.addDoubleCollectionValue(BugFixesDistanceTimeAttribute, distanceTime);
-		state.addValue(BugFixesDistanceTimeVarianceAttribute, distanceTime.getVariance());
-
-		
-   		state.addValue(AverageFixedLifespanAttribute, averageFixedLifespan);
-   		state.addValue(AverageFixedBugLifespanAttribute, averageFixedBugLifespan);
-   		state.addValue(AverageCausedLifespanAttribute, averageCausedLifespan);
-   		state.addValue(AverageCausedBugLifespanAttribute, averageCausedBugLifespan);
-   		
-	}
-  }
+  	}
 }
 
 
