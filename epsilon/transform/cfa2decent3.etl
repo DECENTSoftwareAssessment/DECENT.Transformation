@@ -23,6 +23,8 @@ pre {
 		attributes.put(f.name+"."+a.name+".Local","Local/Artifact: "+a.description+" ("+f.name+")");
 		attributes.put(f.name+"."+a.name+".Global","Global/Agent: "+a.description+" ("+f.name+")");
   	}
+  	attributes.put(f.name+".ClearedWeight.Local","Local/Artifact: Cleared weight ("+f.name+")");
+  	attributes.put(f.name+".CarriedWeight.Local","Local/Artifact: Carried weight ("+f.name+")");
   }
   //TODO: initialize attributes automagically?
   
@@ -150,7 +152,7 @@ pre {
 
   transformArtifactStates();
   addCarriedWeights();
-  addDeltas();
+  //addDeltas();
   transformAgentStates();
   
   ("...done!").log(2);
@@ -164,6 +166,15 @@ post {
     ("Duration: "+duration.toMinutes().round(5)).log(1);
   
 }
+
+operation addArtifactTemporals() {
+  ("...adding artifact temporals...").log(2);
+}
+
+operation addAgentTemporals() {
+  ("...adding artifact temporals...").log(2);
+}
+
 
 operation transformArtifactStates() {
   ("...transforming artifact states...").log(2);
@@ -187,9 +198,9 @@ operation transformArtifactStates() {
   	if (size <> 1) {
   		("  "+size+" DECENT matches found for: "+fileName+" at "+s.ID).log(4);
   		("    Avaliable states at "+s.ID+" are:").log(4);
-  		for (x in DECENT!State.allInstances().select(x|x.artifact.isMGtype() and x.ID = s.ID)) {
-  			("      "+x.artifact.name+" at "+x.ID+" ("+x.getValue(FilePathAttribute).content+")").log(4);
-  		}
+  		//for (x in DECENT!State.allInstances().select(x|x.artifact.isMGtype() and x.ID = s.ID)) {
+  			//("      "+x.artifact.name+" at "+x.ID+" ("+x.getValue(FilePathAttribute).content+")").log(4);
+  		//}
   	} else {
   		var state = matchedStates.first();
   		
@@ -214,7 +225,8 @@ operation transformArtifactStates() {
 	  			//TODO: what's the sense behind the multiplication below???
 	  			clearedBugWeight = factorValues.get(CFAWeightFactor) * (s.fixes.size().asDouble()/s.fixes.size().asDouble());
 	  		}
-	   		state.addValue(ClearedTotalBugWeightAttribute, clearedBugWeight);
+	  		var ClearedWeightAttribute = DECENT!Attribute.allInstances().select(x|x.name = f.name+".ClearedWeight.Local").first();
+	   		state.addValue(ClearedWeightAttribute, clearedBugWeight);
 		}
   		
   		//TODO: legacy
@@ -357,6 +369,25 @@ operation transformArtifactStates() {
 
 operation addCarriedWeights() {
   ("...adding carried weights...").log(2);
+
+  	for (f in CFA!Factor.allInstances()) {
+		var CarriedWeightAttribute = DECENT!Attribute.allInstances().select(x|x.name = f.name+".CarriedWeight.Local").first();
+		var TotalWeightAttribute = DECENT!Attribute.allInstances().select(x|x.name = f.name+".TotalWeight.Local").first();
+	  	var ClearedWeightAttribute = DECENT!Attribute.allInstances().select(x|x.name = f.name+".ClearedWeight.Local").first();
+
+	    for (a in DECENT!Artifact.allInstances().select(x|x.isMGtype())) {
+		  	var lastWeight = 0.asDouble();
+	  		for (s in a.states) {
+	  			var totalWeight = s.getValue(TotalWeightAttribute).content;
+		  		lastWeight = lastWeight + totalWeight;
+	  			var clearedWeight = s.getValue(ClearedWeightAttribute).content;
+		  		lastWeight = lastWeight - clearedWeight;
+	  			s.addValue(ClearedWeightAttribute, lastWeight);
+	  		}
+	  	}
+  	}
+  	
+  //TODO: legacy
   for (a in DECENT!Artifact.allInstances().select(x|x.isMGtype())) {
   	var lastWeight = 0.asDouble();
   	for (s in a.states) {
@@ -372,9 +403,7 @@ operation addCarriedWeights() {
 operation addDeltas() {
   ("...adding deltas...").log(2);
   for (a in DECENT!Artifact.allInstances().select(x|x.isMGtype())) {
-  	var lastWeight = 0.asDouble();
   	for (s in a.states) {
-  		s.addValue(CarriedTotalBugWeightAttribute, lastWeight);
   		for (v in s.values.select(v|v.isTypeOf(DECENT!DoubleValue) or v.isTypeOf(DECENT!IntegerValue))) {
   			s.fromActivity.get(0).addDelta(v.ofAttribute);
   		}
@@ -422,7 +451,8 @@ operation transformAgentStates() {
 	  			//TODO: what's the sense behind the multiplication below???
 	  			clearedBugWeight = factorValues.get(CFAWeightFactor) * (s.fixes.size().asDouble()/s.fixes.size().asDouble());
 	  		}
-	   		state.addValue(ClearedTotalBugWeightAttribute, clearedBugWeight);
+	  		var ClearedWeightAttribute = DECENT!Attribute.allInstances().select(x|x.name = f.name+".ClearedWeight.Local").first();
+	   		state.addValue(ClearedWeightAttribute, clearedBugWeight);
 		}
   		
   		//TODO: legacy

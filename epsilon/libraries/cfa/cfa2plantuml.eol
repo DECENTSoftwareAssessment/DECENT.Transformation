@@ -43,7 +43,7 @@ operation Sequence cfaToPlantUML() {
   		for (f in s.factors.keySet()) {
   			//TODO: handle multiple factors
 		  	var factorValues = s.factors.get(f);
-		  	if (factorValues.get(TotalBugWeightAttribute) > 0) {
+		  	if (factorValues.get(TotalWeightAttribute) > 0) {
 	        	color = " #FFAAAA";
 		  	}
 		}        
@@ -153,7 +153,7 @@ operation Sequence cfaToPlantUML() {
 		    for (f in a.factors.keySet()) {
 	  			//TODO: handle multiple factors
 			  	var factorValues = a.factors.get(f);
-			  	if (factorValues.get(TotalBugWeightAttribute) > 0) {
+			  	if (factorValues.get(TotalWeightAttribute) > 0) {
 		        	color = " #FFAAAA";
 			  	}
 			}        
