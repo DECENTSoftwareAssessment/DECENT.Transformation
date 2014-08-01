@@ -36,10 +36,6 @@ operation Sequence cfaToPlantUML() {
         ("processing object "+s.~uniqueName).println();
         var color = "";
        	
-       	//TODO: legacy
-        if (s.totalBugWeight > 0) {
-        	color = " #FFAAAA";
-        }
   		for (f in s.factors.keySet()) {
   			//TODO: handle multiple factors
 		  	var factorValues = s.factors.get(f);
@@ -57,9 +53,7 @@ operation Sequence cfaToPlantUML() {
 		  	}
 		}        
 
-		//TODO: legacy        
         (s.~uniqueName+" : hunks = "+s.hunks).printlno();
-        (s.~uniqueName+" : weight factor (bug fix) = "+s.weightFactor).printlno();
         if (lastState.isDefined()) {
             (lastState.~uniqueName +" -right- "+s.~uniqueName).printlno();
         }
@@ -94,21 +88,7 @@ operation Sequence cfaToPlantUML() {
 	            label = label + "=" + (weightFactor*(1/s.fixes.size().asDouble()));
 	            label = label + "\\n";
 			}        
-			
-            //TODO: legacy
-			weightFactor = s.weightFactor;
-            label = label + "bug cause weight";
-            label = label + ": " + weightFactor + "*" + 1 + "/" + s.fixes.size();
-            label = label+"="+(weightFactor*(1/s.fixes.size().asDouble()));
-            label = label + "\\nfull cause weight: " + 1 + "/" + s.fixes.size();
-            label = label+"="+((1/s.fixes.size().asDouble()));
-            //label = label + distance;
-            
-/*            (f.~uniqueName + " \"" + s.~uniqueName + ":" + 1 + "/" + f.causes.size() + distance + "\""
-                 + " <... "
-                 + "\"" + offsetDistance + f.~uniqueName + ":" + 1 + "/" + s.fixes.size() + distance + "\" " + s.~uniqueName
-                 + " : " + label).printlno();
-*/                 
+			            
             var notename = f.~uniqueName+"_"+s.~uniqueName;
 			("note \""+s.~uniqueName + ":" + 1 + "/" + f.causes.size()+" -> "+f.~uniqueName + ":" + 1 + "/" + s.fixes.size()+"\\n"+label+"\" as " + notename).printlno();
 			(f.~uniqueName + " <..down.. " + notename).printlno();
@@ -123,18 +103,8 @@ operation Sequence cfaToPlantUML() {
 			  	weightFactor = factorValues.get(WeightFactorAttribute);
             	(s.~uniqueName +" : causes = "+c.~uniqueName +" (c="+1+"/"+s.causes.size()+",f="+1+"/"+c.fixes.size()+","+f.name+".bcw=" +(weightFactor*(1/c.fixes.size().asDouble()))+",fcw=" +((1/c.fixes.size().asDouble()))+ ")").printlno();
 			}
-        	//TODO: legacy
-        	weightFactor = c.weightFactor;
-            (s.~uniqueName +" : causes = "+c.~uniqueName +" (c="+1+"/"+s.causes.size()+",f="+1+"/"+c.fixes.size()+",bcw=" +(weightFactor*(1/c.fixes.size().asDouble()))+",fcw=" +((1/c.fixes.size().asDouble()))+ ")").printlno();
         }
         
-        //TODO: legacy
-        (s.~uniqueName+" : total cause weight = "+s.totalWeight).printlno();
-        (s.~uniqueName+" : average cause weight = "+s.averageWeight).printlno();
-        (s.~uniqueName+" : total bug cause weight = "+s.totalBugWeight).printlno();
-        (s.~uniqueName+" : average bug cause weight = "+s.averageBugWeight).printlno();
-
-
 		//essentially duplicated from above...
         for (a in s.artifactStates) {
         	if (a.name <> "src/terminal_splitter.cpp") {
@@ -145,11 +115,6 @@ operation Sequence cfaToPlantUML() {
 	        //("object "+a.~uniqueName).printlno();
 	        var color = "";
 
-  			//TODO: legacy
-	        if (a.totalBugWeight > 0) {
-	        	color = " #FFAAAA";
-	        }
-	        
 		    for (f in a.factors.keySet()) {
 	  			//TODO: handle multiple factors
 			  	var factorValues = a.factors.get(f);
@@ -201,21 +166,6 @@ operation Sequence cfaToPlantUML() {
 		            label = label + "\\n";
 				}        
 
-
-      			//TODO: legacy
-      			weightFactor = a.weightFactor;
-	            label = label + "bug cause weight";
-	            label = label + ": " + weightFactor + "*" + 1 + "/" + a.fixes.size();
-	            label = label + "=" + (weightFactor*(1/a.fixes.size().asDouble()));
-	            label = label + "\\nfull cause weight: " + 1 + "/" + a.fixes.size();
-	            label = label + "=" + ((1/a.fixes.size().asDouble()));
-	            //label = label + distance;
-	            
-/*	            (f.~uniqueName + " \"" + a.~uniqueName + ":" + 1 + "/" + f.causes.size() + distance + "\""
-	                 + " <.left.. "
-	                 + "\"" + offsetDistance + f.~uniqueName + ":" + 1 + "/" + a.fixes.size() + distance + "\" " + a.~uniqueName
-	                 + " : " + label).printlno();
-*/	            
 				var notename = f.~uniqueName+"_"+a.~uniqueName;
 				("note \""+a.~uniqueName + ":" + 1 + "/" + f.causes.size()+" -> "+f.~uniqueName + ":" + 1 + "/" + a.fixes.size()+"\\n"+label+"\" as " + notename).printlno();
 				(f.~uniqueName + " <..up.. " + notename).printlno();
@@ -230,16 +180,7 @@ operation Sequence cfaToPlantUML() {
 				  	weightFactor = factorValues.get(WeightFactorAttribute);
 	            	(a.~uniqueName +" : causes = "+c.~uniqueName +" (c="+1+"/"+a.causes.size()+",f="+1+"/"+c.fixes.size()+","+f.name+".bcw=" +(weightFactor*(1/c.fixes.size().asDouble()))+",fcw=" +((1/c.fixes.size().asDouble()))+ ")").printlno();
 				}
-	        	//TODO: legacy
-	        	weightFactor = c.weightFactor;
-	            (a.~uniqueName +" : causes = "+c.~uniqueName +" (c="+1+"/"+a.causes.size()+",f="+1+"/"+c.fixes.size()+",bcw=" +(weightFactor*(1/c.fixes.size().asDouble()))+",fcw=" +((1/c.fixes.size().asDouble()))+ ")").printlno();
 	        }
-
-  			//TODO: legacy
-	        (a.~uniqueName+" : total cause weight = "+a.totalWeight).printlno();
-	        (a.~uniqueName+" : average cause weight = "+a.averageWeight).printlno();
-	        (a.~uniqueName+" : total bug cause weight = "+a.totalBugWeight).printlno();
-	        (a.~uniqueName+" : average bug cause weight = "+a.averageBugWeight).printlno();
         }
 
 
