@@ -27,10 +27,17 @@ pre mgInitPre {
   var TotalWeightAttribute = CFA!Attribute.allInstances().select(a|a.name = "TotalWeight").first();
   var AverageWeightAttribute = CFA!Attribute.allInstances().select(a|a.name = "AverageWeight").first();
   
-
   var factors = new Map;
   factors.put("BugFix","Bug Fix factor derived from revision label based on regular expressions applied to revision messages");
   factors.put("Default","Default factor - used as a baseline");
+
+  var repository = System.getContext().getModelRepository();
+  var traceAvailable = repository.getModelByNameSafe("TRACE").isDefined();
+  ("BZ TRACE Available: "+traceAvailable).log(2);
+  if (traceAvailable) {
+  	factors.put("IssueCount","Related issues count");
+  }
+
   for (a in factors.keySet()) {
 	var factor = new CFA!Factor;
 	factor.name = a;
@@ -39,6 +46,11 @@ pre mgInitPre {
   
   var BugFixFactor = CFA!Factor.allInstances().select(a|a.name = "BugFix").first();
   var DefaultFactor = CFA!Factor.allInstances().select(a|a.name = "Default").first();
+
+  if (traceAvailable) {
+  	IssueCountFactor = CFA!Factor.allInstances().select(a|a.name = "IssueCount").first();
+  }  
+  
 }
 
 post mgInitPost{
@@ -72,6 +84,10 @@ post mgInitPost{
     var duration = end - start;
     ("Duration: "+duration.toMinutes().round(5)).log(1);
         
+}
+
+operation Integer getBZReferenceWeight() : Real {
+	return TRACE!Trace.allInstances().select(x|x.target.commit_id = s.ID).size().asDouble();	
 }
 
 operation CFA!State addFactor(factor : CFA!Factor, weightFactor : Real) {
@@ -110,7 +126,10 @@ rule Revisions
     
     s.addFactor(BugFixFactor, r.is_bug_fix.asDouble());
     s.addFactor(DefaultFactor, 1.asDouble());
-
+ 	if (traceAvailable) {
+    	s.addFactor(IssueCountFactor, s.ID.getBZReferenceWeight());
+	}
+	
     s.hunks = r.hunks.size();
     s.bugFix = r.is_bug_fix.asDouble();
     s.weightFactor = r.is_bug_fix.asDouble();
@@ -140,6 +159,9 @@ rule Actions
     
     s.addFactor(BugFixFactor, a.revision.is_bug_fix.asDouble());
     s.addFactor(DefaultFactor, 1.asDouble());
+    if (traceAvailable) {
+    	s.addFactor(IssueCountFactor, s.ID.getBZReferenceWeight());
+	}
     
     var hunks = a.revision.hunks.select(h|h.file = a.file);
     s.hunks = hunks.size();
