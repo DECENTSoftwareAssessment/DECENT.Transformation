@@ -44,20 +44,20 @@ pre mgInitPre {
 post mgInitPost{
     ("Post processing... ").log(2);
     for (s in CFA!State.allInstances()) {
-    	var fixes = s.fixes.size();
+    	var fixes = s.fixes.size().asDouble();
     	if (fixes = 0) {
     		fixes = 1.asDouble();
     	}
         for (f in s.fixes) {
         	var value; 
-        	for (factor in f.factors.values) {
-        		value = factor.get(TotalWeightAttribute) + factor.get(WeightFactorAttribute) * (1/fixes);
-        		factor.put(TotalWeightAttribute,value);
+        	for (factor in f.factors) {
+        		value = factor.value.get(TotalWeightAttribute) + s.factors.get(factor.key).get(WeightFactorAttribute) * (1/fixes);
+        		factor.value.put(TotalWeightAttribute,value);
         	}
         }
     }
     for (s in CFA!State.allInstances()) {
-    	var causes = s.causes.size();
+    	var causes = s.causes.size().asDouble();
     	if (causes = 0) {
     		causes = 1.asDouble();
     	}
