@@ -7,8 +7,8 @@ operation calculateTotalFactorWeights(selectedFactor : CFA!Factor) {
         for (f in s.fixes) {
         	var value; 
         	var factor = f.factors.get(selectedFactor);
-        	value = factor.value.get(TotalWeightAttribute) + s.factors.get(factor.key).get(WeightFactorAttribute) * (1/fixes);
-        	factor.value.put(TotalWeightAttribute,value);
+        	value = factor.get(TotalWeightAttribute) + s.factors.get(selectedFactor).get(WeightFactorAttribute) * (1/fixes);
+        	factor.put(TotalWeightAttribute,value);
         }
     }
 }
