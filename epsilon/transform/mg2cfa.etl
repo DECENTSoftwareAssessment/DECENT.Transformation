@@ -31,12 +31,7 @@ pre mgInitPre {
   factors.put("BugFix","Bug Fix factor derived from revision label based on regular expressions applied to revision messages");
   factors.put("Default","Default factor - used as a baseline");
 
-  var repository = System.getContext().getModelRepository();
-  var traceAvailable = repository.getModelByNameSafe("TRACE").isDefined();
-  ("BZ TRACE Available: "+traceAvailable).log(2);
-  if (traceAvailable) {
-  	factors.put("IssueCount","Related issues count");
-  }
+  //var traceAvailable = repository.getModelByNameSafe("TRACE").isDefined();
 
   for (a in factors.keySet()) {
 	var factor = new CFA!Factor;
@@ -46,15 +41,9 @@ pre mgInitPre {
   
   var BugFixFactor = CFA!Factor.allInstances().select(a|a.name = "BugFix").first();
   var DefaultFactor = CFA!Factor.allInstances().select(a|a.name = "Default").first();
-
-  if (traceAvailable) {
-  	IssueCountFactor = CFA!Factor.allInstances().select(a|a.name = "IssueCount").first();
-  }  
-  
 }
 
-post mgInitPost{
-    ("Post processing... ").log(2);
+operation calculateTotalFactorWeights() {
     for (s in CFA!State.allInstances()) {
     	var fixes = s.fixes.size().asDouble();
     	if (fixes = 0) {
@@ -68,6 +57,8 @@ post mgInitPost{
         	}
         }
     }
+}
+operation calculateAverageFactorWeights() {
     for (s in CFA!State.allInstances()) {
     	var causes = s.causes.size().asDouble();
     	if (causes = 0) {
@@ -79,6 +70,12 @@ post mgInitPost{
     		factor.put(AverageWeightAttribute,value);
     	}
     }
+}
+
+post mgInitPost{
+    ("Post processing... ").log(2);
+    calculateTotalFactorWeights();
+    calculateAverageFactorWeights();
         
     var end = Native("java.lang.System").currentTimeMillis();
     var duration = end - start;
@@ -86,9 +83,6 @@ post mgInitPost{
         
 }
 
-operation Integer getBZReferenceWeight() : Real {
-	return TRACE!Trace.allInstances().select(x|x.target.commit_id = s.ID).size().asDouble();	
-}
 
 operation CFA!State addFactor(factor : CFA!Factor, weightFactor : Real) {
     var defaultValue = 0.asDouble();
@@ -126,9 +120,6 @@ rule Revisions
     
     s.addFactor(BugFixFactor, r.is_bug_fix.asDouble());
     s.addFactor(DefaultFactor, 1.asDouble());
- 	if (traceAvailable) {
-    	s.addFactor(IssueCountFactor, s.ID.getBZReferenceWeight());
-	}
 	
     s.hunks = r.hunks.size();
     s.bugFix = r.is_bug_fix.asDouble();
@@ -157,11 +148,10 @@ rule Actions
     s.name = a.current_file_path;
     s.ID = a.revision.commit_id;
     
+    //TODO: restructure such that network is created as default and factors and weights are added afterwards
+    //as separate modules 
     s.addFactor(BugFixFactor, a.revision.is_bug_fix.asDouble());
     s.addFactor(DefaultFactor, 1.asDouble());
-    if (traceAvailable) {
-    	s.addFactor(IssueCountFactor, s.ID.getBZReferenceWeight());
-	}
     
     var hunks = a.revision.hunks.select(h|h.file = a.file);
     s.hunks = hunks.size();
