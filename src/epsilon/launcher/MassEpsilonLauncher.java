@@ -97,6 +97,9 @@ public class MassEpsilonLauncher extends EpsilonStandaloneLauncher {
 		case "MG2CFA":
 			executeMG2CFA(location);
 			break;
+		case "TRACE2CFA":
+			executeTRACE2CFA(location);
+			break;
 		case "CFA2DECENT":
 			executeCFA2DECENT(location);
 			break;
@@ -249,6 +252,23 @@ public class MassEpsilonLauncher extends EpsilonStandaloneLauncher {
 		module.reset();
 	}
 
+	private void executeTRACE2CFA(String location) throws Exception, URISyntaxException,
+			EolModelLoadingException, EolRuntimeException {
+		String source = "epsilon/transform/trace2cfa.eol";
+		IEolExecutableModule module = loadModule(source);
+		IModel cfaModel = getCFAModel(location, true, true);
+		IModel traceModel = getTRACEModel(location, true, false);
+		//mgModel.load();
+		module.getContext().getModelRepository().addModel(cfaModel);
+		module.getContext().getModelRepository().addModel(traceModel);
+		module.execute();
+		traceModel.dispose();
+		//can be stored and retained alternatively
+		cfaModel.dispose();
+		module.reset();
+	}
+
+	
 	private void executeEXPERIENCE2DECENT(String location) throws Exception, URISyntaxException,
 			EolModelLoadingException, EolRuntimeException {
 		String source = "epsilon/transform/experience2decent3.eol";
