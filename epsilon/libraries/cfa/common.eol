@@ -1,0 +1,36 @@
+operation calculateTotalFactorWeights() {
+    for (s in CFA!State.allInstances()) {
+    	var fixes = s.fixes.size().asDouble();
+    	if (fixes = 0) {
+    		fixes = 1.asDouble();
+    	}
+        for (f in s.fixes) {
+        	var value; 
+        	for (factor in f.factors) {
+        		value = factor.value.get(TotalWeightAttribute) + s.factors.get(factor.key).get(WeightFactorAttribute) * (1/fixes);
+        		factor.value.put(TotalWeightAttribute,value);
+        	}
+        }
+    }
+}
+operation calculateAverageFactorWeights() {
+    for (s in CFA!State.allInstances()) {
+    	var causes = s.causes.size().asDouble();
+    	if (causes = 0) {
+    		causes = 1.asDouble();
+    	}
+    	var value; 
+    	for (factor in s.factors.values) {
+    		value = factor.get(TotalWeightAttribute) / causes;
+    		factor.put(AverageWeightAttribute,value);
+    	}
+    }
+}
+
+operation CFA!State addFactor(factor : CFA!Factor, weightFactor : Real) {
+    var defaultValue = 0.asDouble();
+    self.factors.put(factor,new Map);
+    self.factors.get(factor).put(WeightFactorAttribute, weightFactor);
+	self.factors.get(factor).put(TotalWeightAttribute,defaultValue);
+	self.factors.get(factor).put(AverageWeightAttribute,defaultValue);
+}
