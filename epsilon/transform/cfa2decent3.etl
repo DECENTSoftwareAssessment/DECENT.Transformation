@@ -25,6 +25,8 @@ pre {
   	}
   	attributes.put(f.name+".ClearedWeight.Local","Local/Artifact: Cleared weight ("+f.name+")");
   	attributes.put(f.name+".CarriedWeight.Local","Local/Artifact: Carried weight ("+f.name+")");
+  	attributes.put(f.name+".ClearedWeight.Global","Global/Agent: Cleared weight ("+f.name+")");
+  	attributes.put(f.name+".CarriedWeight.Global","Global/Agent: Carried weight ("+f.name+")");
   }
   //TODO: initialize attributes automagically?
   //TODO: cleanup
@@ -136,9 +138,9 @@ pre {
   //TODO: add lifespans
 
   transformArtifactStates();
-  addCarriedWeights();
   //addDeltas();
   transformAgentStates();
+  addCarriedWeights();
   
   addArtifactTemporals();
   addAgentTemporals();
@@ -464,6 +466,11 @@ operation addCarriedWeights() {
 		var TotalWeightAttribute = DECENT!Attribute.allInstances().select(x|x.name = f.name+".TotalWeight.Local").first();
 	  	var ClearedWeightAttribute = DECENT!Attribute.allInstances().select(x|x.name = f.name+".ClearedWeight.Local").first();
 
+		var GlobalCarriedWeightAttribute = DECENT!Attribute.allInstances().select(x|x.name = f.name+".CarriedWeight.Global").first();
+		var GlobalTotalWeightAttribute = DECENT!Attribute.allInstances().select(x|x.name = f.name+".TotalWeight.Global").first();
+	  	var GlobalClearedWeightAttribute = DECENT!Attribute.allInstances().select(x|x.name = f.name+".ClearedWeight.Global").first();
+
+		//TODO: check for negatives
 	    for (a in DECENT!Artifact.allInstances().select(x|x.isMGtype())) {
 		  	var lastWeight = 0.asDouble();
 	  		for (s in a.states) {
@@ -471,10 +478,23 @@ operation addCarriedWeights() {
 		  		lastWeight = lastWeight + totalWeight;
 	  			var clearedWeight = s.getValue(ClearedWeightAttribute).content;
 		  		lastWeight = lastWeight - clearedWeight;
-	  			s.addValue(ClearedWeightAttribute, lastWeight);
+	  			s.addValue(CarriedWeightAttribute, lastWeight);
+	  			//TODO: add globals as well?
 	  		}
 	  	}
-  	}
+	
+	    for (a in DECENT!Agent.allInstances()) {
+		  	var lastWeight = 0.asDouble();
+	  		for (s in a.states) {
+	  			var totalWeight = s.getValue(GlobalTotalWeightAttribute).content;
+		  		lastWeight = lastWeight + totalWeight;
+	  			var clearedWeight = s.getValue(GlobalClearedWeightAttribute).content;
+		  		lastWeight = lastWeight - clearedWeight;
+	  			s.addValue(GlobalCarriedWeightAttribute, lastWeight);
+	  		}
+	  	}
+  	
+	}
 }
 
 operation addDeltas() {
@@ -516,7 +536,7 @@ operation transformAgentStates() {
 	  			//TODO: what's the sense behind the multiplication below???
 	  			clearedBugWeight = factorValues.get(CFAWeightFactor) * (s.fixes.size().asDouble()/s.fixes.size().asDouble());
 	  		}
-	  		var ClearedWeightAttribute = DECENT!Attribute.allInstances().select(x|x.name = f.name+".ClearedWeight.Local").first();
+	  		var ClearedWeightAttribute = DECENT!Attribute.allInstances().select(x|x.name = f.name+".ClearedWeight.Global").first();
 	   		state.addValue(ClearedWeightAttribute, clearedBugWeight);
 		}
   		
