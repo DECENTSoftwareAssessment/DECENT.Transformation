@@ -96,7 +96,7 @@ operation Sequence cfaToPlantUML() {
     
         }
         for (c in s.causes) {
-        	c.~uniqueName = "Mr"+s.ID;
+        	c.~uniqueName = "Mr"+c.ID;
 			var weightFactor;
 	  		for (f in c.factors.keySet()) {
 			  	var factorValues = c.factors.get(f);
