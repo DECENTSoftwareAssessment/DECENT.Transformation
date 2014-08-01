@@ -146,7 +146,6 @@ post {
     var duration = end - start;
     ("Duration: "+duration.toMinutes().round(5)).log(1);
     //TODO: use this check to enable BZ based processing
-  	("Meta "+System.getContext().getModelRepository().getModelByNameSafe("BZ").isDefined()).println();
 }
 
 operation addArtifactTemporals() {
