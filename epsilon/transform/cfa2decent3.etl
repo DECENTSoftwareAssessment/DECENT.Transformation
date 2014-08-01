@@ -108,8 +108,8 @@ pre {
   addCarriedWeights();
   
   //TODO: this needs to be rethought tho, as it is now it is providing too much noise
-  addArtifactTemporals();
-  addAgentTemporals();
+  //addArtifactTemporals();
+  //addAgentTemporals();
   
   var separator = "\t";
   var h = false;
