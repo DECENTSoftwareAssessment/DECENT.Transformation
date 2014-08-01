@@ -424,15 +424,6 @@ operation addAgentTemporals() {
 operation transformArtifactStates() {
   ("...transforming artifact states...").log(2);
   
-  var absoluteTime = new Sequence;
-  var relativeTime = new Sequence;
-  var distanceTime = new Sequence;
-  var resolution = 24*60*60*1000;//days*hours*minutes*seconds
-  //resolution = 60*1000;//minutes*seconds
-  
-  var start = CFA!GlobalState.allInstances().sortBy(x|x.revision.author_date.time).first().revision.author_date.time;
-  
-  
   for (s in CFA!ArtifactState.allInstances()) {
 	("  " + s.file.file_name + " @ "+s.ID).log(3);
   	var fileName = s.file.file_name;
@@ -552,13 +543,6 @@ operation addDeltas() {
 //TODO: largely copied from trasnformArtifactStates
 operation transformAgentStates() {
   ("...adding agent state values...").log(2);
-  var absoluteTime = new Sequence;
-  var relativeTime = new Sequence;
-  var distanceTime = new Sequence;
-  var resolution = 24*60*60*1000;//days*hours*minutes*seconds
-  //resolution = 60*1000;//minutes*seconds
-  
-  var start = CFA!GlobalState.allInstances().sortBy(x|x.revision.author_date.time).first().revision.author_date.time;
   
   for (s in CFA!GlobalState.allInstances()) {
 	("  " + " @ "+s.ID).log(3);
@@ -609,99 +593,6 @@ operation transformAgentStates() {
   			clearedBugWeight = s.weightFactor * (s.fixes.size().asDouble()/s.fixes.size().asDouble());
   		}
    		state.addValue(ClearedTotalBugWeightAttribute, clearedBugWeight);
-
-
-		//TODO: extract temporals
-   		var averageFixedLifespan = 0.asDouble();
-   		var averageFixedBugLifespan = 0.asDouble();
-   		var averageCausedLifespan = 0.asDouble();
-   		var averageCausedBugLifespan = 0.asDouble();
-
-		var time = s.revision.author_date.time;
-		var totalFixedTime = 0;
-		
-		absoluteTime.clear();
-		relativeTime.clear();
-		distanceTime.clear();
-		
-		for (c in s.fixes) {
-			var causeTime = c.revision.author_date.time;
-			totalFixedTime = totalFixedTime + (time - causeTime);
-			absoluteTime.add(causeTime.asDouble()/resolution);
-			relativeTime.add((causeTime - start).asDouble()/resolution);
-			distanceTime.add((time - causeTime).asDouble()/resolution);
-		}
-		if (s.fixes.size() > 0) {
-			averageFixedLifespan = (totalFixedTime / s.fixes.size().asDouble()).toDays();
-			averageFixedBugLifespan = s.weightFactor*(totalFixedTime / s.fixes.size().asDouble()).toDays();
-		}
-  		state.addDoubleCollectionValue(CausesAbsoluteTimeAttribute, absoluteTime);
-  		state.addValue(CausesAbsoluteTimeVarianceAttribute, absoluteTime.getVariance());
-
-  		state.addDoubleCollectionValue(CausesRelativeTimeAttribute, relativeTime);
-		state.addValue(CausesRelativeTimeVarianceAttribute, relativeTime.getVariance());
-		
-  		state.addDoubleCollectionValue(CausesDistanceTimeAttribute, distanceTime);
-		state.addValue(CausesDistanceTimeVarianceAttribute, distanceTime.getVariance());
-
-		
-		absoluteTime.clear();
-		relativeTime.clear();
-		distanceTime.clear();
-		
-		var totalCausedTime = 0;
-		for (f in s.causes) {
-			var fixTime = f.revision.author_date.time;
-			totalCausedTime = totalCausedTime + (fixTime - time);
-			absoluteTime.add(fixTime.asDouble()/resolution);
-			relativeTime.add((fixTime - start).asDouble()/resolution);
-			distanceTime.add((fixTime - time).asDouble()/resolution);
-		}
-		if (s.causes.size() > 0) {
-			averageCausedLifespan = (totalCausedTime / s.causes.size().asDouble()).toDays();
-		}
-
-  		state.addDoubleCollectionValue(FixesAbsoluteTimeAttribute, absoluteTime);
-  		state.addValue(FixesAbsoluteTimeVarianceAttribute, absoluteTime.getVariance());
-
-  		state.addDoubleCollectionValue(FixesRelativeTimeAttribute, relativeTime);
-		state.addValue(FixesRelativeTimeVarianceAttribute, relativeTime.getVariance());
-		
-  		state.addDoubleCollectionValue(FixesDistanceTimeAttribute, distanceTime);
-		state.addValue(FixesDistanceTimeVarianceAttribute, distanceTime.getVariance());
-
-		absoluteTime.clear();
-		relativeTime.clear();
-		distanceTime.clear();
-		
-		var totalCausedBugTime = 0;
-		var selectedCauses = s.causes.select(c|c.weightFactor > 0);
-		for (f in selectedCauses) {
-			var fixTime = f.revision.author_date.time;
-			totalCausedBugTime = totalCausedBugTime + (fixTime - time);
-			absoluteTime.add(fixTime.asDouble()/resolution);
-			relativeTime.add((fixTime - start).asDouble()/resolution);
-			distanceTime.add((fixTime - time).asDouble()/resolution);
-		}
-		if (selectedCauses.size() > 0) {
-			averageCausedBugLifespan = (totalCausedBugTime / selectedCauses.size().asDouble()).toDays();
-		}
-
-  		state.addDoubleCollectionValue(BugFixesAbsoluteTimeAttribute, absoluteTime);
-  		state.addValue(BugFixesAbsoluteTimeVarianceAttribute, absoluteTime.getVariance());
-
-  		state.addDoubleCollectionValue(BugFixesRelativeTimeAttribute, relativeTime);
-		state.addValue(BugFixesRelativeTimeVarianceAttribute, relativeTime.getVariance());
-		
-  		state.addDoubleCollectionValue(BugFixesDistanceTimeAttribute, distanceTime);
-		state.addValue(BugFixesDistanceTimeVarianceAttribute, distanceTime.getVariance());
-
-		
-   		state.addValue(AverageFixedLifespanAttribute, averageFixedLifespan);
-   		state.addValue(AverageFixedBugLifespanAttribute, averageFixedBugLifespan);
-   		state.addValue(AverageCausedLifespanAttribute, averageCausedLifespan);
-   		state.addValue(AverageCausedBugLifespanAttribute, averageCausedBugLifespan);
-   		
 	}
   }
 }
