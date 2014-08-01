@@ -138,6 +138,21 @@ operation DECENT!Artifact isMGtype() : Boolean {
 		self.type.name = "ui";
 }
 
+operation Collection getMean() : Real {
+	if (self.size <= 1) {
+	    //mean for a set of 1 elememts shall be 0
+		return 0.asReal();
+	}
+    var n = 0.asReal();
+    var sum1 = 0.asReal();
+    for (x in self){
+        n = n + 1;
+        sum1 = sum1 + x;
+    }
+    var mean = sum1/n;
+	return mean;
+}
+
 operation Collection getVariance() : Real {
 	if (self.size <= 1) {
 	    //variance for a set of 1 elememts shall be 0
