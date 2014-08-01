@@ -1,4 +1,4 @@
-import "../mg/mg_hunks.eol";
+import "../../epsilon/libraries/mg/hunks.eol";
 import "../../epsilon/libraries/decent/common.eol";
 
 //changed lines
