@@ -27,7 +27,7 @@ pre {
   	attributes.put(f.name+".CarriedWeight.Local","Local/Artifact: Carried weight ("+f.name+")");
   }
   //TODO: initialize attributes automagically?
-  
+  //TODO: cleanup
   attributes.put("BugFix","Local (artifact) label as bug fix from revision message");
   attributes.put("WeightFactor","Local (artifact) weight factor from CFA analysis");
   attributes.put("TotalWeight","Total local (artifact) cause weight from CFA analysis (total weight for caused changes)");
@@ -86,26 +86,11 @@ pre {
   var FilePathAttribute = DECENT!Attribute.allInstances().select(a|a.name = "FilePath").first();
   
   
-  var BugFixAttribute = DECENT!Attribute.allInstances().select(a|a.name = "BugFix").first();
-  var WeightFactorAttribute = DECENT!Attribute.allInstances().select(a|a.name = "WeightFactor").first();
-  var TotalWeightAttribute = DECENT!Attribute.allInstances().select(a|a.name = "TotalWeight").first();
-  var AverageWeightAttribute = DECENT!Attribute.allInstances().select(a|a.name = "AverageWeight").first();
-  var TotalBugWeightAttribute = DECENT!Attribute.allInstances().select(a|a.name = "TotalBugWeight").first();
-  var AverageBugWeightAttribute = DECENT!Attribute.allInstances().select(a|a.name = "AverageBugWeight").first();
   var CausesCountAttribute = DECENT!Attribute.allInstances().select(a|a.name = "CausesCount").first();
   var FixesCountAttribute = DECENT!Attribute.allInstances().select(a|a.name = "FixesCount").first();
 
-  var GlobalBugFixAttribute = DECENT!Attribute.allInstances().select(a|a.name = "GlobalBugFix").first();
-  var GlobalWeightFactorAttribute = DECENT!Attribute.allInstances().select(a|a.name = "GlobalWeightFactor").first();
-  var GlobalTotalWeightAttribute = DECENT!Attribute.allInstances().select(a|a.name = "GlobalTotalWeight").first();
-  var GlobalAverageWeightAttribute = DECENT!Attribute.allInstances().select(a|a.name = "GlobalAverageWeight").first();
-  var GlobalTotalBugWeightAttribute = DECENT!Attribute.allInstances().select(a|a.name = "GlobalTotalBugWeight").first();
-  var GlobalAverageBugWeightAttribute = DECENT!Attribute.allInstances().select(a|a.name = "GlobalAverageBugWeight").first();
   var GlobalCausesCountAttribute = DECENT!Attribute.allInstances().select(a|a.name = "GlobalCausesCount").first();
   var GlobalFixesCountAttribute = DECENT!Attribute.allInstances().select(a|a.name = "GlobalFixesCount").first();
-
-  var CarriedTotalBugWeightAttribute = DECENT!Attribute.allInstances().select(a|a.name = "CarriedTotalBugWeight").first();
-  var ClearedTotalBugWeightAttribute = DECENT!Attribute.allInstances().select(a|a.name = "ClearedTotalBugWeight").first();
 
   var AverageFixedLifespanAttribute = DECENT!Attribute.allInstances().select(a|a.name = "AverageFixedLifespan").first();
   var AverageFixedBugLifespanAttribute = DECENT!Attribute.allInstances().select(a|a.name = "AverageFixedBugLifespan").first();
@@ -440,10 +425,7 @@ operation transformArtifactStates() {
   	} else {
   		var state = matchedStates.first();
   		
-  		for (a in attributes.keySet()) {
-			state.values.removeAll(state.values.select(v|v.ofAttribute.name = a));
-		}
-  		
+		//TODO: add proper backout  		
   		for (f in s.factors.keySet()) {
 		  	var factorValues = s.factors.get(f);
 		  	var globalStateFactorValues = s.globalState.factors.get(f);
@@ -465,33 +447,11 @@ operation transformArtifactStates() {
 	   		state.addValue(ClearedWeightAttribute, clearedBugWeight);
 		}
   		
-  		//TODO: legacy
-  		state.addValue(BugFixAttribute, s.bugFix);
-  		state.addValue(WeightFactorAttribute, s.weightFactor);
-  		state.addValue(TotalWeightAttribute, s.totalWeight);
-  		state.addValue(TotalBugWeightAttribute, s.totalBugWeight);
-  		state.addValue(AverageWeightAttribute, s.averageWeight);
-  		state.addValue(AverageBugWeightAttribute, s.averageBugWeight);
   		state.addValue(CausesCountAttribute, s.causes.size().asDouble());
   		state.addValue(FixesCountAttribute, s.fixes.size().asDouble());
 
-		//TODO: this may be removed as it is also included in the agent state
-  		state.addValue(GlobalBugFixAttribute, s.globalState.bugFix);
-  		state.addValue(GlobalWeightFactorAttribute, s.globalState.weightFactor);
-  		state.addValue(GlobalTotalWeightAttribute, s.globalState.totalWeight);
-  		state.addValue(GlobalTotalBugWeightAttribute, s.globalState.totalBugWeight);
-  		state.addValue(GlobalAverageWeightAttribute, s.globalState.averageWeight);
-  		state.addValue(GlobalAverageBugWeightAttribute, s.globalState.averageBugWeight);
   		state.addValue(GlobalCausesCountAttribute, s.globalState.causes.size().asDouble());
   		state.addValue(GlobalFixesCountAttribute, s.globalState.fixes.size().asDouble());
-  		
-  		var clearedBugWeight = 0.asDouble();
-  		if (s.fixes.size()>0) {
-  			//TODO: what's the sense behind the multiplicaiton below?!
-  			clearedBugWeight = s.weightFactor * (s.fixes.size().asDouble()/s.fixes.size().asDouble());
-  		}
-   		state.addValue(ClearedTotalBugWeightAttribute, clearedBugWeight);
-   		
   	}
   }
 }
@@ -515,18 +475,6 @@ operation addCarriedWeights() {
 	  		}
 	  	}
   	}
-  	
-  //TODO: legacy
-  for (a in DECENT!Artifact.allInstances().select(x|x.isMGtype())) {
-  	var lastWeight = 0.asDouble();
-  	for (s in a.states) {
-  		var totalBugWeight = s.getValue(TotalBugWeightAttribute).content;
-  		lastWeight = lastWeight + totalBugWeight;
-  		var clearedBugWeight = s.getValue(ClearedTotalBugWeightAttribute).content;
-  		lastWeight = lastWeight - clearedBugWeight;
-  		s.addValue(CarriedTotalBugWeightAttribute, lastWeight);
-  	}
-  }
 }
 
 operation addDeltas() {
@@ -554,17 +502,12 @@ operation transformAgentStates() {
   		("  "+size+" DECENT matches found for: "+authorName+" at "+s.ID).log(1);
   	} else {
   		var state = matchedStates.first();
-  		
-  		for (a in attributes.keySet()) {
-			state.values.removeAll(state.values.select(v|v.ofAttribute.name = a));
-		}
-  		
+  		//TODO: add appropriate backout  		
   		for (f in s.factors.keySet()) {
 		  	var factorValues = s.factors.get(f);
 		  	for (a in factorValues.keySet()) {
 	  			var GlobalAttribute = DECENT!Attribute.allInstances().select(x|x.name = f.name+"."+a.name+".Global").first();
 	  			//state.values.removeAll(state.values.select(v|v.ofAttribute.name = GlobalAttribute));
-	  			
 	  			state.addValue(GlobalAttribute,factorValues.get(a));
 		  	}
 		  	
@@ -577,22 +520,8 @@ operation transformAgentStates() {
 	   		state.addValue(ClearedWeightAttribute, clearedBugWeight);
 		}
   		
-  		//TODO: legacy
-  		state.addValue(BugFixAttribute, s.bugFix);
-  		state.addValue(WeightFactorAttribute, s.weightFactor);
-  		state.addValue(TotalWeightAttribute, s.totalWeight);
-  		state.addValue(TotalBugWeightAttribute, s.totalBugWeight);
-  		state.addValue(AverageWeightAttribute, s.averageWeight);
-  		state.addValue(AverageBugWeightAttribute, s.averageBugWeight);
   		state.addValue(CausesCountAttribute, s.causes.size().asDouble());
   		state.addValue(FixesCountAttribute, s.fixes.size().asDouble());
-  		
-  		var clearedBugWeight = 0.asDouble();
-  		if (s.fixes.size()>0) {
-  			//TODO: what's the sense behind the multiplicaiton below?!
-  			clearedBugWeight = s.weightFactor * (s.fixes.size().asDouble()/s.fixes.size().asDouble());
-  		}
-   		state.addValue(ClearedTotalBugWeightAttribute, clearedBugWeight);
 	}
   }
 }
