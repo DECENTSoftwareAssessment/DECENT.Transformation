@@ -1,12 +1,25 @@
 import "../libraries/cfa/common.eol";
+import "../libraries/decent/common.eol";
+import "../libraries/decent/logging.eol";
+
+
+  	"Running trace2cfa".log(1);
+
+  	var start = Native("java.lang.System").currentTimeMillis();
+	
+  	var WeightFactorAttribute = CFA!Attribute.allInstances().select(a|a.name = "WeightFactor").first();
+  	var TotalWeightAttribute = CFA!Attribute.allInstances().select(a|a.name = "TotalWeight").first();
+  	var AverageWeightAttribute = CFA!Attribute.allInstances().select(a|a.name = "AverageWeight").first();
 
   	var factors = new Map;
   	factors.put("IssueCount","Related issues count");
   	
   	for (a in factors.keySet()) {
-		var factor = new CFA!Factor;
-		factor.name = a;
-		factor.description = factors.get(a);
+  		if (CFA!Factor.allInstances().select(x|x.name = a).size() = 0) {
+			var factor = new CFA!Factor;
+			factor.name = a;
+			factor.description = factors.get(a);
+		}
   	}
 
   	var IssueCountFactor = CFA!Factor.allInstances().select(a|a.name = "IssueCount").first();
@@ -16,6 +29,10 @@ import "../libraries/cfa/common.eol";
 	calculateAverageFactorWeights();
 
 
+    var end = Native("java.lang.System").currentTimeMillis();
+    var duration = end - start;
+    ("Duration: "+duration.toMinutes().round(5)).log(1);
+
 operation addFactors() {
 	for (s in CFA!State.allInstances) {
 		s.addFactor(IssueCountFactor, s.ID.getBZReferenceWeight());
@@ -23,6 +40,7 @@ operation addFactors() {
 }
 	
 operation Integer getBZReferenceWeight() : Real {
-	return TRACE!Trace.allInstances().select(x|x.target.commit_id = self).size().asDouble();	
+	return TRACE!Trace.allInstances().select(x|x.target.commit_id = self).size().asDouble();
+	return 0.asDouble();	
 }
 	
