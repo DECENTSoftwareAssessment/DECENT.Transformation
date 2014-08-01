@@ -155,6 +155,9 @@ pre {
   //addDeltas();
   transformAgentStates();
   
+  addArtifactTemporals();
+  addAgentTemporals();
+  
   ("...done!").log(2);
 }
 
@@ -169,16 +172,6 @@ post {
 
 operation addArtifactTemporals() {
   ("...adding artifact temporals...").log(2);
-}
-
-operation addAgentTemporals() {
-  ("...adding artifact temporals...").log(2);
-}
-
-
-operation transformArtifactStates() {
-  ("...transforming artifact states...").log(2);
-  
   var absoluteTime = new Sequence;
   var relativeTime = new Sequence;
   var distanceTime = new Sequence;
@@ -186,7 +179,6 @@ operation transformArtifactStates() {
   //resolution = 60*1000;//minutes*seconds
   
   var start = CFA!GlobalState.allInstances().sortBy(x|x.revision.author_date.time).first().revision.author_date.time;
-  
   
   for (s in CFA!ArtifactState.allInstances()) {
 	("  " + s.file.file_name + " @ "+s.ID).log(3);
@@ -203,61 +195,7 @@ operation transformArtifactStates() {
   		//}
   	} else {
   		var state = matchedStates.first();
-  		
-  		for (a in attributes.keySet()) {
-			state.values.removeAll(state.values.select(v|v.ofAttribute.name = a));
-		}
-  		
-  		for (f in s.factors.keySet()) {
-		  	var factorValues = s.factors.get(f);
-		  	var globalStateFactorValues = s.globalState.factors.get(f);
-		  	for (a in factorValues.keySet()) {
-	  			var LocalAttribute = DECENT!Attribute.allInstances().select(x|x.name = f.name+"."+a.name+".Local").first();
-	  			var GlobalAttribute = DECENT!Attribute.allInstances().select(x|x.name = f.name+"."+a.name+".Global").first();
-	  			//state.values.removeAll(state.values.select(v|v.ofAttribute.name = LocalAttribute));
-	  			//state.values.removeAll(state.values.select(v|v.ofAttribute.name = GlobalAttribute));
-	  			state.addValue(LocalAttribute,factorValues.get(a));
-	  			state.addValue(GlobalAttribute,globalStateFactorValues.get(a));
-		  	}
-		  	
-  	  		var clearedBugWeight = 0.asDouble();
-	  		if (s.fixes.size()>0) {
-	  			//TODO: what's the sense behind the multiplication below???
-	  			clearedBugWeight = factorValues.get(CFAWeightFactor) * (s.fixes.size().asDouble()/s.fixes.size().asDouble());
-	  		}
-	  		var ClearedWeightAttribute = DECENT!Attribute.allInstances().select(x|x.name = f.name+".ClearedWeight.Local").first();
-	   		state.addValue(ClearedWeightAttribute, clearedBugWeight);
-		}
-  		
-  		//TODO: legacy
-  		state.addValue(BugFixAttribute, s.bugFix);
-  		state.addValue(WeightFactorAttribute, s.weightFactor);
-  		state.addValue(TotalWeightAttribute, s.totalWeight);
-  		state.addValue(TotalBugWeightAttribute, s.totalBugWeight);
-  		state.addValue(AverageWeightAttribute, s.averageWeight);
-  		state.addValue(AverageBugWeightAttribute, s.averageBugWeight);
-  		state.addValue(CausesCountAttribute, s.causes.size().asDouble());
-  		state.addValue(FixesCountAttribute, s.fixes.size().asDouble());
-
-		//TODO: this may be removed as it is also included in the agent state
-  		state.addValue(GlobalBugFixAttribute, s.globalState.bugFix);
-  		state.addValue(GlobalWeightFactorAttribute, s.globalState.weightFactor);
-  		state.addValue(GlobalTotalWeightAttribute, s.globalState.totalWeight);
-  		state.addValue(GlobalTotalBugWeightAttribute, s.globalState.totalBugWeight);
-  		state.addValue(GlobalAverageWeightAttribute, s.globalState.averageWeight);
-  		state.addValue(GlobalAverageBugWeightAttribute, s.globalState.averageBugWeight);
-  		state.addValue(GlobalCausesCountAttribute, s.globalState.causes.size().asDouble());
-  		state.addValue(GlobalFixesCountAttribute, s.globalState.fixes.size().asDouble());
-  		
-  		var clearedBugWeight = 0.asDouble();
-  		if (s.fixes.size()>0) {
-  			//TODO: what's the sense behind the multiplicaiton below?!
-  			clearedBugWeight = s.weightFactor * (s.fixes.size().asDouble()/s.fixes.size().asDouble());
-  		}
-   		state.addValue(ClearedTotalBugWeightAttribute, clearedBugWeight);
-   		
-   		//temporals
-   		//TODO: EXTRACT
+  
    		//TODO: consider moving to mg2cfa 
    		//TODO: consider filtering by weight
    		//TODO: considering adding further temporals
@@ -363,6 +301,206 @@ operation transformArtifactStates() {
    		state.addValue(AverageFixedBugLifespanAttribute, averageFixedBugLifespan);
    		state.addValue(AverageCausedLifespanAttribute, averageCausedLifespan);
    		state.addValue(AverageCausedBugLifespanAttribute, averageCausedBugLifespan);
+	}
+  }
+}
+
+operation addAgentTemporals() {
+  ("...adding agent temporals...").log(2);
+  var absoluteTime = new Sequence;
+  var relativeTime = new Sequence;
+  var distanceTime = new Sequence;
+  var resolution = 24*60*60*1000;//days*hours*minutes*seconds
+  //resolution = 60*1000;//minutes*seconds
+  
+  var start = CFA!GlobalState.allInstances().sortBy(x|x.revision.author_date.time).first().revision.author_date.time;
+  
+  for (s in CFA!GlobalState.allInstances()) {
+	("  " + " @ "+s.ID).log(3);
+  	var authorName = s.revision.author.name;
+  	var matchedStates = DECENT!AgentState.allInstances().select(m|m.ID = s.ID);
+  	var size = matchedStates.size();
+	//check if correct matches can be found 
+  	if (size <> 1) {
+  		("  "+size+" DECENT matches found for: "+authorName+" at "+s.ID).log(1);
+  	} else {
+  		var state = matchedStates.first();
+  		
+   		var averageFixedLifespan = 0.asDouble();
+   		var averageFixedBugLifespan = 0.asDouble();
+   		var averageCausedLifespan = 0.asDouble();
+   		var averageCausedBugLifespan = 0.asDouble();
+
+		var time = s.revision.author_date.time;
+		var totalFixedTime = 0;
+		
+		absoluteTime.clear();
+		relativeTime.clear();
+		distanceTime.clear();
+		
+		for (c in s.fixes) {
+			var causeTime = c.revision.author_date.time;
+			totalFixedTime = totalFixedTime + (time - causeTime);
+			absoluteTime.add(causeTime.asDouble()/resolution);
+			relativeTime.add((causeTime - start).asDouble()/resolution);
+			distanceTime.add((time - causeTime).asDouble()/resolution);
+		}
+		if (s.fixes.size() > 0) {
+			averageFixedLifespan = (totalFixedTime / s.fixes.size().asDouble()).toDays();
+			averageFixedBugLifespan = s.weightFactor*(totalFixedTime / s.fixes.size().asDouble()).toDays();
+		}
+  		state.addDoubleCollectionValue(CausesAbsoluteTimeAttribute, absoluteTime);
+  		state.addValue(CausesAbsoluteTimeVarianceAttribute, absoluteTime.getVariance());
+
+  		state.addDoubleCollectionValue(CausesRelativeTimeAttribute, relativeTime);
+		state.addValue(CausesRelativeTimeVarianceAttribute, relativeTime.getVariance());
+		
+  		state.addDoubleCollectionValue(CausesDistanceTimeAttribute, distanceTime);
+		state.addValue(CausesDistanceTimeVarianceAttribute, distanceTime.getVariance());
+
+		
+		absoluteTime.clear();
+		relativeTime.clear();
+		distanceTime.clear();
+		
+		var totalCausedTime = 0;
+		for (f in s.causes) {
+			var fixTime = f.revision.author_date.time;
+			totalCausedTime = totalCausedTime + (fixTime - time);
+			absoluteTime.add(fixTime.asDouble()/resolution);
+			relativeTime.add((fixTime - start).asDouble()/resolution);
+			distanceTime.add((fixTime - time).asDouble()/resolution);
+		}
+		if (s.causes.size() > 0) {
+			averageCausedLifespan = (totalCausedTime / s.causes.size().asDouble()).toDays();
+		}
+
+  		state.addDoubleCollectionValue(FixesAbsoluteTimeAttribute, absoluteTime);
+  		state.addValue(FixesAbsoluteTimeVarianceAttribute, absoluteTime.getVariance());
+
+  		state.addDoubleCollectionValue(FixesRelativeTimeAttribute, relativeTime);
+		state.addValue(FixesRelativeTimeVarianceAttribute, relativeTime.getVariance());
+		
+  		state.addDoubleCollectionValue(FixesDistanceTimeAttribute, distanceTime);
+		state.addValue(FixesDistanceTimeVarianceAttribute, distanceTime.getVariance());
+
+		absoluteTime.clear();
+		relativeTime.clear();
+		distanceTime.clear();
+		
+		var totalCausedBugTime = 0;
+		var selectedCauses = s.causes.select(c|c.weightFactor > 0);
+		for (f in selectedCauses) {
+			var fixTime = f.revision.author_date.time;
+			totalCausedBugTime = totalCausedBugTime + (fixTime - time);
+			absoluteTime.add(fixTime.asDouble()/resolution);
+			relativeTime.add((fixTime - start).asDouble()/resolution);
+			distanceTime.add((fixTime - time).asDouble()/resolution);
+		}
+		if (selectedCauses.size() > 0) {
+			averageCausedBugLifespan = (totalCausedBugTime / selectedCauses.size().asDouble()).toDays();
+		}
+
+  		state.addDoubleCollectionValue(BugFixesAbsoluteTimeAttribute, absoluteTime);
+  		state.addValue(BugFixesAbsoluteTimeVarianceAttribute, absoluteTime.getVariance());
+
+  		state.addDoubleCollectionValue(BugFixesRelativeTimeAttribute, relativeTime);
+		state.addValue(BugFixesRelativeTimeVarianceAttribute, relativeTime.getVariance());
+		
+  		state.addDoubleCollectionValue(BugFixesDistanceTimeAttribute, distanceTime);
+		state.addValue(BugFixesDistanceTimeVarianceAttribute, distanceTime.getVariance());
+
+		
+   		state.addValue(AverageFixedLifespanAttribute, averageFixedLifespan);
+   		state.addValue(AverageFixedBugLifespanAttribute, averageFixedBugLifespan);
+   		state.addValue(AverageCausedLifespanAttribute, averageCausedLifespan);
+   		state.addValue(AverageCausedBugLifespanAttribute, averageCausedBugLifespan);
+   		
+	}
+  }
+}
+
+
+operation transformArtifactStates() {
+  ("...transforming artifact states...").log(2);
+  
+  var absoluteTime = new Sequence;
+  var relativeTime = new Sequence;
+  var distanceTime = new Sequence;
+  var resolution = 24*60*60*1000;//days*hours*minutes*seconds
+  //resolution = 60*1000;//minutes*seconds
+  
+  var start = CFA!GlobalState.allInstances().sortBy(x|x.revision.author_date.time).first().revision.author_date.time;
+  
+  
+  for (s in CFA!ArtifactState.allInstances()) {
+	("  " + s.file.file_name + " @ "+s.ID).log(3);
+  	var fileName = s.file.file_name;
+  	var filePath = s.action.current_file_path;
+  	var matchedStates = DECENT!State.allInstances().select(m|m.artifact.isMGtype() and m.ID = s.ID and m.getValue(FilePathAttribute).content = filePath);
+  	var size = matchedStates.size();
+	//check if correct matches can be found 
+  	if (size <> 1) {
+  		("  "+size+" DECENT matches found for: "+fileName+" at "+s.ID).log(4);
+  		("    Avaliable states at "+s.ID+" are:").log(4);
+  		//for (x in DECENT!State.allInstances().select(x|x.artifact.isMGtype() and x.ID = s.ID)) {
+  			//("      "+x.artifact.name+" at "+x.ID+" ("+x.getValue(FilePathAttribute).content+")").log(4);
+  		//}
+  	} else {
+  		var state = matchedStates.first();
+  		
+  		for (a in attributes.keySet()) {
+			state.values.removeAll(state.values.select(v|v.ofAttribute.name = a));
+		}
+  		
+  		for (f in s.factors.keySet()) {
+		  	var factorValues = s.factors.get(f);
+		  	var globalStateFactorValues = s.globalState.factors.get(f);
+		  	for (a in factorValues.keySet()) {
+	  			var LocalAttribute = DECENT!Attribute.allInstances().select(x|x.name = f.name+"."+a.name+".Local").first();
+	  			var GlobalAttribute = DECENT!Attribute.allInstances().select(x|x.name = f.name+"."+a.name+".Global").first();
+	  			//state.values.removeAll(state.values.select(v|v.ofAttribute.name = LocalAttribute));
+	  			//state.values.removeAll(state.values.select(v|v.ofAttribute.name = GlobalAttribute));
+	  			state.addValue(LocalAttribute,factorValues.get(a));
+	  			state.addValue(GlobalAttribute,globalStateFactorValues.get(a));
+		  	}
+		  	
+  	  		var clearedBugWeight = 0.asDouble();
+	  		if (s.fixes.size()>0) {
+	  			//TODO: what's the sense behind the multiplication below???
+	  			clearedBugWeight = factorValues.get(CFAWeightFactor) * (s.fixes.size().asDouble()/s.fixes.size().asDouble());
+	  		}
+	  		var ClearedWeightAttribute = DECENT!Attribute.allInstances().select(x|x.name = f.name+".ClearedWeight.Local").first();
+	   		state.addValue(ClearedWeightAttribute, clearedBugWeight);
+		}
+  		
+  		//TODO: legacy
+  		state.addValue(BugFixAttribute, s.bugFix);
+  		state.addValue(WeightFactorAttribute, s.weightFactor);
+  		state.addValue(TotalWeightAttribute, s.totalWeight);
+  		state.addValue(TotalBugWeightAttribute, s.totalBugWeight);
+  		state.addValue(AverageWeightAttribute, s.averageWeight);
+  		state.addValue(AverageBugWeightAttribute, s.averageBugWeight);
+  		state.addValue(CausesCountAttribute, s.causes.size().asDouble());
+  		state.addValue(FixesCountAttribute, s.fixes.size().asDouble());
+
+		//TODO: this may be removed as it is also included in the agent state
+  		state.addValue(GlobalBugFixAttribute, s.globalState.bugFix);
+  		state.addValue(GlobalWeightFactorAttribute, s.globalState.weightFactor);
+  		state.addValue(GlobalTotalWeightAttribute, s.globalState.totalWeight);
+  		state.addValue(GlobalTotalBugWeightAttribute, s.globalState.totalBugWeight);
+  		state.addValue(GlobalAverageWeightAttribute, s.globalState.averageWeight);
+  		state.addValue(GlobalAverageBugWeightAttribute, s.globalState.averageBugWeight);
+  		state.addValue(GlobalCausesCountAttribute, s.globalState.causes.size().asDouble());
+  		state.addValue(GlobalFixesCountAttribute, s.globalState.fixes.size().asDouble());
+  		
+  		var clearedBugWeight = 0.asDouble();
+  		if (s.fixes.size()>0) {
+  			//TODO: what's the sense behind the multiplicaiton below?!
+  			clearedBugWeight = s.weightFactor * (s.fixes.size().asDouble()/s.fixes.size().asDouble());
+  		}
+   		state.addValue(ClearedTotalBugWeightAttribute, clearedBugWeight);
+   		
   	}
   }
 }
