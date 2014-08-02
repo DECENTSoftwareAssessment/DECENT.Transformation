@@ -13,6 +13,8 @@ import "../libraries/decent/logging.eol";
 
   	var factors = new Map;
   	factors.put("IssueCount","Related issues count");
+  	factors.put("CommentsPerIssue","Average comments per related issues count");
+  	factors.put("UsersPerIssue","Average users per related issues count");
   	
   	for (a in factors.keySet()) {
   		if (CFA!Factor.allInstances().select(x|x.name = a).size() = 0) {
@@ -23,9 +25,13 @@ import "../libraries/decent/logging.eol";
   	}
 
   	var IssueCountFactor = CFA!Factor.allInstances().select(a|a.name = "IssueCount").first();
+  	var CommentsPerIssueFactor = CFA!Factor.allInstances().select(a|a.name = "CommentsPerIssue").first();
+  	var UsersPerIssueFactor = CFA!Factor.allInstances().select(a|a.name = "UsersPerIssue").first();
 
 	addFactors();
 	calculateTotalFactorWeights(IssueCountFactor);
+	calculateTotalFactorWeights(CommentsPerIssueFactor);
+	calculateTotalFactorWeights(UsersPerIssueFactor);
 	calculateAverageFactorWeights();
 
 
@@ -36,11 +42,38 @@ import "../libraries/decent/logging.eol";
 operation addFactors() {
 	for (s in CFA!State.allInstances) {
 		s.addFactor(IssueCountFactor, s.ID.getBZReferenceWeight());
+		s.addFactor(CommentsPerIssueFactor, s.ID.getBZCommentsWeight());
+		s.addFactor(UsersPerIssueFactor, s.ID.getBZUsersWeight());
 	}
 }
 	
 operation Integer getBZReferenceWeight() : Real {
 	return TRACE!Trace.allInstances().select(x|x.target.commit_id = self).size().asDouble();
-	return 0.asDouble();	
+}
+
+operation Integer getBZCommentsWeight() : Real {
+	var traces = TRACE!Trace.allInstances().select(x|x.target.commit_id = self);
+	if (traces.size() = 0) { 
+		return 0.asDouble();
+	}
+	var comments = new Set;
+	for (t in traces) {
+		comments.addAll(t.source.comments);
+	}
+	return comments.size().asDouble()/traces.size().asDouble();
+}
+
+operation Integer getBZUsersWeight() : Real {
+	var traces = TRACE!Trace.allInstances().select(x|x.target.commit_id = self);
+	if (traces.size() = 0) { 
+		return 0.asDouble();
+	}
+	var authors = new Set;
+	for (t in traces) {
+		for (c in t.source.comments) {
+			authors.add(c.commentAuthor);
+		}
+	}
+	return authors.size().asDouble()/traces.size().asDouble();
 }
 	
