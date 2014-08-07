@@ -63,7 +63,7 @@ public class MassEpsilonLauncher extends EpsilonStandaloneLauncher {
 
 	public static void main(String[] args) throws Exception {
 		MassEpsilonLauncher launcher = new MassEpsilonLauncher();
-		launcher.loadProperties(args[0]);
+		launcher.loadProperties(args);
 		launcher.registerMetaModels();
 //		launcher.getBinaryDECENTModel(args[0], true, false);
 //		launcher.convertDECENTModelToBinary(args[0]);
@@ -76,9 +76,18 @@ public class MassEpsilonLauncher extends EpsilonStandaloneLauncher {
 		return new EtlModule();
 	}
 
-	public void loadProperties(String propertiesFilename) throws Exception {
+	public void loadProperties(String[] arguments) throws Exception {
+		if (arguments.length < 1) {
+			System.out.println("No configuration provided! Usage: <CONFIGURATION> [<STEPS>]");
+			System.exit(0);
+		}
 		System.out.println("INIT: Loading settings...");
+		String propertiesFilename = arguments[0];
 		properties.load(new FileInputStream(propertiesFilename));
+		if (arguments.length == 2) {
+			properties.setProperty("steps", arguments[1]);
+		}
+
 	}
 
 	public void executeSteps() throws Exception {
