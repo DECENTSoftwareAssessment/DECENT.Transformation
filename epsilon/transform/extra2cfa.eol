@@ -1,0 +1,59 @@
+import "../libraries/cfa/common.eol";
+import "../libraries/decent/common.eol";
+import "../libraries/decent/logging.eol";
+
+
+  	"Running extra2cfa".log(1);
+
+  	var start = Native("java.lang.System").currentTimeMillis();
+	
+  	var WeightFactorAttribute = CFA!Attribute.allInstances().select(a|a.name = "WeightFactor").first();
+  	var TotalWeightAttribute = CFA!Attribute.allInstances().select(a|a.name = "TotalWeight").first();
+  	var AverageWeightAttribute = CFA!Attribute.allInstances().select(a|a.name = "AverageWeight").first();
+
+  	var factors = new Map;
+  	factors.put("RefactoringMessage","Based on commit messages");
+  	
+  	for (a in factors.keySet()) {
+  		if (CFA!Factor.allInstances().select(x|x.name = a).size() = 0) {
+			var factor = new CFA!Factor;
+			factor.name = a;
+			factor.description = factors.get(a);
+		}
+  	}
+
+  	var RefactoringMessageFactor = CFA!Factor.allInstances().select(a|a.name = "RefactoringMessage").first();
+
+	addFactors();
+	calculateTotalFactorWeights(RefactoringMessageFactor);
+	calculateAverageFactorWeights();
+
+    var end = Native("java.lang.System").currentTimeMillis();
+    var duration = end - start;
+    ("Duration: "+duration.toMinutes().round(5)).log(1);
+
+operation addFactors() {
+	for (s in CFA!State.allInstances) {
+		s.addFactor(RefactoringMessageFactor, s.getRefactoringWeight());
+	}
+}
+
+operation String getRefactoringWeight() : Real {
+	var weight = 0.asDouble();
+	if ((self.toLowerCase().contains("factored ")) 
+		or (self.toLowerCase().contains("factoring "))) {
+		weight = 1.asDouble();
+	}
+	return weight;
+}
+
+
+operation CFA!GlobalState getRefactoringWeight() : Real {
+	return self.revision.message.getRefactoringWeight();
+}
+operation CFA!ArtifactState getRefactoringWeight() : Real {
+	return self.action.revision.message.getRefactoringWeight();
+}
+
+
+	
