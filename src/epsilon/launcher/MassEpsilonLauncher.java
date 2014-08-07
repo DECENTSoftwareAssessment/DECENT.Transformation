@@ -41,7 +41,9 @@ import org.eclipse.epsilon.eol.models.IModel;
 import org.eclipse.epsilon.etl.EtlModule;
 
 import DECENT.DECENTPackage;
+import MG.MGPackage;
 import resource.tools.DECENTResourceTool;
+import resource.tools.MGResourceTool;
 import epsilon.launcher.EpsilonStandaloneLauncher;
 
 /**
@@ -55,6 +57,7 @@ public class MassEpsilonLauncher extends EpsilonStandaloneLauncher {
 	
 	private HashMap<String, Object> metaModelCache = new HashMap<>();
 	private boolean useDECENTBinary = true;
+	private boolean useMGBinary = true;
 	private Properties properties = new Properties();
 
 
@@ -92,9 +95,11 @@ public class MassEpsilonLauncher extends EpsilonStandaloneLauncher {
 			executeMG2NORMALIZEDHUNKS(location);
 			break;
 		case "MG2DECENT":
+			useMGBinary=Boolean.parseBoolean(properties.getProperty("useBinary"));
 			executeMG2DECENT(location);
 			break;
 		case "MG2CFA":
+			useMGBinary=Boolean.parseBoolean(properties.getProperty("useBinary"));
 			executeMG2CFA(location);
 			break;
 		case "TRACE2CFA":
@@ -161,15 +166,15 @@ public class MassEpsilonLauncher extends EpsilonStandaloneLauncher {
 		}
 	}
 
-	private void restoreDecentMetaModels() {
+	private void restoreMetaModels() {
 		for (String key : metaModelCache .keySet()) {
 			EPackage.Registry.INSTANCE.put(key, metaModelCache.get(key));
 		};
 	}
 
-	private void unregisterDECENTMetaModels() {
+	private void unregisterMetaModels(String filter) {
 		for (String key : EPackage.Registry.INSTANCE.keySet()) {
-			if (key.contains("decent")) {
+			if (key.contains(filter)) {
 				metaModelCache.put(key, EPackage.Registry.INSTANCE.get(key));
 			}
 		};
@@ -465,24 +470,24 @@ public class MassEpsilonLauncher extends EpsilonStandaloneLauncher {
 	
 	
 	public void convertDECENTModelToBinary(String location) {
-		unregisterDECENTMetaModels();
+		unregisterMetaModels("decent");
 		DECENTResourceTool tool = new DECENTResourceTool();
 		Resource resource = tool.loadResourceFromXMI(location+"/model.decent","decent", DECENTPackage.eINSTANCE);
 		tool.storeBinaryResourceContents(resource.getContents(), location+"/model.decent"+"bin", "decentbin");
-		restoreDecentMetaModels();		
+		restoreMetaModels();		
 	}
 
 	public void convertDECENTModelToXMI(String location) {
-		unregisterDECENTMetaModels();
+		unregisterMetaModels("decent");
 		DECENTResourceTool tool = new DECENTResourceTool(); 
 		Resource resource = tool.loadResourceFromBinary(location+"/model.decentbin","decentbin", DECENTPackage.eINSTANCE);
 		tool.storeResourceContents(resource.getContents(), location+"/model.decent", "decent");
-		restoreDecentMetaModels();		
+		restoreMetaModels();		
 	}
 
 	public IModel getBinaryDECENTModel(String location, boolean readOnLoad, boolean storedOnDisposal) throws Exception {
 		String resourceLocation = location+"/model.decent";
-		unregisterDECENTMetaModels();
+		unregisterMetaModels("decent");
 
 		DECENTResourceTool tool = new DECENTResourceTool();
 		Resource resourceBin = tool.loadResourceFromBinary(resourceLocation+"bin","decentbin", DECENTPackage.eINSTANCE);
@@ -490,7 +495,7 @@ public class MassEpsilonLauncher extends EpsilonStandaloneLauncher {
 		InMemoryEmfModel emfModel = new InMemoryEmfModel("DECENT", resourceBin, DECENTPackage.eINSTANCE);
 		emfModel.setStoredOnDisposal(storedOnDisposal);
 		emfModel.setReadOnLoad(readOnLoad);
-		restoreDecentMetaModels();		
+		restoreMetaModels();		
 
 //		sampleModel(emfModel);
 		return emfModel;
@@ -518,7 +523,28 @@ public class MassEpsilonLauncher extends EpsilonStandaloneLauncher {
 	
 	public IModel getMGModel(String location,boolean read, boolean write) throws Exception {
 		String resourceLocation = location+"/model.mg";
-		IModel model = createEmfModel("MG", resourceLocation, "../DECENT.Meta/model/MG.ecore", read, write);
+		IModel model;
+		if (useMGBinary) {
+			unregisterMetaModels("");
+			
+			MGResourceTool tool = new MGResourceTool();
+			if (!new File(location+"/model.mg"+"bin").exists()) {
+				Resource resource = tool.loadResourceFromXMI(location+"/model.mg","mg", MGPackage.eINSTANCE);
+				tool.storeBinaryResourceContents(resource.getContents(), location+"/model.mg"+"bin", "mgbin");
+			}
+
+			Resource resourceBin = tool.loadResourceFromBinary(resourceLocation+"bin","mgbin", MGPackage.eINSTANCE);
+			//NOTE: Adding the package is essential as otherwise epsilon breaks
+			model = new InMemoryEmfModel("MG", resourceBin, MGPackage.eINSTANCE);
+			model.setStoredOnDisposal(write);
+			model.setReadOnLoad(read);
+			
+			restoreMetaModels();		
+		} else {
+			model = createEmfModel("MG", resourceLocation, "../DECENT.Meta/model/MG.ecore", read, write);
+		}
+
+		
 		return model;
 	}
 
