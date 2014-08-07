@@ -142,6 +142,7 @@ public class MassEpsilonLauncher extends EpsilonStandaloneLauncher {
 			executeQUERY(location);
 			break;
 		default:
+			System.out.println("ERROR: Unknown step "+step);
 			break;
 		}
 	}
