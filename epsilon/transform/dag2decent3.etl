@@ -67,10 +67,12 @@ operation Any assignAgentStatesToActivities() {
 
 
 operation DAG!Node findPreviousStateInParentNodes(state : DECENT!AgentState) {
-	state.previous = state.agent.states.select(x|x.name = self.name).first();
-	if (self.parents.size() > 0 and state.previous.isUndefined()) {
+	if (self.parents.size() > 0) {
 		for (p in self.parents) {
-			p.findPreviousStateInParentNodes(state);
+			state.previous = state.agent.states.select(x|x.name = p.name).first();
+			if (state.previous.isUndefined()) {
+				p.findPreviousStateInParentNodes(state);
+			}
 		}
 	}
 }
@@ -101,13 +103,18 @@ operation Any assignAgentStateSequence() {
   var nodes = DAG!Graph.allInstances().first.nodes;
   for (a in DECENT!Agent.allInstances()) {
   	("  Agent: "+a.name).log(3);
+  	var count = 0;
   	for (s in a.states) {
 		var node = nodes.select(n|n.name = s.name).first();
 		node.findPreviousStateInParentNodes(s);
-		if (not s.previous.isDefined()) {
-			(    "Failed to assign previous state for state "+s.ID+"!").log(1);
+		if (s.previous.isUndefined() and count > 0) {
+			//TODO: most of these are harmless for first commits but sometimes the chains are broken - e.g. rebase? 
+			//TODO: how to handle these? simply fall back to last known change? what if parallel?
+			(    "Failed to assign previous state for state "+s.ID+" / "+s.name+"!").log(1);
 			(    "Corresponding node has "+node.parents.size()+" parents!").log(1);
+		} else {
 		}
+		count = count + 1;
   	}
   }
 }
