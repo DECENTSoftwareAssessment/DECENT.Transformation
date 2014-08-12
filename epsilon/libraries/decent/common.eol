@@ -126,6 +126,22 @@ operation DECENT!Activity setActivityType(type : String) {
 }
 
 
+operation addAttribute(name : String) : DECENT!Attribute {
+	return addAttribute(name, "");
+}
+
+operation String addAttribute(name : String, description : String) : DECENT!Attribute {
+	var attribute = Model.attributePool.attributes.select(att|att.name = name).first();
+	if (attribute.isUndefined()) {
+	  	attribute = new DECENT!Attribute;
+	  	attribute.name = name;
+	  	attribute.description = description;
+      	Model.attributePool.attributes.add(attribute);
+  	}
+  	return attribute;
+}
+
+
 operation DECENT!Model addAttributes(attributes : Map) {
 	for (a in attributes.keySet()) {
     	if (Model.attributePool.attributes.select(att|att.name = a).size() = 0) {
