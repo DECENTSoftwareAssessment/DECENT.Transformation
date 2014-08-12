@@ -85,7 +85,7 @@ pre {
   //TODO: these may need to be pre-calculated in mg2cfa
   Model.addAttributes(attributes);
   
-  var CFAWeightFactor = "WeightFactor".getCFAAtribute();
+  var CFAWeightFactor = "WeightFactor".getCFAAttribute();
   var FilePathAttribute = "FilePath".getAttribute();
   
   
