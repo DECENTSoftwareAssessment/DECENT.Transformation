@@ -1,0 +1,100 @@
+import "../libraries/decent/common.eol";
+import "../libraries/decent/logging.eol";
+
+"Running dude2decent ".log(1);
+var start = Native("java.lang.System").currentTimeMillis();
+//TODO: could also be integrated back into famix2decent as inline checking 
+//to further filter out unchanged elements 
+
+var Model = DECENT!Model.allInstances().first();
+
+var attributes = new Map;
+attributes.put("ClonedLinesPost","Cloned lines within artifact in resulting state");
+attributes.put("ClonedFragmentsPost","Cloned fragments in resulting state");
+attributes.put("ClonedLinesPerFragmentPost","Cloned lines per fragment in resulting state");
+attributes.put("ClonedPairsPost","Cloned pairs for cloned fragments in resulting state");
+attributes.put("ClonedPairsPerFragmentPost","Cloned pairs per fragment in resulting state");
+
+Model.addAttributes(attributes);  
+
+var ClassArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "Class").first();
+var MethodArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "Method").first();
+var FunctionArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "Function").first();
+var ModuleArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "Module").first();
+var StartLineAttribute = DECENT!Attribute.allInstances().select(a|a.name = "StartLine").first();
+var EndLineAttribute = DECENT!Attribute.allInstances().select(a|a.name = "EndLine").first();
+var LinesPreAttribute = DECENT!Attribute.allInstances().select(a|a.name = "LinesPre").first();
+var LinesPostAttribute = DECENT!Attribute.allInstances().select(a|a.name = "LinesPost").first();
+
+var FilePathAttribute = DECENT!Attribute.allInstances().select(a|a.name = "FilePath").first();
+
+var ClonedLinesPostAttribute = DECENT!Attribute.allInstances().select(a|a.name = "ClonedLinesPost").first();
+var ClonedFragmentsPostAttribute = DECENT!Attribute.allInstances().select(a|a.name = "ClonedFragmentsPost").first();
+var ClonedLinesPerFragmentPostAttribute = DECENT!Attribute.allInstances().select(a|a.name = "ClonedLinesPerFragmentPost").first();
+var ClonedPairsPostAttribute = DECENT!Attribute.allInstances().select(a|a.name = "ClonedPairsPost").first();
+var ClonedPairsPerFragmentPostAttribute = DECENT!Attribute.allInstances().select(a|a.name = "ClonedPairsPerFragmentPost").first();
+
+
+
+//TODO: work topdown: Agent State -> State -> Children States
+//                    iterate over runs and fragments
+//                    add pair counts within artifact and outside
+
+//TODO: add cleanup before start, including deltas?
+//TODO: add deltas or in a separate transformation
+var states = DECENT!AgentState.allInstances();
+for (s in DECENT!State.allInstances()) {
+	s.resetState(attributes.keySet());
+}
+
+for (s in states) {
+	var run = DUDE!Run.allInstances().select(r|r.commit_id = s.ID).first();
+	var count = 0;
+	for (a in s.activities.select(x|x.targetState.artifact.isMGtype())) {
+		var content = new Sequence();
+		if (a.targetState.getValue(ClonedLinesPostAttribute).isDefined()) {
+			a.targetState.addIntegerCollectionValue(ClonedLinesPostAttribute, content);
+		}
+		for (f in run.fragments.select(x|x.file_name = "/"+a.targetState.getValue(FilePathAttribute).content)) {
+			var clonedLines = f.start_line.to(f.end_line);
+			content.addAll(clonedLines);
+			
+			count = count + 1;
+		}
+		a.targetState.addIntegerCollectionValue(ClonedLinesPostAttribute, content);
+		a.targetState.addValue(ClonedFragmentsPostAttribute, count);
+		
+		for (c in a.targetState.artifact.children) {
+			for (cs in c.states.select(x|x.ID = s.ID)) {
+				var startLine = cs.getValue(StartLineAttribute).content;
+				var endLine = cs.getValue(EndLineAttribute).content;
+				var csClonedLines = content.select(l|l >= startLine and l <= endLine);
+				c.targetState.addIntegerCollectionValue(ClonedLinesPostAttribute, csClonedLines);
+				
+				//TODO: add fragments and other attributes
+			}
+		}	  	
+	}
+}
+
+
+Model.content.add("dude2decent3");
+
+var end = Native("java.lang.System").currentTimeMillis();
+var duration = end - start;
+("Duration: "+duration.toMinutes().round(5)).log(1);
+
+operation DECENT!State resetState(attributes : Collection) {
+	for (a in attributes) {
+		var attribute = a.getAttribute();
+		var value = self.getValue(attribute);
+		if (value.isDefined()) {
+			if (value.isTypeOf(DECENT!DoubleValue)) {
+				value.content = 0.asDouble();	
+			} else if (value.isTypeOf(DECENT!IntegerListValue)) {
+				value.content = new Sequence();
+			} else {
+			}
+		}
+	}
+}
