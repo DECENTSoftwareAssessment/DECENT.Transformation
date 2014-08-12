@@ -2,6 +2,7 @@ operation Any addValue(attribute : DECENT!Attribute, content : Any, value : DECE
     value.name = attribute.name;
     value.content = content;
     self.values.add(value);
+    //if the is to be kept this should be moved too
     value.ofAttribute = attribute;
     //TODO: outsource these
 //    self.artifact.attributes.add(attribute);
@@ -19,39 +20,59 @@ operation String getAttribute() : DECENT!Attribute {
 }
 
 operation Any addValue(attribute : DECENT!Attribute, content : String) : DECENT!Value {
-    var value : new DECENT!StringValue;
+	var value = self.getValue(attribute);
+	if (value.isUndefined()) {
+    	value = new DECENT!StringValue;
+	}
     return self.addValue(attribute, content, value);
 }
 
 //NOTE: order matters, otherwise integers are mistakenly treated as reals
 operation Any addValue(attribute : DECENT!Attribute, content : Integer) : DECENT!Value {
-    var value : new DECENT!IntegerValue;
+	var value = self.getValue(attribute);
+	if (value.isUndefined()) {
+    	value = new DECENT!IntegerValue;
+	}
     return self.addValue(attribute, content, value);
 }
 
 operation Any addValue(attribute : DECENT!Attribute, content : Real) : DECENT!Value {
-    var value : new DECENT!DoubleValue;
+	var value = self.getValue(attribute);
+	if (value.isUndefined()) {
+    	value = new DECENT!DoubleValue;
+	}
     return self.addValue(attribute, content, value);
 }
 
 operation Any addValue(attribute : DECENT!Attribute, content : Collection) : DECENT!Value {
-    var value : new DECENT!ListValue;
-    ("collection "+content).println();
+	var value = self.getValue(attribute);
+	if (value.isUndefined()) {
+    	value = new DECENT!ListValue;
+	}
     return self.addValue(attribute, content, value);
 }
 
 operation Any addStringCollectionValue(attribute : DECENT!Attribute, content : Collection(String)) : DECENT!Value {
-    var value : new DECENT!StringListValue;
+	var value = self.getValue(attribute);
+	if (value.isUndefined()) {
+    	value = new DECENT!StringListValue;
+	}
     return self.addValue(attribute, content, value);
 }
 
 operation Any addIntegerCollectionValue(attribute : DECENT!Attribute, content : Collection(Integer)) : DECENT!Value {
-    var value : new DECENT!IntegerListValue;
+	var value = self.getValue(attribute);
+	if (value.isUndefined()) {
+    	value = new DECENT!IntegerListValue;
+	}
     return self.addValue(attribute, content, value);
 }
 
 operation Any addDoubleCollectionValue(attribute : DECENT!Attribute, content : Collection(Real)) : DECENT!Value {
-    var value : new DECENT!DoubleListValue;
+	var value = self.getValue(attribute);
+	if (value.isUndefined()) {
+    	value = new DECENT!DoubleListValue;
+	}
     return self.addValue(attribute, content, value);
 }
 
