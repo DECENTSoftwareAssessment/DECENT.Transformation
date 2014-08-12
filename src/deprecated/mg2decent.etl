@@ -1,4 +1,4 @@
-import "famix-init.etl";
+import "../../epsilon/libraries/famix/init.etl";
 pre mgInitPre {
 
   //Some initialization
