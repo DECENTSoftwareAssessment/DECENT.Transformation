@@ -22,15 +22,9 @@ pre mgInitPre {
   BranchArtifactType.name = "Branch";
   Model.artifactTypeHierarchy.types.add(BranchArtifactType);
     
-  var FilePathAttribute = new DECENT!Attribute;
-  FilePathAttribute.name = "FilePath";
-  Model.attributePool.attributes.add(FilePathAttribute);
-
-  var BranchAttribute = new DECENT!Attribute;
-  BranchAttribute.name = "Branch";
-  Model.attributePool.attributes.add(BranchAttribute);
-
   var attributes = new Map;
+  attributes.put("FilePath","File path");
+  attributes.put("Branch","Branch name");
   attributes.put("FileSize","File size in bytes");
   attributes.put("LOC","Lines of code");
   attributes.put("LinesAdded","Lines added");
@@ -54,26 +48,28 @@ pre mgInitPre {
 
   Model.addAttributes(attributes);
 
-  var FileSizeAttribute = DECENT!Attribute.allInstances().select(a|a.name = "FileSize").first();
-  var LOCAttribute = DECENT!Attribute.allInstances().select(a|a.name = "LOC").first();
-  var LinesAddedAttribute = DECENT!Attribute.allInstances().select(a|a.name = "LinesAdded").first();
-  var LinesRemovedAttribute = DECENT!Attribute.allInstances().select(a|a.name = "LinesRemoved").first();
-  var IsBugFixAttribute = DECENT!Attribute.allInstances().select(a|a.name = "IsBugFix").first();
-  var BugFixCountAttribute = DECENT!Attribute.allInstances().select(a|a.name = "BugFixCount").first();
-  var AggregateFragmentCountAttribute = DECENT!Attribute.allInstances().select(a|a.name = "AggregateFragmentCount").first();
-  var FragmentCountAttribute = DECENT!Attribute.allInstances().select(a|a.name = "FragmentCount").first();
-  var HunkCountAttribute = DECENT!Attribute.allInstances().select(a|a.name = "HunkCount").first();
-  var ChangedFragmentAttribute = DECENT!Attribute.allInstances().select(a|a.name = "ChangedFragments").first();
-  var FragmentsAttribute = DECENT!Attribute.allInstances().select(a|a.name = "Fragments").first();
-  var VarianceChangedFragmentAttribute = DECENT!Attribute.allInstances().select(a|a.name = "VarianceChangedFragments").first();
-  var VarianceFragmentsAttribute = DECENT!Attribute.allInstances().select(a|a.name = "VarianceFragments").first();
-  var MessageAttribute = DECENT!Attribute.allInstances().select(a|a.name = "Message").first();
-  var LinesPreAttribute = DECENT!Attribute.allInstances().select(a|a.name = "LinesPre").first();
-  var LinesPostAttribute = DECENT!Attribute.allInstances().select(a|a.name = "LinesPost").first();
-  var LinesMergedAttribute = DECENT!Attribute.allInstances().select(a|a.name = "LinesMerged").first();
-  var VarianceLinesPreAttribute = DECENT!Attribute.allInstances().select(a|a.name = "VarianceLinesPre").first();
-  var VarianceLinesPostAttribute = DECENT!Attribute.allInstances().select(a|a.name = "VarianceLinesPost").first();
-  var VarianceLinesMergedAttribute = DECENT!Attribute.allInstances().select(a|a.name = "VarianceLinesMerged").first();
+  var FilePathAttribute = "FilePath".getAttribute();
+  var BranchAttribute = "Branch".getAttribute();
+  var FileSizeAttribute = "FileSize".getAttribute();
+  var LOCAttribute = "LOC".getAttribute();
+  var LinesAddedAttribute = "LinesAdded".getAttribute();
+  var LinesRemovedAttribute = "LinesRemoved".getAttribute();
+  var IsBugFixAttribute = "IsBugFix".getAttribute();
+  var BugFixCountAttribute = "BugFixCount".getAttribute();
+  var AggregateFragmentCountAttribute = "AggregateFragmentCount".getAttribute();
+  var FragmentCountAttribute = "FragmentCount".getAttribute();
+  var HunkCountAttribute = "HunkCount".getAttribute();
+  var ChangedFragmentAttribute = "ChangedFragments".getAttribute();
+  var FragmentsAttribute = "Fragments".getAttribute();
+  var VarianceChangedFragmentAttribute = "VarianceChangedFragments".getAttribute();
+  var VarianceFragmentsAttribute = "VarianceFragments".getAttribute();
+  var MessageAttribute = "Message".getAttribute();
+  var LinesPreAttribute = "LinesPre".getAttribute();
+  var LinesPostAttribute = "LinesPost".getAttribute();
+  var LinesMergedAttribute = "LinesMerged".getAttribute();
+  var VarianceLinesPreAttribute = "VarianceLinesPre".getAttribute();
+  var VarianceLinesPostAttribute = "VarianceLinesPost".getAttribute();
+  var VarianceLinesMergedAttribute = "VarianceLinesMerged".getAttribute();
 
   var Project = new DECENT!Project;
   Project.name = MG!Model.allInstances().first().name;

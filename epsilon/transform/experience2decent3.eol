@@ -32,16 +32,16 @@ var MethodArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "M
 var FunctionArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "Function").first();
 var ModuleArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "Module").first();
 
-var ProjectActivitiesAttribute = DECENT!Attribute.allInstances().select(a|a.name = "ProjectActivities").first();
-var TotalProjectActivitiesAttribute = DECENT!Attribute.allInstances().select(a|a.name = "TotalProjectActivities").first();
-var ProjectCommitsAttribute = DECENT!Attribute.allInstances().select(a|a.name = "ProjectCommits").first();
-var DeveloperActivitiesAttribute = DECENT!Attribute.allInstances().select(a|a.name = "DeveloperActivities").first();
-var TotalDeveloperActivitiesAttribute = DECENT!Attribute.allInstances().select(a|a.name = "TotalDeveloperActivities").first();
-var DeveloperCommitsAttribute = DECENT!Attribute.allInstances().select(a|a.name = "DeveloperCommits").first();
-var ArtifactActivitiesAttribute = DECENT!Attribute.allInstances().select(a|a.name = "ArtifactActivities").first();
-var TotalArtifactActivitiesAttribute = DECENT!Attribute.allInstances().select(a|a.name = "TotalArtifactActivities").first();
-var ArtifactDevelopersAttribute = DECENT!Attribute.allInstances().select(a|a.name = "ArtifactDevelopers").first();
-var ArtifactDeveloperActivitiesAttribute = DECENT!Attribute.allInstances().select(a|a.name = "ArtifactDeveloperActivities").first();
+var ProjectActivitiesAttribute = "ProjectActivities".getAttribute();
+var TotalProjectActivitiesAttribute = "TotalProjectActivities".getAttribute();
+var ProjectCommitsAttribute = "ProjectCommits".getAttribute();
+var DeveloperActivitiesAttribute = "DeveloperActivities".getAttribute();
+var TotalDeveloperActivitiesAttribute = "TotalDeveloperActivities".getAttribute();
+var DeveloperCommitsAttribute = "DeveloperCommits".getAttribute();
+var ArtifactActivitiesAttribute = "ArtifactActivities".getAttribute();
+var TotalArtifactActivitiesAttribute = "TotalArtifactActivities".getAttribute();
+var ArtifactDevelopersAttribute = "ArtifactDevelopers".getAttribute();
+var ArtifactDeveloperActivitiesAttribute = "ArtifactDeveloperActivities".getAttribute();
 
 //TODO: this can only be executed prior to FAMIX
 var progress = 0;

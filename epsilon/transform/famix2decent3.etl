@@ -15,21 +15,22 @@ pre {
   var MethodArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "Method").first();
   var FunctionArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "Function").first();
   var ModuleArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "Module").first();
-  var FileAnchorAttribute = DECENT!Attribute.allInstances().select(t|t.name = "FileAnchor").first();
-  var FilePathAttribute = DECENT!Attribute.allInstances().select(t|t.name = "FilePath").first();
 
   //TODO: this is effectively moved to hits2decent
   var attributes = new Map;
   attributes.put("StartLine", "Artifact start line");
   attributes.put("EndLine", "Artifact end line");
+  attributes.put("EndLine", "Artifact end line");
   
   Model.addAttributes(attributes);
 
-  var LinesPostHitsAttribute = DECENT!Attribute.allInstances().select(a|a.name = "LinesPostHits").first();
-  var StartLineAttribute = DECENT!Attribute.allInstances().select(a|a.name = "StartLine").first();
-  var EndLineAttribute = DECENT!Attribute.allInstances().select(a|a.name = "EndLine").first();
-  var LinesPreAttribute = DECENT!Attribute.allInstances().select(a|a.name = "LinesPre").first();
-  var LinesPostAttribute = DECENT!Attribute.allInstances().select(a|a.name = "LinesPost").first();
+  var LinesPostHitsAttribute = "LinesPostHits".getAttribute();
+  var StartLineAttribute = "StartLine".getAttribute();
+  var EndLineAttribute = "EndLine".getAttribute();
+  var LinesPreAttribute = "LinesPre".getAttribute();
+  var LinesPostAttribute = "LinesPost".getAttribute();
+  var FileAnchorAttribute = "FileAnchor".getAttribute();
+  var FilePathAttribute = "FilePath".getAttribute();
 
 
   
@@ -200,8 +201,7 @@ operation DECENT!State mapAnchoredElement(c : FAMIX!AnchoredElement, artifactTyp
     activity.agent = parentArtifactActivity.agent;
     
     for (attr in c.eClass().getEAllAttributes()) {
-        var attribute = DECENT!Attribute.allInstances().
-            select(a|a.name = attr.getName()).first(); 
+        var attribute = attr.getName().getAttribute(); 
         if (not attribute.isDefined()){
             attribute = new DECENT!Attribute;
             attribute.name = attr.getName();

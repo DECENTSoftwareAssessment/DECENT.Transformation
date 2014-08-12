@@ -30,26 +30,26 @@ import "../libraries/decent/logging.eol";
 
   Model.addAttributes(attributes);
 
-  var AbsoluteTimeAttribute = DECENT!Attribute.allInstances().select(a|a.name = "AbsoluteTime").first();
-  var RelativeTimeAttribute = DECENT!Attribute.allInstances().select(a|a.name = "RelativeTime").first();
-  var DistanceTimeAttribute = DECENT!Attribute.allInstances().select(a|a.name = "DistanceTime").first();
+  var AbsoluteTimeAttribute = "AbsoluteTime".getAttribute();
+  var RelativeTimeAttribute = "RelativeTime".getAttribute();
+  var DistanceTimeAttribute = "DistanceTime".getAttribute();
 
-  var AbsoluteTimeVarianceAttribute = DECENT!Attribute.allInstances().select(a|a.name = "AbsoluteTimeVariance").first();
-  var RelativeTimeVarianceAttribute = DECENT!Attribute.allInstances().select(a|a.name = "RelativeTimeVariance").first();
-  var DistanceTimeVarianceAttribute = DECENT!Attribute.allInstances().select(a|a.name = "DistanceTimeVariance").first();
+  var AbsoluteTimeVarianceAttribute = "AbsoluteTimeVariance".getAttribute();
+  var RelativeTimeVarianceAttribute = "RelativeTimeVariance".getAttribute();
+  var DistanceTimeVarianceAttribute = "DistanceTimeVariance".getAttribute();
 
-  var RevisionsAttribute = DECENT!Attribute.allInstances().select(a|a.name = "Revisions").first();
-  var LifespanAttribute = DECENT!Attribute.allInstances().select(a|a.name = "Lifespan").first();
-  var AgeAttribute = DECENT!Attribute.allInstances().select(a|a.name = "Age").first();
-  var DistanceAttribute = DECENT!Attribute.allInstances().select(a|a.name = "Distance").first();
+  var RevisionsAttribute = "Revisions".getAttribute();
+  var LifespanAttribute = "Lifespan".getAttribute();
+  var AgeAttribute = "Age".getAttribute();
+  var DistanceAttribute = "Distance".getAttribute();
 
-  var DistanceAverageAttribute = DECENT!Attribute.allInstances().select(a|a.name = "DistanceAverage").first();
-  var DistanceRunningAverageAttribute = DECENT!Attribute.allInstances().select(a|a.name = "DistanceRunningAverage").first();
+  var DistanceAverageAttribute = "DistanceAverage".getAttribute();
+  var DistanceRunningAverageAttribute = "DistanceRunningAverage".getAttribute();
 
   
-  var FrequencyAttribute = DECENT!Attribute.allInstances().select(a|a.name = "Frequency").first();
-  var FrequencyAverageAttribute = DECENT!Attribute.allInstances().select(a|a.name = "FrequencyAverage").first();
-  var FrequencyDistanceToAverageAttribute = DECENT!Attribute.allInstances().select(a|a.name = "FrequencyDistanceToAverage").first();
+  var FrequencyAttribute = "Frequency".getAttribute();
+  var FrequencyAverageAttribute = "FrequencyAverage".getAttribute();
+  var FrequencyDistanceToAverageAttribute = "FrequencyDistanceToAverage".getAttribute();
 
 
   //TODO: other temporal dimensions such as cause-fix time, agent time, bug lifetime vs fragment lifetime, etc.

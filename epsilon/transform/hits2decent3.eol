@@ -18,12 +18,12 @@ var ClassArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "Cl
 var MethodArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "Method").first();
 var FunctionArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "Function").first();
 var ModuleArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "Module").first();
-var StartLineAttribute = DECENT!Attribute.allInstances().select(a|a.name = "StartLine").first();
-var EndLineAttribute = DECENT!Attribute.allInstances().select(a|a.name = "EndLine").first();
-var LinesPreAttribute = DECENT!Attribute.allInstances().select(a|a.name = "LinesPre").first();
-var LinesPostAttribute = DECENT!Attribute.allInstances().select(a|a.name = "LinesPost").first();
-var LinesPostHitsAttribute = DECENT!Attribute.allInstances().select(a|a.name = "LinesPostHits").first();
-var LinesPreHitsAttribute = DECENT!Attribute.allInstances().select(a|a.name = "LinesPreHits").first();
+var StartLineAttribute = "StartLine".getAttribute();
+var EndLineAttribute = "EndLine".getAttribute();
+var LinesPreAttribute = "LinesPre".getAttribute();
+var LinesPostAttribute = "LinesPost".getAttribute();
+var LinesPostHitsAttribute = "LinesPostHits".getAttribute();
+var LinesPreHitsAttribute = "LinesPreHits".getAttribute();
 
 var existingStatesInRevision = DECENT!State.allInstances().select(s|
 									s.artifact.type = ClassArtifactType or 

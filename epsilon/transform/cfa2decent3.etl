@@ -84,14 +84,14 @@ pre {
   Model.addAttributes(attributes);
   
   var CFAWeightFactor = CFA!Attribute.allInstances().select(a|a.name = "WeightFactor").first();
-  var FilePathAttribute = DECENT!Attribute.allInstances().select(a|a.name = "FilePath").first();
+  var FilePathAttribute = "FilePath".getAttribute();
   
   
-  var CausesCountAttribute = DECENT!Attribute.allInstances().select(a|a.name = "CausesCount").first();
-  var FixesCountAttribute = DECENT!Attribute.allInstances().select(a|a.name = "FixesCount").first();
+  var CausesCountAttribute = "CausesCount".getAttribute();
+  var FixesCountAttribute = "FixesCount".getAttribute();
 
-  var GlobalCausesCountAttribute = DECENT!Attribute.allInstances().select(a|a.name = "GlobalCausesCount").first();
-  var GlobalFixesCountAttribute = DECENT!Attribute.allInstances().select(a|a.name = "GlobalFixesCount").first();
+  var GlobalCausesCountAttribute = "GlobalCausesCount".getAttribute();
+  var GlobalFixesCountAttribute = "GlobalFixesCount".getAttribute();
 
   //TODO: need to accumulate a value? i.e. keep a balance of sorts? bug cause adds, bug fix removes
   // - or do we focus only on the states that introduce a bug and the activities that lead to them??
@@ -153,17 +153,17 @@ operation addArtifactTemporals() {
   	("...adding artifact temporals...").log(2);
 
   	for (f in CFA!Factor.allInstances()) {
-  		var AverageFixedLifespanAttribute = DECENT!Attribute.allInstances().select(a|a.name = f.name+".AverageFixedLifespan").first();
-  		var AverageCausedLifespanAttribute = DECENT!Attribute.allInstances().select(a|a.name = f.name+".AverageCausedLifespan").first();
+  		var AverageFixedLifespanAttribute = (f.name+".AverageFixedLifespan").getAttribute();
+  		var AverageCausedLifespanAttribute = (f.name+".AverageCausedLifespan").getAttribute();
 
-  		var FixedRelativeDistanceVarianceAttribute = DECENT!Attribute.allInstances().select(a|a.name = f.name+".FixedRelativeDistanceVariance").first();
-  		var CausedRelativeDistanceVarianceAttribute = DECENT!Attribute.allInstances().select(a|a.name = f.name+".CausedRelativeDistanceVariance").first();
+  		var FixedRelativeDistanceVarianceAttribute = (f.name+".FixedRelativeDistanceVariance").getAttribute();
+  		var CausedRelativeDistanceVarianceAttribute = (f.name+".CausedRelativeDistanceVariance").getAttribute();
 
-  		var FixedRelativeDistanceAverageAttribute = DECENT!Attribute.allInstances().select(a|a.name = f.name+".FixedRelativeDistanceAverage").first();
-  		var CausedRelativeDistanceAverageAttribute = DECENT!Attribute.allInstances().select(a|a.name = f.name+".CausedRelativeDistanceAverage").first();
+  		var FixedRelativeDistanceAverageAttribute = (f.name+".FixedRelativeDistanceAverage").getAttribute();
+  		var CausedRelativeDistanceAverageAttribute = (f.name+".CausedRelativeDistanceAverage").getAttribute();
 
-  		var CausesDistanceTimeVarianceAttribute = DECENT!Attribute.allInstances().select(a|a.name = f.name+".CausesDistanceTimeVariance").first();
-  		var FixesDistanceTimeVarianceAttribute = DECENT!Attribute.allInstances().select(a|a.name = f.name+".FixesDistanceTimeVariance").first();
+  		var CausesDistanceTimeVarianceAttribute = (f.name+".CausesDistanceTimeVariance").getAttribute();
+  		var FixesDistanceTimeVarianceAttribute = (f.name+".FixesDistanceTimeVariance").getAttribute();
 
 		var relativeTime = new Sequence;
 		var distanceTime = new Sequence;
@@ -255,17 +255,17 @@ operation addAgentTemporals() {
   	("...adding agent temporals...").log(2);
   
     for (f in CFA!Factor.allInstances()) {
-  		var AverageFixedLifespanAttribute = DECENT!Attribute.allInstances().select(a|a.name = f.name+".AverageFixedLifespan").first();
-  		var AverageCausedLifespanAttribute = DECENT!Attribute.allInstances().select(a|a.name = f.name+".AverageCausedLifespan").first();
+  		var AverageFixedLifespanAttribute = (f.name+".AverageFixedLifespan").getAttribute();
+  		var AverageCausedLifespanAttribute = (f.name+".AverageCausedLifespan").getAttribute();
 
-  		var FixedRelativeDistanceVarianceAttribute = DECENT!Attribute.allInstances().select(a|a.name = f.name+".FixedRelativeDistanceVariance").first();
-  		var CausedRelativeDistanceVarianceAttribute = DECENT!Attribute.allInstances().select(a|a.name = f.name+".CausedRelativeDistanceVariance").first();
+  		var FixedRelativeDistanceVarianceAttribute = (f.name+".FixedRelativeDistanceVariance").getAttribute();
+  		var CausedRelativeDistanceVarianceAttribute = (f.name+".CausedRelativeDistanceVariance").getAttribute();
 
-  		var FixedRelativeDistanceAverageAttribute = DECENT!Attribute.allInstances().select(a|a.name = f.name+".FixedRelativeDistanceAverage").first();
-  		var CausedRelativeDistanceAverageAttribute = DECENT!Attribute.allInstances().select(a|a.name = f.name+".CausedRelativeDistanceAverage").first();
+  		var FixedRelativeDistanceAverageAttribute = (f.name+".FixedRelativeDistanceAverage").getAttribute();
+  		var CausedRelativeDistanceAverageAttribute = (f.name+".CausedRelativeDistanceAverage").getAttribute();
 
-  		var CausesDistanceTimeVarianceAttribute = DECENT!Attribute.allInstances().select(a|a.name = f.name+".CausesDistanceTimeVariance").first();
-  		var FixesDistanceTimeVarianceAttribute = DECENT!Attribute.allInstances().select(a|a.name = f.name+".FixesDistanceTimeVariance").first();
+  		var CausesDistanceTimeVarianceAttribute = (f.name+".CausesDistanceTimeVariance").getAttribute();
+  		var FixesDistanceTimeVarianceAttribute = (f.name+".FixesDistanceTimeVariance").getAttribute();
   
 	  	var relativeTime = new Sequence;
 	  	var distanceTime = new Sequence;
@@ -359,8 +359,8 @@ operation transformArtifactStates() {
 		  	var factorValues = s.factors.get(f);
 		  	var globalStateFactorValues = s.globalState.factors.get(f);
 		  	for (a in factorValues.keySet()) {
-	  			var LocalAttribute = DECENT!Attribute.allInstances().select(x|x.name = f.name+"."+a.name+".Local").first();
-	  			var GlobalAttribute = DECENT!Attribute.allInstances().select(x|x.name = f.name+"."+a.name+".Global").first();
+	  			var LocalAttribute = (f.name+"."+a.name+".Local").getAttribute();
+	  			var GlobalAttribute = (f.name+"."+a.name+".Global").getAttribute();
 	  			//state.values.removeAll(state.values.select(v|v.ofAttribute.name = LocalAttribute));
 	  			//state.values.removeAll(state.values.select(v|v.ofAttribute.name = GlobalAttribute));
 	  			state.addValue(LocalAttribute,factorValues.get(a));
@@ -372,7 +372,7 @@ operation transformArtifactStates() {
 	  			//TODO: what's the sense behind the multiplication below???
 	  			clearedBugWeight = factorValues.get(CFAWeightFactor) * (s.fixes.size().asDouble()/s.fixes.size().asDouble());
 	  		}
-	  		var ClearedWeightAttribute = DECENT!Attribute.allInstances().select(x|x.name = f.name+".ClearedWeight.Local").first();
+	  		var ClearedWeightAttribute = (f.name+".ClearedWeight.Local").getAttribute();
 	   		state.addValue(ClearedWeightAttribute, clearedBugWeight);
 		}
   		
@@ -389,13 +389,13 @@ operation addCarriedWeights() {
   ("...adding carried weights...").log(2);
 
   	for (f in CFA!Factor.allInstances()) {
-		var CarriedWeightAttribute = DECENT!Attribute.allInstances().select(x|x.name = f.name+".CarriedWeight.Local").first();
-		var TotalWeightAttribute = DECENT!Attribute.allInstances().select(x|x.name = f.name+".TotalWeight.Local").first();
-	  	var ClearedWeightAttribute = DECENT!Attribute.allInstances().select(x|x.name = f.name+".ClearedWeight.Local").first();
+		var CarriedWeightAttribute = (f.name+".CarriedWeight.Local").getAttribute();
+		var TotalWeightAttribute = (f.name+".TotalWeight.Local").getAttribute();
+	  	var ClearedWeightAttribute = (f.name+".ClearedWeight.Local").getAttribute();
 
-		var GlobalCarriedWeightAttribute = DECENT!Attribute.allInstances().select(x|x.name = f.name+".CarriedWeight.Global").first();
-		var GlobalTotalWeightAttribute = DECENT!Attribute.allInstances().select(x|x.name = f.name+".TotalWeight.Global").first();
-	  	var GlobalClearedWeightAttribute = DECENT!Attribute.allInstances().select(x|x.name = f.name+".ClearedWeight.Global").first();
+		var GlobalCarriedWeightAttribute = (f.name+".CarriedWeight.Global").getAttribute();
+		var GlobalTotalWeightAttribute = (f.name+".TotalWeight.Global").getAttribute();
+	  	var GlobalClearedWeightAttribute = (f.name+".ClearedWeight.Global").getAttribute();
 
 		//TODO: check for negatives
 	    for (a in DECENT!Artifact.allInstances().select(x|x.isMGtype())) {
@@ -453,7 +453,7 @@ operation transformAgentStates() {
   		for (f in s.factors.keySet()) {
 		  	var factorValues = s.factors.get(f);
 		  	for (a in factorValues.keySet()) {
-	  			var GlobalAttribute = DECENT!Attribute.allInstances().select(x|x.name = f.name+"."+a.name+".Global").first();
+	  			var GlobalAttribute = (f.name+"."+a.name+".Global").getAttribute();
 	  			//state.values.removeAll(state.values.select(v|v.ofAttribute.name = GlobalAttribute));
 	  			state.addValue(GlobalAttribute,factorValues.get(a));
 		  	}
@@ -463,7 +463,7 @@ operation transformAgentStates() {
 	  			//TODO: what's the sense behind the multiplication below???
 	  			clearedBugWeight = factorValues.get(CFAWeightFactor) * (s.fixes.size().asDouble()/s.fixes.size().asDouble());
 	  		}
-	  		var ClearedWeightAttribute = DECENT!Attribute.allInstances().select(x|x.name = f.name+".ClearedWeight.Global").first();
+	  		var ClearedWeightAttribute = (f.name+".ClearedWeight.Global").getAttribute();
 	   		state.addValue(ClearedWeightAttribute, clearedBugWeight);
 		}
   		

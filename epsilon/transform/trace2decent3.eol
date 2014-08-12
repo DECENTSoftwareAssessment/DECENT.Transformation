@@ -14,11 +14,11 @@ attributes.put("BugResolutions","Number of resolutions of linked issue reports")
 attributes.put("BugLifespan","Lifespan of linked issue )ports");
 Model.addAttributes(attributes);
 
-var BugCountAttribute = DECENT!Attribute.allInstances().select(t|t.name = "BugCount").first();
-var BugCommentsAttribute = DECENT!Attribute.allInstances().select(t|t.name = "BugComments").first();
-var BugEventsAttribute = DECENT!Attribute.allInstances().select(t|t.name = "BugEvents").first();
-var BugResolutionsAttribute = DECENT!Attribute.allInstances().select(t|t.name = "BugResolutions").first();
-var BugLifespanAttribute = DECENT!Attribute.allInstances().select(t|t.name = "BugLifespan").first();
+var BugCountAttribute = "BugCount".getAttribute();
+var BugCommentsAttribute = "BugComments".getAttribute();
+var BugEventsAttribute = "BugEvents".getAttribute();
+var BugResolutionsAttribute = "BugResolutions".getAttribute();
+var BugLifespanAttribute = "BugLifespan".getAttribute();
 
 var artifactTypes = new OrderedSet("build","code","documentation","ui","image","unknown","devel-doc");
 
