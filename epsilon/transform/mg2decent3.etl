@@ -149,7 +149,7 @@ operation MG!Revision getBranch() : MG!Branch {
 rule Branch2Location 
     transform b : MG!Branch 
     to l : DECENT!Location {
-    guard : filterBranch.size()=0 or filterBranch.includes(b.name)
+    guard : filterBranches.size()=0 or filterBranches.includes(b.name)
     
 	l.name = b.name;
     ("Transforming location "+l.name).log(3);
@@ -174,7 +174,7 @@ rule People2Agent
 rule File2Artifact 
     transform f : MG!File 
     to a : DECENT!Artifact {
-    guard : filterBranch.size()=0 or filterBranch.includes(f.getBranch().name)
+    guard : filterBranches.size()=0 or filterBranches.includes(f.getBranch().name)
     
     a.name = f.file_name;
    	a.setArtifactType(f.file_type);
@@ -201,7 +201,7 @@ rule File2Artifact
 rule Revision2AgentState 
     transform r : MG!Revision
     to s : DECENT!AgentState {
-    guard : filterBranch.size()=0 or filterBranch.includes(r.getBranch().name)
+    guard : filterBranches.size()=0 or filterBranches.includes(r.getBranch().name)
     
     var agent = r.author.equivalent(); 
     s.agent = agent;
@@ -214,7 +214,7 @@ rule Revision2AgentState
 rule Action2State 
     transform a : MG!Action
     to s : DECENT!State {
-    guard : filterBranch.size()=0 or filterBranch.includes(a.branch.name)
+    guard : filterBranches.size()=0 or filterBranches.includes(a.branch.name)
 
 	s.name = a.revision.rev;
     ("Transforming action "+ a.revision.commit_id + " for " + a.file.file_name).log(3);
