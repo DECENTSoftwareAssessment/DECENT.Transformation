@@ -100,7 +100,7 @@ operation validateFAMIXCoverage (type:DECENT!ArtifactType) {
 
 //use ETL equivalents instead...
 @cached
-operation String getAttribute() : ARFFx!Attribute {
+operation String getARFFAttribute() : ARFFx!Attribute {
 	var attribute = ARFFx!Attribute.allInstances.select(a|a.name = self).first();
 	if (attribute.isUndefined()) {
 		attribute = new ARFFx!Attribute();
@@ -181,7 +181,7 @@ operation iterateOverAffectedArtifacts (type:DECENT!ArtifactType) {
 	    	arff.data.add(i);
 	    	for (v in s.values) {
 	    		var value = new ARFFx!Value();
-	    		value.ofAttribute = v.name.getAttribute();
+	    		value.ofAttribute = v.name.getARFFAttribute();
 	    		value.content = v.content.asString();
 				i.values.add(value);	    	
 	    	}
@@ -227,7 +227,7 @@ operation iterateOverArtifacts (type:DECENT!ArtifactType) {
 	    	arff.data.add(i);
 	    	for (v in s.values.select(x|x.isTypeOf(DECENT!DoubleValue) or x.isTypeOf(DECENT!IntegerValue))) {
 	    		var value = new ARFFx!Value();
-	    		value.ofAttribute = ("Artifact."+v.name).getAttribute();
+	    		value.ofAttribute = ("Artifact."+v.name).getARFFAttribute();
 	    		value.content = v.content.asString();
 				i.values.add(value);	    	
 	    	}
@@ -235,13 +235,13 @@ operation iterateOverArtifacts (type:DECENT!ArtifactType) {
 	        for (ax in s.fromActivity) {
 		    	for (v in ax.values.select(x|x.isTypeOf(DECENT!DoubleValue) or x.isTypeOf(DECENT!IntegerValue))) {
 		    		var value = new ARFFx!Value();
-		    		value.ofAttribute = ("Activity."+v.name).getAttribute();
+		    		value.ofAttribute = ("Activity."+v.name).getARFFAttribute();
 		    		value.content = v.content.asString();
 					i.values.add(value);	    	
 		    	}
 		    	for (v in ax.deltas) {
 		    		var value = new ARFFx!Value();
-		    		value.ofAttribute = ("Delta."+v.onAttribute.name).getAttribute();
+		    		value.ofAttribute = ("Delta."+v.onAttribute.name).getARFFAttribute();
 		    		value.content = v.change.asString();
 					i.values.add(value);	    	
 		    	}
