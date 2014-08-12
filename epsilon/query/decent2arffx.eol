@@ -216,7 +216,8 @@ operation iterateOverArtifacts (type:DECENT!ArtifactType) {
 	//TODO: need some safety checks...
 	var h = false;
 	var separator = "\t";
-	for (a in Artifact.allInstances().select(x|x.type = type).sortBy(x|x.name)) {
+//	for (a in Artifact.allInstances().select(x|x.type = type).sortBy(x|x.name)) {
+	for (a in Artifact.allInstances().sortBy(x|x.name)) {
 	    var header = "";
 	    for (s in a.states.sortBy(x|x.ID)) {
 	        //(a.name+" at "+s.ID).println();
@@ -225,6 +226,18 @@ operation iterateOverArtifacts (type:DECENT!ArtifactType) {
 
 	    	var i = new ARFFx!Instance();
 	    	arff.data.add(i);
+
+    		var artifactName = new ARFFx!Value();
+    		artifactName.ofAttribute = ("Artifact.Name").getARFFAttribute();
+    		artifactName.content = s.artifact.name.asString();
+			i.values.add(artifactName);
+    		
+    		var stateID = new ARFFx!Value();
+    		stateID.ofAttribute = ("Artifact.StateID").getARFFAttribute();
+    		stateID.content = s.ID.asString();
+			i.values.add(stateID);
+			
+				    	
 	    	for (v in s.values.select(x|x.isTypeOf(DECENT!DoubleValue) or x.isTypeOf(DECENT!IntegerValue))) {
 	    		var value = new ARFFx!Value();
 	    		value.ofAttribute = ("Artifact."+v.name).getARFFAttribute();
