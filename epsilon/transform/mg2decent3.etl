@@ -1,4 +1,5 @@
 import "../libraries/famix/init.etl";
+import "../libraries/mg/common.eol";
 import "../libraries/decent/common.eol";
 import "../libraries/decent/logging.eol";
 
@@ -75,11 +76,10 @@ pre mgInitPre {
   Project.name = MG!Model.allInstances().first().name;
   Model.projects.add(Project);
       
-  //TODO: handle all branches
-
   var artifactCount = MG!File.allInstances().size();
   var processedCount = 0;
   
+  //TODO: handle all branches
   var filterBranches = new Set(); 
   filterBranches.add("master");
 }
@@ -87,7 +87,6 @@ pre mgInitPre {
 post mgInitPost{
   ("Post processing... ").log(2);
   //TODO: move to a separate standalone module?
-  //stats for debugging...
   for (a in DECENT!Artifact.allInstances()) {
   	(""+a.name).log(3);
   	for (s in a.states) {
@@ -97,50 +96,12 @@ post mgInitPost{
   	}
   }
 
-    //TODO: adjust branching structure
   Model.content.add("mg2decent3");
   
   var end = Native("java.lang.System").currentTimeMillis();
   var duration = end - start;
   ("Duration: "+duration.toMinutes().round(5)).log(1);
-  
 }
-
-operation String replaceExtension() : String {
-    return self.replace('\\.h','.cpp');
-}
-
-operation String replaceInclude() : String {
-    return self.replace('include','src');
-}
-
-operation dumpFileCopies() {
-  for (f in MG!File.allInstances()) {
-    (""+f.file_name).log(3);
-  
-  	for (a in f.actions) {
-  		("  " +a.type + " "+a.revision.commit_id + " " + a.revision.message.trim()).log(3);
-  		if (a.copy.isDefined()) {
-  			("  "+a.copy.fromRevision.commit_id +" ("+a.copy.fromFile.file_name+")" + " -> "+ a.revision.commit_id+ " ("+f.file_name+")").log(3);
-  		}
-  	}
-  }
-}
-
-@cached
-operation MG!File getBranch() : MG!Branch {
-	if (self.file_type = "directory") {
-		return self.childrenLinks.first().revision.actions.first().branch;
-	} else {
-		return self.actions.first().branch;
-	}
-}
-
-@cached
-operation MG!Revision getBranch() : MG!Branch {
-	return self.actions.first().branch;
-}
-
 
 rule Branch2Location 
     transform b : MG!Branch 
@@ -166,7 +127,6 @@ rule People2Agent
 	Model.projects.get(0).agents.add(a);
 }
 
-//rule-based
 rule File2Artifact 
     transform f : MG!File 
     to a : DECENT!Artifact {
@@ -176,7 +136,6 @@ rule File2Artifact
    	a.setArtifactType(f.file_type);
     var parentName = "ROOT";
     if (f.parentLinks.size()>0) {
-    	//("Adding parents... "+f.parentLinks.size()).log(1);
     	("Adding parents... "+f.parentLinks.get(0).parent.equivalent().name).log(4);
 	    var parentArtifact = f.parentLinks.get(0).parent.equivalent();
 	    if (parentArtifact.name = "ROOT") {

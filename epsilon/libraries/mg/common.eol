@@ -1,0 +1,26 @@
+operation dumpFileCopies() {
+  for (f in MG!File.allInstances()) {
+    (""+f.file_name).log(3);
+  
+  	for (a in f.actions) {
+  		("  " +a.type + " "+a.revision.commit_id + " " + a.revision.message.trim()).log(3);
+  		if (a.copy.isDefined()) {
+  			("  "+a.copy.fromRevision.commit_id +" ("+a.copy.fromFile.file_name+")" + " -> "+ a.revision.commit_id+ " ("+f.file_name+")").log(3);
+  		}
+  	}
+  }
+}
+
+@cached
+operation MG!File getBranch() : MG!Branch {
+	if (self.file_type = "directory") {
+		return self.childrenLinks.first().revision.actions.first().branch;
+	} else {
+		return self.actions.first().branch;
+	}
+}
+
+@cached
+operation MG!Revision getBranch() : MG!Branch {
+	return self.actions.first().branch;
+}
