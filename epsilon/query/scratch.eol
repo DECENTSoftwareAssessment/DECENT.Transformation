@@ -1,31 +1,40 @@
 ("Running scratch").println();
-var Model = DECENT!Model.allInstances().first();
-//var deltas = DECENT!Delta.allInstances().select(d|d.activity.deltas.select(x|x.onAttribute = d.onAttribute).size() > 1);
 
-var deltas = DECENT!Delta.allInstances().select(d|d.eContainer = null);
-("Floating Deltas:" + deltas.size()).println();
-//var deltas = DECENT!Delta.allInstances().select(d|d.eContainer.eContainer.deltas.select(x|x.key = d.eContainer.key).size() > 1);
-("Duplicate Deltas:" + deltas.size()).println();
+var seq = new Sequence();
 
-//var deltas = DECENT!Delta.allInstances().select(d|d.eContainer = null);
-//("Orphaned Deltas:" + deltas.size()).println();
-
-for (d in deltas) {
-	//("Delta on : "+d.onAttribute.name+", activity to "+d.activity.targetState.ID+" of "+d.activity.targetState.artifact.name+" deltas: "+ d.activity.deltas.select(x|x.onAttribute = d.onAttribute).size()).println();
-	("Delta on : "+d.eContainer.key.name+", activity to "+d.eContainer.eContainer.targetState.ID+" of "+d.eContainer.eContainer.targetState.artifact.name+" deltas: "+ d.eContainer.eContainer.deltas.select(x|x.key = d.eContainer.key).size()).println();
+for (s in seq) {
+	s.println();
 }
 
-if (false) {
-for (v in DECENT!Value.allInstances.select(v|v.ofAttribute.name = "BugCount" and v.content <> 0.0)) {
-	(v.eContainer.artifact.name+ " in " +v.eContainer.ID +" : " +v.name+" = "+v.content).println();
-
-}
-
-
-for (a in DECENT!Agent.allInstances) {
-	(a.name + " " + a.activities.size()).println();
-	a.attributes.put(DECENT!Attribute.allInstances.first(),DECENT!DoubleValue.allInstances.first());
-
-}
-
+operation scratch1() {
+	var Model = DECENT!Model.allInstances().first();
+	//var deltas = DECENT!Delta.allInstances().select(d|d.activity.deltas.select(x|x.onAttribute = d.onAttribute).size() > 1);
+	
+	var deltas = DECENT!Delta.allInstances().select(d|d.eContainer = null);
+	("Floating Deltas:" + deltas.size()).println();
+	//var deltas = DECENT!Delta.allInstances().select(d|d.eContainer.eContainer.deltas.select(x|x.key = d.eContainer.key).size() > 1);
+	("Duplicate Deltas:" + deltas.size()).println();
+	
+	//var deltas = DECENT!Delta.allInstances().select(d|d.eContainer = null);
+	//("Orphaned Deltas:" + deltas.size()).println();
+	
+	for (d in deltas) {
+		//("Delta on : "+d.onAttribute.name+", activity to "+d.activity.targetState.ID+" of "+d.activity.targetState.artifact.name+" deltas: "+ d.activity.deltas.select(x|x.onAttribute = d.onAttribute).size()).println();
+		("Delta on : "+d.eContainer.key.name+", activity to "+d.eContainer.eContainer.targetState.ID+" of "+d.eContainer.eContainer.targetState.artifact.name+" deltas: "+ d.eContainer.eContainer.deltas.select(x|x.key = d.eContainer.key).size()).println();
+	}
+	
+	if (false) {
+		for (v in DECENT!Value.allInstances.select(v|v.ofAttribute.name = "BugCount" and v.content <> 0.0)) {
+			(v.eContainer.artifact.name+ " in " +v.eContainer.ID +" : " +v.name+" = "+v.content).println();
+		
+		}
+		
+		
+		for (a in DECENT!Agent.allInstances) {
+			(a.name + " " + a.activities.size()).println();
+			a.attributes.put(DECENT!Attribute.allInstances.first(),DECENT!DoubleValue.allInstances.first());
+		
+		}
+	
+	}
 }
