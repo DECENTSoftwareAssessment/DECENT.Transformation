@@ -98,55 +98,87 @@ public class MassEpsilonLauncher extends EpsilonStandaloneLauncher {
 			executeTransformation(step, location);
 		}
 	}	
-	public void executeTransformation(String step, String location) throws Exception {
-		switch (step) {
-		case "MG2NORMALIZEDHUNKS":
-			executeMG2NORMALIZEDHUNKS(location);
-			break;
-		case "MG2DECENT":
-			useMGBinary=Boolean.parseBoolean(properties.getProperty("useBinary"));
-			executeMG2DECENT(location);
-			break;
-		case "MG2CFA":
-			useMGBinary=Boolean.parseBoolean(properties.getProperty("useBinary"));
-			executeMG2CFA(location);
-			break;
-		case "TRACE2CFA":
-			executeTRACE2CFA(location);
-			break;
-		case "EXTRA2CFA":
-			executeEXTRA2CFA(location);
-			break;
-		case "CFA2DECENT":
-			executeCFA2DECENT(location);
-			break;
-		case "EXPERIENCE2DECENT":
-			executeEXPERIENCE2DECENT(location);
-			break;
-		case "TEMPORAL2DECENT":
-			executeTEMPORAL2DECENT(location);
-			break;
-		case "BZ2TRACE":
-			executeBZ2TRACE(location);
-			break;
-		case "TRACE2DECENT":
-			executeTRACE2DECENT(location);
-			break;
-		case "FAMIX2DECENT":
-			String lowerBound = properties.getProperty("famixLower");
-			String upperBound = properties.getProperty("famixUpper");
-			useDECENTBinary=Boolean.parseBoolean(properties.getProperty("useBinary"));
-			executeFAMIX2DECENT(location, lowerBound, upperBound); //reloads only famix model instances
-			break;
-		case "HITS2DECENT":
-			executeHITS2DECENT(location);
-			break;
-		case "QUERY":
-			executeQUERY(location);
-			break;
-		default:
-			System.out.println("ERROR: Unknown step "+step);
-			break;
+	public void executeTransformation(String step, String location) {
+		try {
+			switch (step) {
+			case "MG2NORMALIZEDHUNKS":
+				executeMG2NORMALIZEDHUNKS(location);
+				break;
+			case "MG2DECENT":
+				useMGBinary=Boolean.parseBoolean(properties.getProperty("useBinary"));
+				executeMG2DECENT(location);
+				break;
+			case "MG2CFA":
+				useMGBinary=Boolean.parseBoolean(properties.getProperty("useBinary"));
+				executeMG2CFA(location);
+				break;
+			case "TRACE2CFA":
+				executeTRACE2CFA(location);
+				break;
+			case "EXTRA2CFA":
+				executeEXTRA2CFA(location);
+				break;
+			case "CFA2DECENT":
+				executeCFA2DECENT(location);
+				break;
+			case "DAG2DECENT":
+				executeDAG2DECENT(location);
+				break;
+			case "DUDE2DECENT":
+				executeDUDE2DECENT(location);
+				break;
+			case "EXPERIENCE2DECENT":
+				executeEXPERIENCE2DECENT(location);
+				break;
+			case "TEMPORAL2DECENT":
+				executeTEMPORAL2DECENT(location);
+				break;
+			case "BZ2TRACE":
+				executeBZ2TRACE(location);
+				break;
+			case "TRACE2DECENT":
+				executeTRACE2DECENT(location);
+				break;
+			case "FAMIX2DECENT":
+				String lowerBound = properties.getProperty("famixLower");
+				String upperBound = properties.getProperty("famixUpper");
+				useDECENTBinary=Boolean.parseBoolean(properties.getProperty("useBinary"));
+				executeFAMIX2DECENT(location, lowerBound, upperBound); //reloads only famix model instances
+				break;
+			case "HITS2DECENT":
+				executeHITS2DECENT(location);
+				break;
+			case "DECENT2ARFFx":
+				useDECENTBinary=Boolean.parseBoolean(properties.getProperty("useBinary"));
+				executeDECENT2ARFFx(location);
+				break;
+			case "ARFFx2ARFF":
+				executeARFFx2ARFF(location);
+				break;
+			case "QUERY":
+				executeQUERY(location);
+				break;
+			default:
+				System.out.println("ERROR: Unknown step "+step);
+				break;
+			}
+		} catch (EolModelLoadingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (URISyntaxException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (EolRuntimeException e) {
+			// TODO Auto-generated catch block
+			String path = e.getAst().getUri().getPath();
+			System.out.println("  Epsilon Runtime Exception:" +
+					"\n\tReason: "+e.getReason()+
+					"\n\tWhere:  "+e.getAst().getUri()+" at "+e.getLine() + " : "+e.getColumn() +
+					"\n\tLink:   ("+path.substring(path.lastIndexOf("/")+1)+":"+e.getLine()+")");
+			//e.printStackTrace();
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
 	}
 	
@@ -234,6 +266,42 @@ public class MassEpsilonLauncher extends EpsilonStandaloneLauncher {
 		module.reset();
 	}
 
+	private void executeDAG2DECENT(String location) throws Exception,
+			URISyntaxException, EolModelLoadingException, EolRuntimeException {
+		String source = "epsilon/transform/dag2decent3.eol";
+		IEolExecutableModule module = loadModule(source);
+		IModel decentModel = getDECENTModel(location, true, true);
+		IModel dagModel = getDAGModel(location);
+		// mgModel.load();
+		// cfaModel.load();
+		// decentModel.load();
+		module.getContext().getModelRepository().addModel(dagModel);
+		module.getContext().getModelRepository().addModel(decentModel);
+		module.execute();
+		dagModel.dispose();
+		// can be stored and retained alternatively
+		decentModel.dispose();
+		module.reset();
+	}
+
+	
+	private void executeDUDE2DECENT(String location) throws Exception,
+			URISyntaxException, EolModelLoadingException, EolRuntimeException {
+		String source = "epsilon/transform/dude2decent3.eol";
+		IEolExecutableModule module = loadModule(source);
+		IModel decentModel = getDECENTModel(location, true, true);
+		IModel dudeModel = getDUDEModel(location);
+		// mgModel.load();
+		// cfaModel.load();
+		// decentModel.load();
+		module.getContext().getModelRepository().addModel(dudeModel);
+		module.getContext().getModelRepository().addModel(decentModel);
+		module.execute();
+		dudeModel.dispose();
+		// can be stored and retained alternatively
+		decentModel.dispose();
+		module.reset();
+	}
 	
 	private void executeCFA2DECENT(String location) throws Exception, URISyntaxException,
 			EolModelLoadingException, EolRuntimeException {
@@ -354,7 +422,40 @@ public class MassEpsilonLauncher extends EpsilonStandaloneLauncher {
 		// can be stored and retained alternatively
 		module.reset();
 	}
+
+	private void executeARFFx2ARFF(String location) throws Exception,
+			URISyntaxException, EolModelLoadingException, EolRuntimeException {
+		String source = "epsilon/query/arffx2arff.eol";
+		IEolExecutableModule module = loadModule(source);
+		IModel arffxModel = getARFFxModel(location, true, false);
+		module.getContext().getModelRepository().addModel(arffxModel);
+		module.execute();
+		arffxModel.dispose();
+		// can be stored and retained alternatively
+		module.reset();
+	}
 	
+	private void executeDECENT2ARFFx(String location) throws Exception,
+			URISyntaxException, EolModelLoadingException, EolRuntimeException {
+		String source = "epsilon/query/decent2arffx.eol";
+		IEolExecutableModule module = loadModule(source);
+		IModel decentModel;
+		if (useDECENTBinary) {
+			decentModel = getBinaryDECENTModel(location, true, false);
+		} else {
+			decentModel = getDECENTModel(location, true, false);
+		}
+		IModel arffxModel = getARFFxModel(location, false, true);;
+		// decentModel.load();
+		module.getContext().getModelRepository().addModel(decentModel);
+		module.getContext().getModelRepository().addModel(arffxModel);
+		module.execute();
+		decentModel.dispose();
+		arffxModel.dispose();
+		// can be stored and retained alternatively
+		module.reset();
+	}
+
 	private void executeMG2NORMALIZEDHUNKS(String location) throws Exception, URISyntaxException,
 			EolModelLoadingException, EolRuntimeException {
 		String source = "epsilon/transform/mg2normalized_hunks.eol";
@@ -486,6 +587,15 @@ public class MassEpsilonLauncher extends EpsilonStandaloneLauncher {
 		return model;
 	}
 
+	public IModel getARFFxModel(String location, boolean read, boolean write) throws Exception {
+		String resourceLocation = location+"/model.arffx";
+		IModel model = createEmfModel("ARFFx", resourceLocation, "../DECENT.Meta/model/ARFFx.ecore", read, write);
+		//In memory example -> can be used to work with DB? or even EMF-Fragments
+		//new InMemoryEmfModel("DECENT", resource, "../DECENT.Meta/model/DECENTv3.ecore")
+		return model;
+	}
+
+	
 	public IModel getFAMIXModel(String location, int commitId) throws Exception {
 		//TODO: make filtered optional infix
 		String resourceLocation = location+"/famix/"+commitId+"/filtered/model.famix";
@@ -515,6 +625,11 @@ public class MassEpsilonLauncher extends EpsilonStandaloneLauncher {
 		unregisterMetaModels("decent");
 
 		DECENTResourceTool tool = new DECENTResourceTool();
+		if (!new File(location+"/model.decent"+"bin").exists()) {
+			Resource resource = tool.loadResourceFromXMI(location+"/model.decent","decent", DECENTPackage.eINSTANCE);
+			tool.storeBinaryResourceContents(resource.getContents(), location+"/model.decent"+"bin", "decentbin");
+		}
+
 		Resource resourceBin = tool.loadResourceFromBinary(resourceLocation+"bin","decentbin", DECENTPackage.eINSTANCE);
 		//NOTE: Adding the package is essential as otherwise epsilon breaks
 		InMemoryEmfModel emfModel = new InMemoryEmfModel("DECENT", resourceBin, DECENTPackage.eINSTANCE);
@@ -579,6 +694,19 @@ public class MassEpsilonLauncher extends EpsilonStandaloneLauncher {
 		return model;
 	}
 
+	public IModel getDAGModel(String location) throws Exception {
+		String resourceLocation = location+"/model.dag";
+		IModel model = createEmfModel("DAG", resourceLocation, "../DECENT.Meta/model/DAG.ecore", true, false);
+		return model;
+	}
+	
+	public IModel getDUDEModel(String location) throws Exception {
+		String resourceLocation = location+"/model.dude";
+		IModel model = createEmfModel("DUDE", resourceLocation, "../DECENT.Meta/model/DuDe.ecore", true, false);
+		return model;
+	}
+
+	
 	public IModel getCFAModel(String location, boolean read, boolean write) throws Exception {
 		String resourceLocation = location+"/model.cfa";
 		IModel model = createEmfModel("CFA", resourceLocation, "../DECENT.Meta/model/CFA.ecore", read, write);
