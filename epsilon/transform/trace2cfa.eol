@@ -4,7 +4,7 @@ import "../libraries/decent/logging.eol";
 
 
   	"Running trace2cfa".log(1);
-
+	//TODO: double check that artifact states are assigned correct weights
   	var start = Native("java.lang.System").currentTimeMillis();
 	
   	var WeightFactorAttribute = CFA!Attribute.allInstances().select(a|a.name = "WeightFactor").first();
