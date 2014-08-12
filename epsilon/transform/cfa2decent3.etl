@@ -1,4 +1,5 @@
 //import "cfa-init.etl";
+import "../libraries/cfa/common.eol";
 import "../libraries/decent/common.eol";
 import "../libraries/decent/logging.eol";
 
@@ -83,7 +84,7 @@ pre {
   //TODO: these may need to be pre-calculated in mg2cfa
   Model.addAttributes(attributes);
   
-  var CFAWeightFactor = CFA!Attribute.allInstances().select(a|a.name = "WeightFactor").first();
+  var CFAWeightFactor = "WeightFactor".getCFAAtribute();
   var FilePathAttribute = "FilePath".getAttribute();
   
   

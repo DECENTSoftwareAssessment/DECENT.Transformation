@@ -1,3 +1,8 @@
+@cached
+operation String getCFAAttribute() : CFA!Attribute {
+    return CFA!Attribute.allInstances().select(a|a.name = self).first();
+}
+
 operation calculateTotalFactorWeights(selectedFactor : CFA!Factor) {
     for (s in CFA!State.allInstances()) {
     	var fixes = s.fixes.size().asDouble();

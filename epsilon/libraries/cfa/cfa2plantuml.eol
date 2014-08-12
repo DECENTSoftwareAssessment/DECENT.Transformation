@@ -20,15 +20,11 @@ operation Sequence cfaToPlantUML() {
 	("skinparam classArrowFontColor #AA4444").printlno();
 	("").printlno();
 	
-	var TotalBugWeightAttribute = CFA!Attribute.allInstances().select(a|a.name = "TotalBugWeight").first();
-	var HunksAttribute = CFA!Attribute.allInstances().select(a|a.name = "Hunks").first();
-  	var BugFixAttribute = CFA!Attribute.allInstances().select(a|a.name = "BugFix").first();
-  	var WeightFactorAttribute = CFA!Attribute.allInstances().select(a|a.name = "WeightFactor").first();
-  	var TotalWeightAttribute = CFA!Attribute.allInstances().select(a|a.name = "TotalWeight").first();
-  	var TotalBugWeightAttribute = CFA!Attribute.allInstances().select(a|a.name = "TotalBugWeight").first();
-  	var AverageBugWeightAttribute = CFA!Attribute.allInstances().select(a|a.name = "AverageBugWeight").first();
-  	var AverageWeightAttribute = CFA!Attribute.allInstances().select(a|a.name = "AverageWeight").first();
-	
+	var HunksAttribute = "Hunks".getCFAAttribute();
+  	var BugFixAttribute = "BugFix".getCFAAttribute();
+  	var WeightFactorAttribute = "WeightFactor".getCFAAttribute();
+  	var TotalWeightAttribute = "TotalWeight".getCFAAttribute();
+  	var AverageWeightAttribute = "AverageWeight".getCFAAttribute();
 	
 	var lastState;
 	for (s in self) {

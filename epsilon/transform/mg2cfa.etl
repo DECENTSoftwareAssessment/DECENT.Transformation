@@ -22,11 +22,11 @@ pre mgInitPre {
 	Attribute.description = attributes.get(a);
   }
 
-  var HunksAttribute = CFA!Attribute.allInstances().select(a|a.name = "Hunks").first();
-  var BugFixAttribute = CFA!Attribute.allInstances().select(a|a.name = "BugFix").first();
-  var WeightFactorAttribute = CFA!Attribute.allInstances().select(a|a.name = "WeightFactor").first();
-  var TotalWeightAttribute = CFA!Attribute.allInstances().select(a|a.name = "TotalWeight").first();
-  var AverageWeightAttribute = CFA!Attribute.allInstances().select(a|a.name = "AverageWeight").first();
+  var HunksAttribute = "Hunks".getCFAAttribute();
+  var BugFixAttribute = "BugFix".getCFAAttribute();
+  var WeightFactorAttribute = "WeightFactor".getCFAAttribute();
+  var TotalWeightAttribute = "TotalWeight".getCFAAttribute();
+  var AverageWeightAttribute = "AverageWeight".getCFAAttribute();
   
   var factors = new Map;
   factors.put("BugFix","Bug Fix factor derived from revision label based on regular expressions applied to revision messages");
@@ -62,7 +62,7 @@ rule Models
     ("Transforming model "+ s.name +", URI: " +s.uri).log(3);    
     t.name = s.name;
     for (a in attributes.keySet()) {
-		var Attribute = CFA!Attribute.allInstances().select(x|x.name = a).first();
+		var Attribute = a.getCFAAttribute();
 		t.attributes.add(Attribute);
  	}
     for (a in factors.keySet()) {

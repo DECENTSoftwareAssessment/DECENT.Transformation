@@ -7,9 +7,9 @@ import "../libraries/decent/logging.eol";
 
   	var start = Native("java.lang.System").currentTimeMillis();
 	
-  	var WeightFactorAttribute = CFA!Attribute.allInstances().select(a|a.name = "WeightFactor").first();
-  	var TotalWeightAttribute = CFA!Attribute.allInstances().select(a|a.name = "TotalWeight").first();
-  	var AverageWeightAttribute = CFA!Attribute.allInstances().select(a|a.name = "AverageWeight").first();
+  	var WeightFactorAttribute = "WeightFactor".getCFAAttribute();
+  	var TotalWeightAttribute = "TotalWeight".getCFAAttribute();
+  	var AverageWeightAttribute = "AverageWeight".getCFAAttribute();
 
   	var factors = new Map;
   	factors.put("RefactoringMessage","Based on commit messages");
