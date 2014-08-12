@@ -15,7 +15,7 @@ operation Any getValue(attribute : DECENT!Attribute) : DECENT!Value {
 
 @cached
 operation String getAttribute() : DECENT!Attribute {
-    return DECENT!Attribute.allInstances().select(a|a.name = name).first();
+    return DECENT!Attribute.allInstances().select(a|a.name = self).first();
 }
 
 operation Any addValue(attribute : DECENT!Attribute, content : String) : DECENT!Value {
