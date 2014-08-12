@@ -116,6 +116,20 @@ pre {
   addArtifactTemporals();
   addAgentTemporals();
   
+  ("...done!").log(2);
+}
+
+post {
+  	Model.content.add("cfa2decent3");
+  
+    var end = Native("java.lang.System").currentTimeMillis();
+    var duration = end - start;
+    ("Duration: "+duration.toMinutes().round(5)).log(1);
+    //TODO: use this check to enable BZ based processing
+}
+
+
+operation dumpAgentStates() {
   var separator = "\t";
   var h = false;
   
@@ -135,17 +149,6 @@ pre {
   	}
   	o.replaceAll("\\.",",").println();
   }
-  
-  ("...done!").log(2);
-}
-
-post {
-  	Model.content.add("cfa2decent3");
-  
-    var end = Native("java.lang.System").currentTimeMillis();
-    var duration = end - start;
-    ("Duration: "+duration.toMinutes().round(5)).log(1);
-    //TODO: use this check to enable BZ based processing
 }
 
 operation addArtifactTemporals() {
