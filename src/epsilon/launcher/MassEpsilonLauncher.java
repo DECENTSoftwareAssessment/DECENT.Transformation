@@ -268,7 +268,7 @@ public class MassEpsilonLauncher extends EpsilonStandaloneLauncher {
 
 	private void executeDAG2DECENT(String location) throws Exception,
 			URISyntaxException, EolModelLoadingException, EolRuntimeException {
-		String source = "epsilon/transform/dag2decent3.eol";
+		String source = "epsilon/transform/dag2decent3.etl";
 		IEolExecutableModule module = loadModule(source);
 		IModel decentModel = getDECENTModel(location, true, true);
 		IModel dagModel = getDAGModel(location);
