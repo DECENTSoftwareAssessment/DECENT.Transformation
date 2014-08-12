@@ -51,17 +51,6 @@ import "../libraries/decent/logging.eol";
   	
   	var sortedStates = a.states; 
   	sortedStates.addAgentTemporalCharacteristics();
-	
-	//TODO: future approach
-	var revisions = 0;
-  	for (s in sortedStates) {
-  		revisions = revisions + 1;
-
-		//TODO: this should be migrated to addValue
-  		var v = new DECENT!DoubleValue();
-  		v.content = revisions.asDouble();
-  		s.valuesMap.put(RevisionsAttribute, v);
-  	}
   }
   
 
