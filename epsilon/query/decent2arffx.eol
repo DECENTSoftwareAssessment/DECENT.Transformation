@@ -1,0 +1,309 @@
+import "../libraries/decent/common.eol";
+import "../libraries/decent/logging.eol";
+
+var BugFixCount = DECENT!Attribute.allInstances().select(a|a.name = "BugFixCount").first();
+var Type = DECENT!ArtifactType.allInstances().select(a|a.name = "code").first();
+var CodeArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "code").first();
+var ClassArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "Class").first();
+var MethodArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "Method").first();
+var FunctionArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "Function").first();
+var ModuleArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "Module").first();
+var StartLineAttribute = DECENT!Attribute.allInstances().select(a|a.name = "StartLine").first();
+var EndLineAttribute = DECENT!Attribute.allInstances().select(a|a.name = "EndLine").first();
+
+var LinesPreAttribute = DECENT!Attribute.allInstances().select(a|a.name = "LinesPre").first();
+var LinesPostAttribute = DECENT!Attribute.allInstances().select(a|a.name = "LinesPost").first();
+
+var LinesPostHitsAttribute = DECENT!Attribute.allInstances().select(a|a.name = "LinesPostHits").first();
+var LinesPreHitsAttribute = DECENT!Attribute.allInstances().select(a|a.name = "LinesPreHits").first();
+  
+var arff = new ARFFx!Model();
+arff.name = "Test";
+
+var projectName = DECENT!Project.allInstances().first().name.split("\\.")[0];
+var filename = "/Users/philip-iii/Dev/workspaces/emf/DECENT.Data/input/"+projectName+"/result.csv";
+var writer;
+var file = new Native("java.io.File") (filename);
+writer = new Native("java.io.FileWriter") (file);
+
+/*
+for (a in Artifact.allInstances().select(x|x.name = "terminal_splitter.cpp")) {
+    for (s in a.states.sortBy(x|x.ID)) {
+    	s.println();
+    }
+	
+}
+
+for (a in Agent.allInstances()) {
+	var difference = a.activities.sortBy(ax|ax.date.time).last().date.time - a.activities.sortBy(ax|ax.date.time).first().date.time;
+	difference = difference.asDouble() / (3600*1000*24);
+	(a.name + " active for " +difference +" days").println();
+	for (ax in a.activities) {
+		("  "+ax.date).println();
+	}
+}
+*/
+
+"Running decent2arffx".log(1);
+var start = Native("java.lang.System").currentTimeMillis();
+
+
+iterateOverArtifacts(CodeArtifactType);
+//iterateOverAffectedArtifacts(MethodArtifactType);
+
+writer.close();
+
+var end = Native("java.lang.System").currentTimeMillis();
+var duration = end - start;
+("Duration: "+duration.toMinutes().round(5)).log(1);
+
+//validateFAMIXCoverage(CodeArtifactType);
+
+
+operation String printlno() {
+	self.println();
+    writer.write(self+"\n");
+    writer.flush();
+}	
+
+
+operation validateFAMIXCoverage (type:DECENT!ArtifactType) {
+	//TODO: need some safety checks...
+	var h = false;
+	var separator = "\t";
+	for (a in Artifact.allInstances().select(x|x.type = type).sortBy(x|x.name)) {
+	    var header = "";
+	    (a.name).println();
+	    for (s in a.states.sortBy(x|x.ID)) {
+	    	var LOCvalue = s.values.select(v|v.name = "LOC").first();
+	    	var LOC = -1.0;
+	    	if (LOCvalue.isDefined()){
+		    	LOC = LOCvalue.content;
+	    	}
+			("  State " + s.ID + " LOC " + LOC).println();
+			var childrenLOC = 0.0;
+			for (c in a.children) {
+				for (cs in c.states.select(x|x.ID = s.ID)) {
+					var cLOCvalue = cs.values.select(v|v.name = "LOC").first();
+					var cLOC = -1.0;
+					if (cLOCvalue.isDefined()) {
+						cLOC = cLOCvalue.content;
+						childrenLOC = childrenLOC + cLOC;
+					}
+					("    "+c.name+" State " + s.ID + " LOC " + cLOC).println();
+				}
+			}
+			("  -->State " + s.ID + ": "+childrenLOC+"/"+LOC+" LOC accounted for").println();
+		}
+	}
+}
+
+//use ETL equivalents instead...
+@cached
+operation String getAttribute() : ARFFx!Attribute {
+	var attribute = ARFFx!Attribute.allInstances.select(a|a.name = self).first();
+	if (attribute.isUndefined()) {
+		attribute = new ARFFx!Attribute();
+		attribute.name = self;
+		arff.attributes.add(attribute);
+	}
+	return attribute;
+}
+
+operation iterateOverAgents (type:DECENT!ArtifactType) {
+    var h = false;
+    var separator = ",";
+    for (a in Agent.allInstances()) {
+        var header = "";
+        for (ax in a.activities.select(a|a.state.artifact.type = type)) {
+            var output = "";
+            for (d in ax.deltas) {
+                //(d.onAttribute+" ").print();
+                header=header+separator+d.onAttribute.name+'(value)'+separator+d.onAttribute.name+'(new value)'+separator+d.onAttribute.name+'(delta)';
+                //(a.name+' '+s.ID+' '+ax.agent.name+' '+ax.date+' '+d.onAttribute.name+' '+d.value.content+' '+d.targetValue.content+' '+d.change).println();
+                output=output+separator+d.value.content+separator+d.targetValue.content+separator+d.change;
+            }
+            //("").println();
+            if (not h) {
+                ("Artifact"+separator+"StateID"+separator+"Agent"+separator+"ActivityDate"+header).printlno();
+                h=true;
+            }
+            (ax.state.artifact.name+separator+ax.state.ID+separator+a.name+separator+ax.date+''+output).printlno();
+        
+        }
+    }
+
+}
+
+operation DECENT!State isHit() : Boolean {
+	var pre = self.getValue(LinesPostHitsAttribute);
+	var post = self.getValue(LinesPreHitsAttribute);
+	return ((pre.isDefined() and pre.content.isDefined() and pre.content.size() > 0) 
+	     or (post.isDefined() and post.content.isDefined() and post.content.size() > 0));
+}
+
+
+operation DECENT!Activity dumpNonZeroDeltas() : String {
+	var output = "Deltas";
+	for (v in self.deltas.select(d|d.change <> 0)) {
+		output= output + ", " + v.onAttribute.name + " = " + v.change;
+	}
+	return output;
+}
+
+
+operation DECENT!Activity dumpDeltas() : String {
+	var output = "Deltas";
+	for (v in self.deltas) {
+		output= output + ", " + v.onAttribute.name + " = " + v.change;
+	}
+	return output;
+}
+
+operation Any dumpValues() : String {
+	var output = "Values";
+	for (v in self.values) {
+		output= output + ", " + v.ofAttribute.name + " = " + v.content;
+	}
+	return output;
+}
+
+operation iterateOverAffectedArtifacts (type:DECENT!ArtifactType) {
+	//TODO: need some safety checks...
+	var h = false;
+	var separator = "\t";
+	for (a in Artifact.allInstances().select(x|x.type = type).sortBy(x|x.name)) {
+	    var header = "";
+	    var affectedStates = a.states.select(x|x.isHit()).sortBy(x|x.ID);
+	    
+	    for (s in affectedStates) {
+	    	var i = new ARFFx!Instance();
+	    	arff.data.add(i);
+	    	for (v in s.values) {
+	    		var value = new ARFFx!Value();
+	    		value.ofAttribute = v.name.getAttribute();
+	    		value.content = v.content.asString();
+				i.values.add(value);	    	
+	    	}
+	    }
+	    
+	    (a.name+" : Affected States "+affectedStates.size()+ " / "+a.states.size()).println();
+	    //TODO: check for non-zero deltas in unaffected states
+	    //  =>  occasional occurences -> how to deal with them?
+	    var non_affectedStates = a.states.excludingAll(affectedStates);
+	    for (s in non_affectedStates) {
+	    	("  "+a.name+" @Affected State "+s.ID).println();
+	    	("    From Activity " + s.fromActivity.first().dumpNonZeroDeltas()).println();
+	    	if (false) {
+		    	("    State " + s.dumpValues()).println();
+		    	//TODO: add agent states to lower-level activities
+		    	var agentState = s.fromActivity.first().agent.states.select(x|x.ID = s.ID).first();
+		    	//("  Agent State " + s.fromActivity.first().agentState.dumpValues()).println();
+		    	("    Agent State " + agentState.dumpValues()).println();
+		    	("    From Activity " + s.fromActivity.first().dumpValues()).println();
+		    	("    From Activity " + s.fromActivity.first().dumpDeltas()).println();
+		    	if (s.activity.size()>0) {
+			    	("    Activity " + s.activity.first().dumpValues()).println();
+			    	("    Activity " + s.activity.first().dumpDeltas()).println();
+		    	}
+	    	}
+	    }
+	}
+}
+
+
+operation iterateOverArtifacts (type:DECENT!ArtifactType) {
+	//TODO: need some safety checks...
+	var h = false;
+	var separator = "\t";
+	for (a in Artifact.allInstances().select(x|x.type = type).sortBy(x|x.name)) {
+	    var header = "";
+	    for (s in a.states.sortBy(x|x.ID)) {
+	        //(a.name+" at "+s.ID).println();
+	        //TODO: note that because of this the last state is not shown!
+	        // - workaround this or show target state values
+
+	    	var i = new ARFFx!Instance();
+	    	arff.data.add(i);
+	    	for (v in s.values.select(x|x.isTypeOf(DECENT!DoubleValue) or x.isTypeOf(DECENT!IntegerValue))) {
+	    		var value = new ARFFx!Value();
+	    		value.ofAttribute = ("Artifact."+v.name).getAttribute();
+	    		value.content = v.content.asString();
+				i.values.add(value);	    	
+	    	}
+
+	        for (ax in s.fromActivity) {
+		    	for (v in ax.values.select(x|x.isTypeOf(DECENT!DoubleValue) or x.isTypeOf(DECENT!IntegerValue))) {
+		    		var value = new ARFFx!Value();
+		    		value.ofAttribute = ("Activity."+v.name).getAttribute();
+		    		value.content = v.content.asString();
+					i.values.add(value);	    	
+		    	}
+		    	for (v in ax.deltas) {
+		    		var value = new ARFFx!Value();
+		    		value.ofAttribute = ("Delta."+v.onAttribute.name).getAttribute();
+		    		value.content = v.change.asString();
+					i.values.add(value);	    	
+		    	}
+			}
+        	continue;
+
+	        for (ax in s.activity) {
+	            var output = "";
+	            for (d in ax.deltas) {
+	                //(d.onAttribute+" ").print();
+	                header=header+separator+d.onAttribute.name+'(value)'+separator+d.onAttribute.name+'(new value)'+separator+d.onAttribute.name+'(delta)';
+	                //(a.name+' '+s.ID+' '+ax.agent.name+' '+ax.date+' '+d.onAttribute.name+' '+d.value.content+' '+d.targetValue.content+' '+d.change).println();
+	                output=output+separator+d.sourceValue.content+separator+d.targetValue.content+separator+d.change;
+	            }
+                for (v in ax.state.values) {
+	                //(d.onAttribute+" ").print();
+	                header=header+separator+v.ofAttribute.name+'(value)';
+	                //(a.name+' '+s.ID+' '+ax.agent.name+' '+ax.date+' '+d.onAttribute.name+' '+d.value.content+' '+d.targetValue.content+' '+d.change).println();
+	                output=output+separator+v.content;
+	            }
+	            
+	            //("").println();
+	            if (not h) {
+	                ("Artifact"+separator+"StateID"+separator+"Agent"+separator+"ActivityDate"+header).printlno();
+	                h=true;
+	            }
+	            (a.name+separator+s.ID+separator+ax.agent.name+separator+ax.date+''+output).printlno();
+	        }
+	    }
+	}
+}
+
+
+/*
+for (s in State.allInstances().select(x|x.artifact.name = "CommandLine.h")) {
+    ("State: "+s.ID + " of "+ s.artifact.name).println();
+    ("Next State (derived): "+s.derivedNext + " of "+ s.artifact.name).println();
+    //TODO: EOL/Epsilon doesn't seem to known how to deal with derived values, Acceleo to the rescue... (see related project)'
+    //NOTE: derivation seems to work in native launcher and ant launcher, but not in java launcher for some reason
+    //NOTE: also it refused to work for a while, until "derived volatile" was set in all (or at least one) "derived" attributes and properties
+    //      (not sure if that would make any difference)
+    //now only left to figure out the java launcher...
+    if (s.activity.first().isDefined()) {
+	    ("Deltas: "+s.activity.first().deltas.at(2).onAttribute.name + " change "+ s.activity.first().deltas.at(2).change).println();
+    }
+    
+    var v = s.values.select(v|v.ofAttribute = BugFixCount);
+    if (v.size() > 0){
+        ("  "+BugFixCount.name+" "+v.first().content).println();
+    }
+    if (v.size() > 0 and v.first().content > 0.0) {
+        for (v in s.values) {
+            ("    Attribute Values: "+v.ofAttribute.name+" = "+v.content).println();
+        }
+        for (c in s.artifact.children) {
+            ("  Child Artifact: "+ c.name).println();
+            var childState = c.states.select(cs|cs.ID = s.ID).first();
+            ("  State: "+childState.ID + " of "+ c.name).println();
+	        for (v in childState.values) {
+	            ("      Child Attribute Values: "+v.ofAttribute.name+" = "+v.content).println();
+	        }
+        }
+	}
+}
+*/

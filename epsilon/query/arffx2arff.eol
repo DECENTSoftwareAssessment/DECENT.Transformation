@@ -1,0 +1,66 @@
+import "../libraries/decent/common.eol";
+import "../libraries/decent/logging.eol";
+
+"Running arffx2arff".log(1);
+var start = Native("java.lang.System").currentTimeMillis();
+
+var projectName = "yakuake"; 
+var filename = "/Users/philip-iii/Dev/workspaces/emf/DECENT.Data/input/"+projectName+"/model.arff";
+var writer;
+var file = new Native("java.io.File") (filename);
+writer = new Native("java.io.FileWriter") (file);
+
+
+var arff = ARFFx!Model.allInstances().first();
+var s = "\t";
+
+
+("@RELATION " + arff.name + " \n").printlno();
+
+var attributes = arff.attributes;
+for (a in attributes) {
+	//("@ATTRIBUTE " + a.name + " " + a.type.name).println();
+	("@ATTRIBUTE " + a.name + " NUMERIC").printlno();
+}
+
+("\n@DATA").printlno();
+
+for (i in arff.data) {
+	i.getValues(s).printlno();
+	//TODO: order seems to be ensured anyways
+	//i.getSafeOrderValues(s, attributes).printlno();
+}
+
+var end = Native("java.lang.System").currentTimeMillis();
+var duration = end - start;
+("Duration: "+duration.toMinutes().round(5)).log(1);
+
+writer.close();
+
+operation String printlno() {
+	self.println();
+    writer.write(self+"\n");
+    writer.flush();
+}	
+
+operation ARFFx!Instance getValues(s : String) : String {
+	var line = "";
+	for (v in self.values) {
+		line = line + v.content + s;
+	}
+	return line;
+}
+
+operation ARFFx!Instance getSafeOrderValues(s : String, attributes : Sequence) : String {
+	var line = "";
+	for (a in attributes) {
+		line = line + i.getValue(a) + s;
+	}
+	return line;
+}
+
+
+operation ARFFx!Instance getValue(attribute : ARFFx!Attribute) : String {
+	//(attribute.name + " = " + self.values.select(v|v.ofAttribute = attribute).size()).println();
+	return self.values.select(v|v.ofAttribute = attribute).first().content;
+}
