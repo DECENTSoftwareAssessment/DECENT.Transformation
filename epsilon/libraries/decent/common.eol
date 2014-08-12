@@ -130,7 +130,7 @@ operation addAttribute(name : String) : DECENT!Attribute {
 	return addAttribute(name, "");
 }
 
-operation String addAttribute(name : String, description : String) : DECENT!Attribute {
+operation addAttribute(name : String, description : String) : DECENT!Attribute {
 	var attribute = Model.attributePool.attributes.select(att|att.name = name).first();
 	if (attribute.isUndefined()) {
 	  	attribute = new DECENT!Attribute;

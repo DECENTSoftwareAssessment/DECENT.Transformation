@@ -6,28 +6,16 @@ var start = Native("java.lang.System").currentTimeMillis();
 
 var Model = DECENT!Model.allInstances().first();
 
-var attributes = new Map;
-attributes.put("BugCount","Number of linked issue reports");
-attributes.put("BugComments","Number of comments in linked issue reports");
-attributes.put("BugEvents","Number of events related to linked issue reports");
-attributes.put("BugResolutions","Number of resolutions of linked issue reports");
-attributes.put("BugLifespan","Lifespan of linked issue )ports");
-Model.addAttributes(attributes);
-
-var BugCountAttribute = "BugCount".getAttribute();
-var BugCommentsAttribute = "BugComments".getAttribute();
-var BugEventsAttribute = "BugEvents".getAttribute();
-var BugResolutionsAttribute = "BugResolutions".getAttribute();
-var BugLifespanAttribute = "BugLifespan".getAttribute();
+var BugCountAttribute = addAttribute("BugCount","Number of linked issue reports");
+var BugCommentsAttribute = addAttribute("BugComments","Number of comments in linked issue reports");
+var BugEventsAttribute = addAttribute("BugEvents","Number of events related to linked issue reports");
+var BugResolutionsAttribute = addAttribute("BugResolutions","Number of resolutions of linked issue reports");
+var BugLifespanAttribute = addAttribute("BugLifespan","Lifespan of linked issue )ports");
 
 var artifactTypes = new OrderedSet("build","code","documentation","ui","image","unknown","devel-doc");
 
 //TODO: filter for files only?
 for (s in DECENT!State.allInstances().select(s|artifactTypes.includes(s.artifact.type.name))) {
-	for (a in attributes.keySet()) {
-		s.values.removeAll(s.values.select(v|v.ofAttribute.name = a));
-	}
-
 	var bugCount = 0.asDouble();
 	var commentCount = 0.asDouble();
 	var eventCount = 0.asDouble();

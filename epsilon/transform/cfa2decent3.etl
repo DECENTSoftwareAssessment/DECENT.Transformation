@@ -75,11 +75,12 @@ pre {
   attributes.put("GlobalAverageWeight","Average global (revision) cause weight from CFA analysis (average weight for caused changes)");
   attributes.put("GlobalTotalBugWeight","Total global (revision) bug cause weight from CFA analysis (total weight for caused fixes)");
   attributes.put("GlobalAverageBugWeight","Average global (revision) bug cause weight from CFA analysis (average weight for caused fixes)");
-  attributes.put("GlobalCausesCount","Number of caused changes in future states of global state (revision)");
-  attributes.put("GlobalFixesCount","Number of causing past states of global state (revision)");
 
   attributes.put("CarriedTotalBugWeight","Accumulated total local (artifact) bug cause weight from past states");
   attributes.put("ClearedTotalBugWeight","Cleared total local (artifact) bug cause weight");
+
+  var GlobalCausesCountAttribute = addAttribute("GlobalCausesCount","Number of caused changes in future states of global state (revision)");
+  var GlobalFixesCountAttribute = addAttribute("GlobalFixesCount","Number of causing past states of global state (revision)");
 
   //TODO: these may need to be pre-calculated in mg2cfa
   Model.addAttributes(attributes);
@@ -90,9 +91,6 @@ pre {
   
   var CausesCountAttribute = "CausesCount".getAttribute();
   var FixesCountAttribute = "FixesCount".getAttribute();
-
-  var GlobalCausesCountAttribute = "GlobalCausesCount".getAttribute();
-  var GlobalFixesCountAttribute = "GlobalFixesCount".getAttribute();
 
   //TODO: need to accumulate a value? i.e. keep a balance of sorts? bug cause adds, bug fix removes
   // - or do we focus only on the states that introduce a bug and the activities that lead to them??

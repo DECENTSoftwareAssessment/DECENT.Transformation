@@ -9,21 +9,18 @@ var start = Native("java.lang.System").currentTimeMillis();
 
 var Model = DECENT!Model.allInstances().first();
 
-var attributes = new Map;
-attributes.put("ProjectActivities","");
-attributes.put("TotalProjectActivities","");
-attributes.put("ProjectCommits","");
-attributes.put("DeveloperActivities","");
-attributes.put("TotalDeveloperActivities","");
-attributes.put("DeveloperCommits","");
-attributes.put("ArtifactActivities","");
-attributes.put("TotalArtifactActivities","");
-attributes.put("ArtifactDevelopers","");
-attributes.put("ArtifactDeveloperActivities","");
+var ProjectActivitiesAttribute = addAttribute("ProjectActivities","");
+var TotalProjectActivitiesAttribute = addAttribute("TotalProjectActivities","");
+var ProjectCommitsAttribute = addAttribute("ProjectCommits","");
+var DeveloperActivitiesAttribute = addAttribute("DeveloperActivities","");
+var TotalDeveloperActivitiesAttribute = addAttribute("TotalDeveloperActivities","");
+var DeveloperCommitsAttribute = addAttribute("DeveloperCommits","");
+var ArtifactActivitiesAttribute = addAttribute("ArtifactActivities","");
+var TotalArtifactActivitiesAttribute = addAttribute("TotalArtifactActivities","");
+var ArtifactDevelopersAttribute = addAttribute("ArtifactDevelopers","");
+var ArtifactDeveloperActivitiesAttribute = addAttribute("ArtifactDeveloperActivities","");
 
 //TODO: add temporals - to last change, to first change, averages, etc.
-
-Model.addAttributes(attributes);  
 
 var CodeArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "code").first();
 
@@ -32,16 +29,6 @@ var MethodArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "M
 var FunctionArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "Function").first();
 var ModuleArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "Module").first();
 
-var ProjectActivitiesAttribute = "ProjectActivities".getAttribute();
-var TotalProjectActivitiesAttribute = "TotalProjectActivities".getAttribute();
-var ProjectCommitsAttribute = "ProjectCommits".getAttribute();
-var DeveloperActivitiesAttribute = "DeveloperActivities".getAttribute();
-var TotalDeveloperActivitiesAttribute = "TotalDeveloperActivities".getAttribute();
-var DeveloperCommitsAttribute = "DeveloperCommits".getAttribute();
-var ArtifactActivitiesAttribute = "ArtifactActivities".getAttribute();
-var TotalArtifactActivitiesAttribute = "TotalArtifactActivities".getAttribute();
-var ArtifactDevelopersAttribute = "ArtifactDevelopers".getAttribute();
-var ArtifactDeveloperActivitiesAttribute = "ArtifactDeveloperActivities".getAttribute();
 
 //TODO: this can only be executed prior to FAMIX
 var progress = 0;

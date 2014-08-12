@@ -8,32 +8,22 @@ var start = Native("java.lang.System").currentTimeMillis();
 
 var Model = DECENT!Model.allInstances().first();
 
-var attributes = new Map;
-attributes.put("ClonedLinesPost","Cloned lines within artifact in resulting state");
-attributes.put("ClonedFragmentsPost","Cloned fragments in resulting state");
-attributes.put("ClonedLinesPerFragmentPost","Cloned lines per fragment in resulting state");
-attributes.put("ClonedPairsPost","Cloned pairs for cloned fragments in resulting state");
-attributes.put("ClonedPairsPerFragmentPost","Cloned pairs per fragment in resulting state");
-
-Model.addAttributes(attributes);  
+var ClonedLinesPostAttribute = addAttribute("ClonedLinesPost","Cloned lines within artifact in resulting state");
+var ClonedFragmentsPostAttribute = addAttribute("ClonedFragmentsPost","Cloned fragments in resulting state");
+var ClonedLinesPerFragmentPostAttribute = addAttribute("ClonedLinesPerFragmentPost","Cloned lines per fragment in resulting state");
+var ClonedPairsPostAttribute = addAttribute("ClonedPairsPost","Cloned pairs for cloned fragments in resulting state");
+var ClonedPairsPerFragmentPostAttribute = addAttribute("ClonedPairsPerFragmentPost","Cloned pairs per fragment in resulting state");
 
 var ClassArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "Class").first();
 var MethodArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "Method").first();
 var FunctionArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "Function").first();
 var ModuleArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "Module").first();
+
 var StartLineAttribute = "StartLine".getAttribute();
 var EndLineAttribute = "EndLine".getAttribute();
 var LinesPreAttribute = "LinesPre".getAttribute();
 var LinesPostAttribute = "LinesPost".getAttribute();
-
 var FilePathAttribute = "FilePath".getAttribute();
-
-var ClonedLinesPostAttribute = "ClonedLinesPost".getAttribute();
-var ClonedFragmentsPostAttribute = "ClonedFragmentsPost".getAttribute();
-var ClonedLinesPerFragmentPostAttribute = "ClonedLinesPerFragmentPost".getAttribute();
-var ClonedPairsPostAttribute = "ClonedPairsPost".getAttribute();
-var ClonedPairsPerFragmentPostAttribute = "ClonedPairsPerFragmentPost".getAttribute();
-
 
 
 //TODO: work topdown: Agent State -> State -> Children States
@@ -43,9 +33,6 @@ var ClonedPairsPerFragmentPostAttribute = "ClonedPairsPerFragmentPost".getAttrib
 //TODO: add cleanup before start, including deltas?
 //TODO: add deltas or in a separate transformation
 var states = DECENT!AgentState.allInstances();
-for (s in DECENT!State.allInstances()) {
-	s.resetState(attributes.keySet());
-}
 
 for (s in states) {
 	var run = DUDE!Run.allInstances().select(r|r.commit_id = s.ID).first();
@@ -83,18 +70,3 @@ Model.content.add("dude2decent3");
 var end = Native("java.lang.System").currentTimeMillis();
 var duration = end - start;
 ("Duration: "+duration.toMinutes().round(5)).log(1);
-
-operation DECENT!State resetState(attributes : Collection) {
-	for (a in attributes) {
-		var attribute = a.getAttribute();
-		var value = self.getValue(attribute);
-		if (value.isDefined()) {
-			if (value.isTypeOf(DECENT!DoubleValue)) {
-				value.content = 0.asDouble();	
-			} else if (value.isTypeOf(DECENT!IntegerListValue)) {
-				value.content = new Sequence();
-			} else {
-			}
-		}
-	}
-}

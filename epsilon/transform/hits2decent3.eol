@@ -8,11 +8,8 @@ var start = Native("java.lang.System").currentTimeMillis();
 
 var Model = DECENT!Model.allInstances().first();
 
-var attributes = new Map;
-attributes.put("LinesPostHits","Changed lines within artifact in resulting state");
-attributes.put("LinesPreHits","Changed lines within artifact in context state");
-
-Model.addAttributes(attributes);  
+var LinesPostHitsAttribute = addAttribute("LinesPostHits","Changed lines within artifact in resulting state");
+var LinesPreHitsAttribute = addAttribute("LinesPreHits","Changed lines within artifact in context state");
 
 var ClassArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "Class").first();
 var MethodArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "Method").first();
@@ -22,8 +19,6 @@ var StartLineAttribute = "StartLine".getAttribute();
 var EndLineAttribute = "EndLine".getAttribute();
 var LinesPreAttribute = "LinesPre".getAttribute();
 var LinesPostAttribute = "LinesPost".getAttribute();
-var LinesPostHitsAttribute = "LinesPostHits".getAttribute();
-var LinesPreHitsAttribute = "LinesPreHits".getAttribute();
 
 var existingStatesInRevision = DECENT!State.allInstances().select(s|
 									s.artifact.type = ClassArtifactType or 

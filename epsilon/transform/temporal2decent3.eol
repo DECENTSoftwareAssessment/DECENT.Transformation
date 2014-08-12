@@ -6,50 +6,25 @@ import "../libraries/decent/logging.eol";
 
   var Model = DECENT!Model.allInstances().first();
 
-  var attributes = new Map;
+  var AbsoluteTimeAttribute = addAttribute("AbsoluteTime","Set of distances to the beginning of time");
+  var RelativeTimeAttribute = addAttribute("RelativeTime","Set of distances to the first state");
+  var DistanceTimeAttribute = addAttribute("DistanceTime","Set of distances to previous states");
 
-  attributes.put("AbsoluteTime","Set of distances to the beginning of time");
-  attributes.put("RelativeTime","Set of distances to the first state");
-  attributes.put("DistanceTime","Set of distances to previous states");
+  var AbsoluteTimeVarianceAttribute = addAttribute("AbsoluteTimeVariance","Variance of distances to the beginning of time");
+  var RelativeTimeVarianceAttribute = addAttribute("RelativeTimeVariance","Variance of distances to the first state");
+  var DistanceTimeVarianceAttribute = addAttribute("DistanceTimeVariance","Variance of distances to previous states");
 
-  attributes.put("AbsoluteTimeVariance","Variance of distances to the beginning of time");
-  attributes.put("RelativeTimeVariance","Variance of distances to the first state");
-  attributes.put("DistanceTimeVariance","Variance of distances to previous states");
+  var RevisionsAttribute = addAttribute("Revisions","Current number of revisions");
+  var LifespanAttribute = addAttribute("Lifespan","Lifespan of artifact");
+  var AgeAttribute = addAttribute("Age","Age of artifact in state");
+  var DistanceAttribute = addAttribute("Distance","Distance to previous state");
 
-  attributes.put("Revisions","Current number of revisions");
-  attributes.put("Lifespan","Lifespan of artifact");
-  attributes.put("Age","Age of artifact in state");
-  attributes.put("Distance","Distance to previous state");
-
-  attributes.put("DistanceAverage","Average distance between states");
-  attributes.put("DistanceRunningAverage","Running average distance between states");
+  var DistanceAverageAttribute = addAttribute("DistanceAverage","Average distance between states");
+  var DistanceRunningAverageAttribute = addAttribute("DistanceRunningAverage","Running average distance between states");
   
-  attributes.put("Frequency","Frequency of changes (=Revisions-1/Age)");
-  attributes.put("FrequencyAverage","Frequency average (=All Revisions-1/Lifespan)");
-  attributes.put("FrequencyDistanceToAverage","Frequency distance to average (=Frequency-FrequencyAverage)");
-
-  Model.addAttributes(attributes);
-
-  var AbsoluteTimeAttribute = "AbsoluteTime".getAttribute();
-  var RelativeTimeAttribute = "RelativeTime".getAttribute();
-  var DistanceTimeAttribute = "DistanceTime".getAttribute();
-
-  var AbsoluteTimeVarianceAttribute = "AbsoluteTimeVariance".getAttribute();
-  var RelativeTimeVarianceAttribute = "RelativeTimeVariance".getAttribute();
-  var DistanceTimeVarianceAttribute = "DistanceTimeVariance".getAttribute();
-
-  var RevisionsAttribute = "Revisions".getAttribute();
-  var LifespanAttribute = "Lifespan".getAttribute();
-  var AgeAttribute = "Age".getAttribute();
-  var DistanceAttribute = "Distance".getAttribute();
-
-  var DistanceAverageAttribute = "DistanceAverage".getAttribute();
-  var DistanceRunningAverageAttribute = "DistanceRunningAverage".getAttribute();
-
-  
-  var FrequencyAttribute = "Frequency".getAttribute();
-  var FrequencyAverageAttribute = "FrequencyAverage".getAttribute();
-  var FrequencyDistanceToAverageAttribute = "FrequencyDistanceToAverage".getAttribute();
+  var FrequencyAttribute = addAttribute("Frequency","Frequency of changes (=Revisions-1/Age)");
+  var FrequencyAverageAttribute = addAttribute("FrequencyAverage","Frequency average (=All Revisions-1/Lifespan)");
+  var FrequencyDistanceToAverageAttribute = addAttribute("FrequencyDistanceToAverage","Frequency distance to average (=Frequency-FrequencyAverage)");
 
 
   //TODO: other temporal dimensions such as cause-fix time, agent time, bug lifetime vs fragment lifetime, etc.
@@ -111,9 +86,6 @@ operation OrderedSet addAgentTemporalCharacteristics() {
   	//TODO: filter hits only 
   	//TODO: navigate via previous/next
   	for (s in self) {
-	 	for (a in attributes.keySet()) {
-			s.values.removeAll(s.values.select(v|v.ofAttribute.name = a));
-		}
   		//TODO: technically lifespan does not need to be included
   		//TODO: difference can also be inferred from age delta
   		//TODO: the interesting part would be the deltas in the 
@@ -181,9 +153,6 @@ operation OrderedSet addArtifactTemporalCharacteristics() {
   	//TODO: filter hits only 
   	//TODO: navigate via previous/next
   	for (s in self) {
-	 	for (a in attributes.keySet()) {
-			s.values.removeAll(s.values.select(v|v.ofAttribute.name = a));
-		}
   		//TODO: technically lifespan does not need to be included
   		//TODO: difference can also be inferred from age delta
   		//TODO: the interesting part would be the deltas in the 
