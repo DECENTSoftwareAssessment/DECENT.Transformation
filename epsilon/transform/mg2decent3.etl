@@ -78,23 +78,14 @@ pre mgInitPre {
   var Project = new DECENT!Project;
   Project.name = MG!Model.allInstances().first().name;
   Model.projects.add(Project);
-    
-  for (b in MG!Branch.allInstances()){
-	var Location = new DECENT!Location;
-	Location.name = b.name;
-	Location.type = BranchArtifactType;
-	Project.location.add(Location);
-//	var RootArtifact = new DECENT!Artifact;
-//	RootArtifact.name = "/";
-//	Location.rootArtifact = RootArtifact;
-  }
-  
+      
   //TODO: handle all branches
-  var RootArtifact = Project.location.select(l|l.name = 'master').first().rootArtifact;
 
   var artifactCount = MG!File.allInstances().size();
   var processedCount = 0;
-
+  
+  var filterBranches = new Set(); 
+  filterBranches.add("master");
 }
 
 post mgInitPost{
@@ -140,6 +131,32 @@ operation dumpFileCopies() {
   }
 }
 
+@cached
+operation MG!File getBranch() : MG!Branch {
+	if (self.file_type = "directory") {
+		return self.childrenLinks.first().revision.actions.first().branch;
+	} else {
+		return self.actions.first().branch;
+	}
+}
+
+@cached
+operation MG!Revision getBranch() : MG!Branch {
+	return self.actions.first().branch;
+}
+
+
+rule Branch2Location 
+    transform b : MG!Branch 
+    to l : DECENT!Location {
+    
+	l.name = b.name;
+    ("Transforming location "+l.name).log(3);
+	
+	l.type = BranchArtifactType;
+	Project.location.add(l);
+}
+
 
 rule People2Agent 
     transform p : MG!People 
@@ -156,6 +173,7 @@ rule People2Agent
 rule File2Artifact 
     transform f : MG!File 
     to a : DECENT!Artifact {
+    guard : filterBranch.size()=0 or filterBranch.includes(f.getBranch().name)
     
     a.name = f.file_name;
    	a.setArtifactType(f.file_type);
@@ -164,11 +182,15 @@ rule File2Artifact
     	//("Adding parents... "+f.parentLinks.size()).log(1);
     	("Adding parents... "+f.parentLinks.get(0).parent.equivalent().name).log(4);
 	    var parentArtifact = f.parentLinks.get(0).parent.equivalent();
-	    a.parent = parentArtifact;
-	    parentName = parentArtifact.name;
+	    if (parentArtifact.name = "ROOT") {
+	    	f.getBranch().equivalent().artifacts.add(a);
+	    } else {
+		    a.parent = parentArtifact;
+		    parentName = parentArtifact.name;
+	    }
     } else {
     	//TODO: handle branches properly
-    	DECENT!Location.allInstances.select(l|l.name = "master").first().rootArtifact=a;
+		//f.actions.first().branch.equivalent().rootArtifact=a;
     }
     ("Transforming artifact "+f.file_name+" ("+f.file_type+") in "+parentName+" ("+processedCount+"/"+artifactCount+" completed)").log(3);
     
@@ -178,6 +200,7 @@ rule File2Artifact
 rule Revision2AgentState 
     transform r : MG!Revision
     to s : DECENT!AgentState {
+    guard : filterBranch.size()=0 or filterBranch.includes(r.getBranch().name)
     
     var agent = r.author.equivalent(); 
     s.agent = agent;
@@ -190,6 +213,7 @@ rule Revision2AgentState
 rule Action2State 
     transform a : MG!Action
     to s : DECENT!State {
+    guard : filterBranch.size()=0 or filterBranch.includes(a.branch.name)
 
 	s.name = a.revision.rev;
     ("Transforming action "+ a.revision.commit_id + " for " + a.file.file_name).log(3);
