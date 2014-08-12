@@ -16,10 +16,8 @@ pre {
   var FunctionArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "Function").first();
   var ModuleArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "Module").first();
 
-  //TODO: this is effectively moved to hits2decent
   var attributes = new Map;
   attributes.put("StartLine", "Artifact start line");
-  attributes.put("EndLine", "Artifact end line");
   attributes.put("EndLine", "Artifact end line");
   
   Model.addAttributes(attributes);
@@ -27,12 +25,8 @@ pre {
   var LinesPostHitsAttribute = "LinesPostHits".getAttribute();
   var StartLineAttribute = "StartLine".getAttribute();
   var EndLineAttribute = "EndLine".getAttribute();
-  var LinesPreAttribute = "LinesPre".getAttribute();
-  var LinesPostAttribute = "LinesPost".getAttribute();
   var FileAnchorAttribute = "FileAnchor".getAttribute();
   var FilePathAttribute = "FilePath".getAttribute();
-
-
   
   var revisionId = -1;
   var potentiallyAffectedClasses = new OrderedSet;
