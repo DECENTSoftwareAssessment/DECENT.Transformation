@@ -92,7 +92,7 @@ operation DECENT!Activity addDelta(attribute : DECENT!Attribute, value : DECENT!
     if (self.state.isDefined()){
     	//delta.sourceValue = self.state.getValue(attribute);
     	//delta.change = delta.targetValue.content - delta.sourceValue.content;
-        delta.change = value.content - self.state.getValue(attribute);
+        delta.change = value.content - self.state.getValue(attribute).content;
     } else {
     	//delta.change = delta.targetValue.content;
         delta.change = value.content;
