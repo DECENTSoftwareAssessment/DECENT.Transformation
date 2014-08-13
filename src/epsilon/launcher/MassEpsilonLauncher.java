@@ -187,25 +187,6 @@ public class MassEpsilonLauncher extends EpsilonStandaloneLauncher {
 		}
 	}
 
-	public void executeAll() throws Exception {
-		String dataLocation = properties.getProperty("dataLocation");
-		String project = properties.getProperty("project");
-		String location = dataLocation+project;
-		//TODO: check if resources are available
-		executeMG2NORMALIZEDHUNKS(location);
-		executeMG2DECENT(location);
-		executeMG2CFA(location);
-		executeCFA2DECENT(location);
-//		executeEXPERIENCE2DECENT(location);
-//		executeTEMPORAL2DECENT(location);
-//		executeBZ2TRACE(location);
-//		executeTRACE2DECENT(location);
-		String lowerBound = "0";
-		String upperBound = "0";
-//		executeFAMIX2DECENT(location, lowerBound, upperBound); //reloads only famix model instances
-//		executeHITS2DECENT(location);
-	}
-
 	private void registerMetaModels() throws Exception {
 		String metaModelsPath = "../DECENT.Meta/model/";
 		File metaModelsLocation = new File(metaModelsPath);
