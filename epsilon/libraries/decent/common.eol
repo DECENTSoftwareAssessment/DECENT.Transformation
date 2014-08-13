@@ -81,10 +81,17 @@ operation DECENT!Activity addDelta(attribute : DECENT!Attribute) : DECENT!Delta 
     return self.addDelta(attribute, self.targetState.values.select(v|v.ofAttribute = attribute).first());
 }
 
+operation DECENT!Activity getDelta(attribute : DECENT!Attribute) : DECENT!Delta {
+    return self.deltas.select(d|d.onAttribute = attribute).first();
+}
 
 operation DECENT!Activity addDelta(attribute : DECENT!Attribute, value : DECENT!Value) : DECENT!Delta {
-    var delta : new DECENT!Delta;
-    delta.onAttribute = attribute;
+	var delta = self.getDelta(attribute);
+	if (delta.isUndefined()) {
+	    delta = new DECENT!Delta;
+	    delta.onAttribute = attribute;
+	}
+
 	//TODO: see if there is any impact of removing these
 	// probably only on loading and saving times
 	// ***slighly negative performance impact for whatever reason*** 
