@@ -14,6 +14,7 @@ pre mgInitPre {
   /********************************** INIT (1x) *******************************/
   
   var Model : new DECENT!Model;
+  Model.name = MG!Model.allInstances().first().name;
   Model.artifactTypeHierarchy = new DECENT!ArtifactTypeHierarchy;
   Model.agentPool = new DECENT!AgentPool;
   Model.attributePool = new DECENT!AttributePool;
