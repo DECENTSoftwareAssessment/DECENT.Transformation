@@ -53,7 +53,7 @@ import epsilon.launcher.EpsilonStandaloneLauncher;
  * @author Dimitrios Kolovos
  */
 @SuppressWarnings("unused")
-public class MassEpsilonLauncher extends EpsilonStandaloneLauncher {
+public class MassEpsilonLauncher {
 	
 	private Properties properties = new Properties();
 	private DECENTEpsilonModelHandler modelHandler = new DECENTEpsilonModelHandler();
@@ -62,10 +62,6 @@ public class MassEpsilonLauncher extends EpsilonStandaloneLauncher {
 		MassEpsilonLauncher launcher = new MassEpsilonLauncher();
 		launcher.loadProperties(args);
 		launcher.registerMetaModels();
-//		launcher.getBinaryDECENTModel(args[0], true, false);
-//		launcher.convertDECENTModelToBinary(args[0]);
-//		launcher.convertDECENTModelToXMI(args[0]);
-//		launcher.executeAll();
 		launcher.executeSteps();
 	}
 	
@@ -340,8 +336,13 @@ public class MassEpsilonLauncher extends EpsilonStandaloneLauncher {
 	private void executeEXPERIENCE2DECENT(String location) throws Exception, URISyntaxException,
 			EolModelLoadingException, EolRuntimeException {
 		String source = "epsilon/transform/experience2decent3.eol";
+		executeDECENTinPalace(location, source, true, true);
+	}
+
+	private void executeDECENTinPalace(String location, String source, boolean read, boolean write) throws Exception,
+			URISyntaxException, EolRuntimeException {
 		IEolExecutableModule module = loadModule(source);
-		IModel decentModel = modelHandler.getDECENTModel(location, true, true);
+		IModel decentModel = modelHandler.getDECENTModel(location, read, write);
 //		decentModel.load();
 		module.getContext().getModelRepository().addModel(decentModel);
 		module.execute();
@@ -352,39 +353,19 @@ public class MassEpsilonLauncher extends EpsilonStandaloneLauncher {
 	private void executeTEMPORAL2DECENT(String location) throws Exception, URISyntaxException,
 			EolModelLoadingException, EolRuntimeException {
 		String source = "epsilon/transform/temporal2decent3.eol";
-		IEolExecutableModule module = loadModule(source);
-		IModel decentModel = modelHandler.getDECENTModel(location, true, true);
-		//decentModel.load();
-		module.getContext().getModelRepository().addModel(decentModel);
-		module.execute();
-		decentModel.dispose();
-		//can be stored and retained alternatively
-		module.reset();
+		executeDECENTinPalace(location, source, true, true);
 	}
 
 	private void executeHITS2DECENT(String location) throws Exception, URISyntaxException,
 			EolModelLoadingException, EolRuntimeException {
 		String source = "epsilon/transform/hits2decent3.eol";
-		IEolExecutableModule module = loadModule(source);
-		IModel decentModel = modelHandler.getDECENTModel(location, true, true);
-		//decentModel.load();
-		module.getContext().getModelRepository().addModel(decentModel);
-		module.execute();
-		decentModel.dispose();
-		//can be stored and retained alternatively
-		module.reset();
+		executeDECENTinPalace(location, source, true, true);
 	}
 
 	private void executeQUERY(String location) throws Exception,
 			URISyntaxException, EolModelLoadingException, EolRuntimeException {
 		String source = "epsilon/query/decent.eol";
-		IEolExecutableModule module = loadModule(source);
-		IModel decentModel = modelHandler.getDECENTModel(location, true, false);
-		module.getContext().getModelRepository().addModel(decentModel);
-		module.execute();
-		decentModel.dispose();
-		// can be stored and retained alternatively
-		module.reset();
+		executeDECENTinPalace(location, source, true, false);
 	}
 
 	private void executeARFFx2ARFF(String location) throws Exception,
@@ -468,14 +449,12 @@ public class MassEpsilonLauncher extends EpsilonStandaloneLauncher {
 					Integer.parseInt(c)<=(Integer.parseInt(upperBound))
 			) {
 				System.out.println("Processing: "+c);
-				module.parse(getFile(getSource()));
+				module.parse(modelHandler.getFile(source));
 				IModel famixModel = modelHandler.getFAMIXModel(location,Integer.parseInt(c));
 				famixModel.load();
 				module.getContext().getModelRepository().addModel(decentModel);
 				module.getContext().getModelRepository().addModel(famixModel);
-				preProcess();
 				module.execute();
-				postProcess();
 				famixModel.dispose();
 				decentModel.store();
 				module.reset();
@@ -495,7 +474,7 @@ public class MassEpsilonLauncher extends EpsilonStandaloneLauncher {
 			
 		}
 		
-		module.parse(getFile(source));
+		module.parse(modelHandler.getFile(source));
 
 		if (module.getParseProblems().size() > 0) {
 			System.err.println("Parse errors occured...");
@@ -546,27 +525,4 @@ public class MassEpsilonLauncher extends EpsilonStandaloneLauncher {
 		Object result = operation.execute(null, parameters, module.getContext());
 		System.out.println(result);
 	}
-	
-
-
-	
-	@Override
-	public List<IModel> getModels() throws Exception {
-		List<IModel> models = new ArrayList<IModel>();
-		
-		return models;
-	}
-
-	//TODO: extract all parameters and configurations
-	@Override
-	public String getSource() throws Exception {
-		//return "src/sample/famix2decent.etl";
-		return "epsilon/transform/famix2decent3.etl";
-	}
-
-	@Override
-	public void postProcess() {
-		
-	}
-
 }
