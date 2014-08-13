@@ -94,6 +94,8 @@ public class MassEpsilonLauncher {
 		}
 	}	
 	public void executeTransformation(String step, String location) {
+		//TODO: extract and generalize steps as configuration files or models
+		//with description, source, required models, required steps, accepted arguments, dependencies, etc.
 		try {
 			switch (step) {
 			case "MG2NORMALIZEDHUNKS":
@@ -125,6 +127,9 @@ public class MassEpsilonLauncher {
 				break;
 			case "TEMPORAL2DECENT":
 				executeTEMPORAL2DECENT(location);
+				break;
+			case "DELTA2DECENT":
+				executeDELTA2DECENT(location);
 				break;
 			case "BZ2TRACE":
 				executeBZ2TRACE(location);
@@ -353,6 +358,11 @@ public class MassEpsilonLauncher {
 	private void executeTEMPORAL2DECENT(String location) throws Exception, URISyntaxException,
 			EolModelLoadingException, EolRuntimeException {
 		String source = "epsilon/transform/temporal2decent3.eol";
+		executeDECENTinPalace(location, source, true, true);
+	}
+	private void executeDELTA2DECENT(String location) throws Exception, URISyntaxException,
+			EolModelLoadingException, EolRuntimeException {
+		String source = "epsilon/transform/delta2decent3.eol";
 		executeDECENTinPalace(location, source, true, true);
 	}
 

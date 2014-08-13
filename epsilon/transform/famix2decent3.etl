@@ -205,7 +205,6 @@ operation DECENT!State mapAnchoredElement(c : FAMIX!AnchoredElement, artifactTyp
         
         if ((attr.getEAttributeType().getName() == "EDouble")) {
             self.addValue(attribute, c.eGet(attr));
-            activity.addDelta(attribute);
         }
     }
 }

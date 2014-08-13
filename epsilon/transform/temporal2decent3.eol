@@ -183,14 +183,6 @@ operation OrderedSet addArtifactTemporalCharacteristics() {
 		distanceTime.add((s.fromActivity.first().date.time - previousStateTime).asDouble()/resolution);
   		s.addDoubleCollectionValue(DistanceTimeAttribute, distanceTime);
 		s.addValue(DistanceTimeVarianceAttribute, distanceTime.getVariance());
-
-		//selected deltas
-		var activity = s.fromActivity.first();
-		activity.addDelta(AgeAttribute); //effectively =difference
-		activity.addDelta(DistanceAttribute); //indicate difference to last distance +slower/-faster
-		activity.addDelta(DistanceRunningAverageAttribute); 
-		activity.addDelta(FrequencyAttribute); 
-		activity.addDelta(FrequencyDistanceToAverageAttribute); 
 		
   		previousStateTime = s.fromActivity.first().date.time;
   	}
