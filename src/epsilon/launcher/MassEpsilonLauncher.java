@@ -55,12 +55,9 @@ import epsilon.launcher.EpsilonStandaloneLauncher;
 @SuppressWarnings("unused")
 public class MassEpsilonLauncher extends EpsilonStandaloneLauncher {
 	
-	private HashMap<String, Object> metaModelCache = new HashMap<>();
-	private boolean useDECENTBinary = true;
-	private boolean useMGBinary = true;
 	private Properties properties = new Properties();
-
-
+	private DECENTEpsilonModelHandler modelHandler = new DECENTEpsilonModelHandler();
+	
 	public static void main(String[] args) throws Exception {
 		MassEpsilonLauncher launcher = new MassEpsilonLauncher();
 		launcher.loadProperties(args);
@@ -84,6 +81,8 @@ public class MassEpsilonLauncher extends EpsilonStandaloneLauncher {
 		System.out.println("INIT: Loading settings...");
 		String propertiesFilename = arguments[0];
 		properties.load(new FileInputStream(propertiesFilename));
+		modelHandler.setUseDECENTBinary(Boolean.parseBoolean(properties.getProperty("useDECENTBinary")));
+		modelHandler.setUseMGBinary(Boolean.parseBoolean(properties.getProperty("useMGBinary")));
 		if (arguments.length == 2) {
 			properties.setProperty("steps", arguments[1]);
 		}
@@ -105,11 +104,9 @@ public class MassEpsilonLauncher extends EpsilonStandaloneLauncher {
 				executeMG2NORMALIZEDHUNKS(location);
 				break;
 			case "MG2DECENT":
-				useMGBinary=Boolean.parseBoolean(properties.getProperty("useBinary"));
 				executeMG2DECENT(location);
 				break;
 			case "MG2CFA":
-				useMGBinary=Boolean.parseBoolean(properties.getProperty("useBinary"));
 				executeMG2CFA(location);
 				break;
 			case "TRACE2CFA":
@@ -142,14 +139,12 @@ public class MassEpsilonLauncher extends EpsilonStandaloneLauncher {
 			case "FAMIX2DECENT":
 				String lowerBound = properties.getProperty("famixLower");
 				String upperBound = properties.getProperty("famixUpper");
-				useDECENTBinary=Boolean.parseBoolean(properties.getProperty("useBinary"));
 				executeFAMIX2DECENT(location, lowerBound, upperBound); //reloads only famix model instances
 				break;
 			case "HITS2DECENT":
 				executeHITS2DECENT(location);
 				break;
 			case "DECENT2ARFFx":
-				useDECENTBinary=Boolean.parseBoolean(properties.getProperty("useBinary"));
 				executeDECENT2ARFFx(location);
 				break;
 			case "ARFFx2ARFF":
@@ -157,6 +152,10 @@ public class MassEpsilonLauncher extends EpsilonStandaloneLauncher {
 				break;
 			case "QUERY":
 				executeQUERY(location);
+				break;
+			case "BIN2DECENT":
+				//duplicates RT functionality
+				executeBIN2DECENT(location);
 				break;
 			default:
 				System.out.println("ERROR: Unknown step "+step);
@@ -182,6 +181,12 @@ public class MassEpsilonLauncher extends EpsilonStandaloneLauncher {
 		}
 	}
 	
+	public void executeBIN2DECENT(String location) {
+		if (new File(location+"/model.decent"+"bin").exists()) {
+			modelHandler.convertDECENTModelToXMI(location);
+		}
+	}
+
 	public void executeAll() throws Exception {
 		String dataLocation = properties.getProperty("dataLocation");
 		String project = properties.getProperty("project");
@@ -211,29 +216,13 @@ public class MassEpsilonLauncher extends EpsilonStandaloneLauncher {
 		}
 	}
 
-	private void restoreMetaModels() {
-		for (String key : metaModelCache .keySet()) {
-			EPackage.Registry.INSTANCE.put(key, metaModelCache.get(key));
-		};
-	}
-
-	private void unregisterMetaModels(String filter) {
-		for (String key : EPackage.Registry.INSTANCE.keySet()) {
-			if (key.contains(filter)) {
-				metaModelCache.put(key, EPackage.Registry.INSTANCE.get(key));
-			}
-		};
-		for (String key : metaModelCache .keySet()) {
-			EPackage.Registry.INSTANCE.remove(key);
-		};
-	}
 
 	private void executeTRACE2DECENT(String location) throws Exception, URISyntaxException,
 			EolModelLoadingException, EolRuntimeException {
 		String source = "epsilon/transform/trace2decent3.eol";
 		IEolExecutableModule module = loadModule(source);
-		IModel decentModel = getDECENTModel(location, true, true);
-		IModel traceModel = getTRACEModel(location, true, false);
+		IModel decentModel = modelHandler.getDECENTModel(location, true, true);
+		IModel traceModel = modelHandler.getTRACEModel(location, true, false);
 //		traceModel.load();
 //		decentModel.load();
 		module.getContext().getModelRepository().addModel(traceModel);
@@ -250,9 +239,9 @@ public class MassEpsilonLauncher extends EpsilonStandaloneLauncher {
 			EolModelLoadingException, EolRuntimeException {
 		String source = "epsilon/transform/bz2trace.etl";
 		IEolExecutableModule module = loadModule(source);
-		IModel mgModel = getMGModel(location, true, false);
-		IModel bzModel = getBZModel(location);
-		IModel traceModel = getTRACEModel(location, false, true);
+		IModel mgModel = modelHandler.getMGModel(location, true, false);
+		IModel bzModel = modelHandler.getBZModel(location);
+		IModel traceModel = modelHandler.getTRACEModel(location, false, true);
 //		mgModel.load();
 //		bzModel.load();
 		module.getContext().getModelRepository().addModel(mgModel);
@@ -270,8 +259,8 @@ public class MassEpsilonLauncher extends EpsilonStandaloneLauncher {
 			URISyntaxException, EolModelLoadingException, EolRuntimeException {
 		String source = "epsilon/transform/dag2decent3.etl";
 		IEolExecutableModule module = loadModule(source);
-		IModel decentModel = getDECENTModel(location, true, true);
-		IModel dagModel = getDAGModel(location);
+		IModel decentModel = modelHandler.getDECENTModel(location, true, true);
+		IModel dagModel = modelHandler.getDAGModel(location);
 		// mgModel.load();
 		// cfaModel.load();
 		// decentModel.load();
@@ -289,8 +278,8 @@ public class MassEpsilonLauncher extends EpsilonStandaloneLauncher {
 			URISyntaxException, EolModelLoadingException, EolRuntimeException {
 		String source = "epsilon/transform/dude2decent3.eol";
 		IEolExecutableModule module = loadModule(source);
-		IModel decentModel = getDECENTModel(location, true, true);
-		IModel dudeModel = getDUDEModel(location);
+		IModel decentModel = modelHandler.getDECENTModel(location, true, true);
+		IModel dudeModel = modelHandler.getDUDEModel(location);
 		// mgModel.load();
 		// cfaModel.load();
 		// decentModel.load();
@@ -307,9 +296,9 @@ public class MassEpsilonLauncher extends EpsilonStandaloneLauncher {
 			EolModelLoadingException, EolRuntimeException {
 		String source = "epsilon/transform/cfa2decent3.etl";
 		IEolExecutableModule module = loadModule(source);
-		IModel decentModel = getDECENTModel(location, true, true);
+		IModel decentModel = modelHandler.getDECENTModel(location, true, true);
 		//TODO: consider removing reliance on MG especially if it is only needed in one line
-		IModel cfaModel = getCFAModel(location, true, false);
+		IModel cfaModel = modelHandler.getCFAModel(location, true, false);
 //		mgModel.load();
 //		cfaModel.load();
 //		decentModel.load();
@@ -326,8 +315,8 @@ public class MassEpsilonLauncher extends EpsilonStandaloneLauncher {
 			EolModelLoadingException, EolRuntimeException {
 		String source = "epsilon/transform/mg2cfa.etl";
 		IEolExecutableModule module = loadModule(source);
-		IModel mgModel = getMGModel(location, true, false);
-		IModel cfaModel = getCFAModel(location, false, true);
+		IModel mgModel = modelHandler.getMGModel(location, true, false);
+		IModel cfaModel = modelHandler.getCFAModel(location, false, true);
 //		mgModel.load();
 		module.getContext().getModelRepository().addModel(cfaModel);
 		module.getContext().getModelRepository().addModel(mgModel);
@@ -342,8 +331,8 @@ public class MassEpsilonLauncher extends EpsilonStandaloneLauncher {
 			EolModelLoadingException, EolRuntimeException {
 		String source = "epsilon/transform/trace2cfa.eol";
 		IEolExecutableModule module = loadModule(source);
-		IModel cfaModel = getCFAModel(location, true, true);
-		IModel traceModel = getTRACEModel(location, true, false);
+		IModel cfaModel = modelHandler.getCFAModel(location, true, true);
+		IModel traceModel = modelHandler.getTRACEModel(location, true, false);
 		//mgModel.load();
 		module.getContext().getModelRepository().addModel(cfaModel);
 		module.getContext().getModelRepository().addModel(traceModel);
@@ -358,7 +347,7 @@ public class MassEpsilonLauncher extends EpsilonStandaloneLauncher {
 			URISyntaxException, EolModelLoadingException, EolRuntimeException {
 		String source = "epsilon/transform/extra2cfa.eol";
 		IEolExecutableModule module = loadModule(source);
-		IModel cfaModel = getCFAModel(location, true, true);
+		IModel cfaModel = modelHandler.getCFAModel(location, true, true);
 		// mgModel.load();
 		module.getContext().getModelRepository().addModel(cfaModel);
 		module.execute();
@@ -371,7 +360,7 @@ public class MassEpsilonLauncher extends EpsilonStandaloneLauncher {
 			EolModelLoadingException, EolRuntimeException {
 		String source = "epsilon/transform/experience2decent3.eol";
 		IEolExecutableModule module = loadModule(source);
-		IModel decentModel = getDECENTModel(location, true, true);
+		IModel decentModel = modelHandler.getDECENTModel(location, true, true);
 //		decentModel.load();
 		module.getContext().getModelRepository().addModel(decentModel);
 		module.execute();
@@ -383,7 +372,7 @@ public class MassEpsilonLauncher extends EpsilonStandaloneLauncher {
 			EolModelLoadingException, EolRuntimeException {
 		String source = "epsilon/transform/temporal2decent3.eol";
 		IEolExecutableModule module = loadModule(source);
-		IModel decentModel = getDECENTModel(location, true, true);
+		IModel decentModel = modelHandler.getDECENTModel(location, true, true);
 		//decentModel.load();
 		module.getContext().getModelRepository().addModel(decentModel);
 		module.execute();
@@ -396,7 +385,7 @@ public class MassEpsilonLauncher extends EpsilonStandaloneLauncher {
 			EolModelLoadingException, EolRuntimeException {
 		String source = "epsilon/transform/hits2decent3.eol";
 		IEolExecutableModule module = loadModule(source);
-		IModel decentModel = getDECENTModel(location, true, true);
+		IModel decentModel = modelHandler.getDECENTModel(location, true, true);
 		//decentModel.load();
 		module.getContext().getModelRepository().addModel(decentModel);
 		module.execute();
@@ -409,13 +398,7 @@ public class MassEpsilonLauncher extends EpsilonStandaloneLauncher {
 			URISyntaxException, EolModelLoadingException, EolRuntimeException {
 		String source = "epsilon/query/decent.eol";
 		IEolExecutableModule module = loadModule(source);
-		IModel decentModel;
-		if (useDECENTBinary) {
-			decentModel = getBinaryDECENTModel(location, true, false);
-		} else {
-			decentModel = getDECENTModel(location, true, false);
-		}
-		// decentModel.load();
+		IModel decentModel = modelHandler.getDECENTModel(location, true, false);
 		module.getContext().getModelRepository().addModel(decentModel);
 		module.execute();
 		decentModel.dispose();
@@ -427,7 +410,7 @@ public class MassEpsilonLauncher extends EpsilonStandaloneLauncher {
 			URISyntaxException, EolModelLoadingException, EolRuntimeException {
 		String source = "epsilon/query/arffx2arff.eol";
 		IEolExecutableModule module = loadModule(source);
-		IModel arffxModel = getARFFxModel(location, true, false);
+		IModel arffxModel = modelHandler.getARFFxModel(location, true, false);
 		module.getContext().getModelRepository().addModel(arffxModel);
 		module.execute();
 		arffxModel.dispose();
@@ -439,13 +422,8 @@ public class MassEpsilonLauncher extends EpsilonStandaloneLauncher {
 			URISyntaxException, EolModelLoadingException, EolRuntimeException {
 		String source = "epsilon/query/decent2arffx.eol";
 		IEolExecutableModule module = loadModule(source);
-		IModel decentModel;
-		if (useDECENTBinary) {
-			decentModel = getBinaryDECENTModel(location, true, false);
-		} else {
-			decentModel = getDECENTModel(location, true, false);
-		}
-		IModel arffxModel = getARFFxModel(location, false, true);;
+		IModel decentModel = modelHandler.getDECENTModel(location, true, false);
+		IModel arffxModel = modelHandler.getARFFxModel(location, false, true);;
 		// decentModel.load();
 		module.getContext().getModelRepository().addModel(decentModel);
 		module.getContext().getModelRepository().addModel(arffxModel);
@@ -460,7 +438,7 @@ public class MassEpsilonLauncher extends EpsilonStandaloneLauncher {
 			EolModelLoadingException, EolRuntimeException {
 		String source = "epsilon/transform/mg2normalized_hunks.eol";
 		IEolExecutableModule module = loadModule(source);
-		IModel mgModel = getMGModel(location, true, true);
+		IModel mgModel = modelHandler.getMGModel(location, true, true);
 //		mgModel.load();
 		module.getContext().getModelRepository().addModel(mgModel);
 		module.execute();
@@ -474,8 +452,8 @@ public class MassEpsilonLauncher extends EpsilonStandaloneLauncher {
 			EolModelLoadingException, EolRuntimeException {
 		String source = "epsilon/transform/mg2decent3.etl";
 		IEolExecutableModule module = loadModule(source);
-		IModel decentModel = getDECENTModel(location, false, true);
-		IModel mgModel = getMGModel(location, true, false);
+		IModel decentModel = modelHandler.getDECENTModel(location, false, true);
+		IModel mgModel = modelHandler.getMGModel(location, true, false);
 //		mgModel.load();
 		module.getContext().getModelRepository().addModel(decentModel);
 		module.getContext().getModelRepository().addModel(mgModel);
@@ -492,14 +470,7 @@ public class MassEpsilonLauncher extends EpsilonStandaloneLauncher {
 		IEolExecutableModule module = loadModule(source);
 		
 		//TODO: add option "use binary"
-		IModel decentModel;
-		if (useDECENTBinary) {
-			convertDECENTModelToBinary(location);
-			decentModel = getBinaryDECENTModel(location, true, true);
-			
-		} else {
-			decentModel = getDECENTModel(location, true, true);
-		}
+		IModel decentModel = modelHandler.getDECENTModel(location, true, true);
 		//module.getContext().getModelRepository().addModel(decentModel);
 		//decentModel.load();
 		
@@ -517,7 +488,7 @@ public class MassEpsilonLauncher extends EpsilonStandaloneLauncher {
 			) {
 				System.out.println("Processing: "+c);
 				module.parse(getFile(getSource()));
-				IModel famixModel = getFAMIXModel(location,Integer.parseInt(c));
+				IModel famixModel = modelHandler.getFAMIXModel(location,Integer.parseInt(c));
 				famixModel.load();
 				module.getContext().getModelRepository().addModel(decentModel);
 				module.getContext().getModelRepository().addModel(famixModel);
@@ -530,10 +501,6 @@ public class MassEpsilonLauncher extends EpsilonStandaloneLauncher {
 			}
 		}
 		decentModel.dispose();
-		if (useDECENTBinary) {
-			//TODO: optional for convenience
-			convertDECENTModelToXMI(location);
-		}
 	}
 
 	private IEolExecutableModule loadModule(String source) throws Exception,
@@ -579,68 +546,6 @@ public class MassEpsilonLauncher extends EpsilonStandaloneLauncher {
 		return commits;
 	}
 	
-	public IModel getDECENTModel(String location, boolean read, boolean write) throws Exception {
-		String resourceLocation = location+"/model.decent";
-		IModel model = createEmfModel("DECENT", resourceLocation, "../DECENT.Meta/model/DECENTv3.ecore", read, write);
-		//In memory example -> can be used to work with DB? or even EMF-Fragments
-		//new InMemoryEmfModel("DECENT", resource, "../DECENT.Meta/model/DECENTv3.ecore")
-		return model;
-	}
-
-	public IModel getARFFxModel(String location, boolean read, boolean write) throws Exception {
-		String resourceLocation = location+"/model.arffx";
-		IModel model = createEmfModel("ARFFx", resourceLocation, "../DECENT.Meta/model/ARFFx.ecore", read, write);
-		//In memory example -> can be used to work with DB? or even EMF-Fragments
-		//new InMemoryEmfModel("DECENT", resource, "../DECENT.Meta/model/DECENTv3.ecore")
-		return model;
-	}
-
-	
-	public IModel getFAMIXModel(String location, int commitId) throws Exception {
-		//TODO: make filtered optional infix
-		String resourceLocation = location+"/famix/"+commitId+"/filtered/model.famix";
-		IModel model = createEmfModel("FAMIX", resourceLocation, "../DECENT.Meta/model/FAMIX.ecore", true, false);
-		return model;
-	}
-	
-	
-	public void convertDECENTModelToBinary(String location) {
-		unregisterMetaModels("decent");
-		DECENTResourceTool tool = new DECENTResourceTool();
-		Resource resource = tool.loadResourceFromXMI(location+"/model.decent","decent", DECENTPackage.eINSTANCE);
-		tool.storeBinaryResourceContents(resource.getContents(), location+"/model.decent"+"bin", "decentbin");
-		restoreMetaModels();		
-	}
-
-	public void convertDECENTModelToXMI(String location) {
-		unregisterMetaModels("decent");
-		DECENTResourceTool tool = new DECENTResourceTool(); 
-		Resource resource = tool.loadResourceFromBinary(location+"/model.decentbin","decentbin", DECENTPackage.eINSTANCE);
-		tool.storeResourceContents(resource.getContents(), location+"/model.decent", "decent");
-		restoreMetaModels();		
-	}
-
-	public IModel getBinaryDECENTModel(String location, boolean readOnLoad, boolean storedOnDisposal) throws Exception {
-		String resourceLocation = location+"/model.decent";
-		unregisterMetaModels("decent");
-
-		DECENTResourceTool tool = new DECENTResourceTool();
-		if (!new File(location+"/model.decent"+"bin").exists()) {
-			Resource resource = tool.loadResourceFromXMI(location+"/model.decent","decent", DECENTPackage.eINSTANCE);
-			tool.storeBinaryResourceContents(resource.getContents(), location+"/model.decent"+"bin", "decentbin");
-		}
-
-		Resource resourceBin = tool.loadResourceFromBinary(resourceLocation+"bin","decentbin", DECENTPackage.eINSTANCE);
-		//NOTE: Adding the package is essential as otherwise epsilon breaks
-		InMemoryEmfModel emfModel = new InMemoryEmfModel("DECENT", resourceBin, DECENTPackage.eINSTANCE);
-		emfModel.setStoredOnDisposal(storedOnDisposal);
-		emfModel.setReadOnLoad(readOnLoad);
-		restoreMetaModels();		
-
-//		sampleModel(emfModel);
-		return emfModel;
-	}
-
 	private void sampleModel(InMemoryEmfModel emfModel) throws Exception,
 			EolRuntimeException {
 		String allTypes = "operation allTypes() : Collection {"
@@ -661,63 +566,7 @@ public class MassEpsilonLauncher extends EpsilonStandaloneLauncher {
 		System.out.println(result);
 	}
 	
-	public IModel getMGModel(String location,boolean read, boolean write) throws Exception {
-		String resourceLocation = location+"/model.mg";
-		IModel model;
-		if (useMGBinary) {
-			unregisterMetaModels("");
-			
-			MGResourceTool tool = new MGResourceTool();
-			if (!new File(location+"/model.mg"+"bin").exists()) {
-				Resource resource = tool.loadResourceFromXMI(location+"/model.mg","mg", MGPackage.eINSTANCE);
-				tool.storeBinaryResourceContents(resource.getContents(), location+"/model.mg"+"bin", "mgbin");
-			}
 
-			Resource resourceBin = tool.loadResourceFromBinary(resourceLocation+"bin","mgbin", MGPackage.eINSTANCE);
-			//NOTE: Adding the package is essential as otherwise epsilon breaks
-			model = new InMemoryEmfModel("MG", resourceBin, MGPackage.eINSTANCE);
-			model.setStoredOnDisposal(write);
-			model.setReadOnLoad(read);
-			
-			restoreMetaModels();		
-		} else {
-			model = createEmfModel("MG", resourceLocation, "../DECENT.Meta/model/MG.ecore", read, write);
-		}
-
-		
-		return model;
-	}
-
-	public IModel getBZModel(String location) throws Exception {
-		String resourceLocation = location+"/model.bz";
-		IModel model = createEmfModel("BZ", resourceLocation, "../DECENT.Meta/model/BZ.ecore", true, false);
-		return model;
-	}
-
-	public IModel getDAGModel(String location) throws Exception {
-		String resourceLocation = location+"/model.dag";
-		IModel model = createEmfModel("DAG", resourceLocation, "../DECENT.Meta/model/DAG.ecore", true, false);
-		return model;
-	}
-	
-	public IModel getDUDEModel(String location) throws Exception {
-		String resourceLocation = location+"/model.dude";
-		IModel model = createEmfModel("DUDE", resourceLocation, "../DECENT.Meta/model/DuDe.ecore", true, false);
-		return model;
-	}
-
-	
-	public IModel getCFAModel(String location, boolean read, boolean write) throws Exception {
-		String resourceLocation = location+"/model.cfa";
-		IModel model = createEmfModel("CFA", resourceLocation, "../DECENT.Meta/model/CFA.ecore", read, write);
-		return model;
-	}
-
-	public IModel getTRACEModel(String location, boolean read, boolean write) throws Exception {
-		String resourceLocation = location+"/model.trace";
-		IModel model = createEmfModel("TRACE", resourceLocation, "../DECENT.Meta/model/Traces.ecore", read, write);
-		return model;
-	}
 
 	
 	@Override
