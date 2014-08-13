@@ -19,8 +19,8 @@ import MG.MGPackage;
 
 public class DECENTEpsilonModelHandler {
 	private HashMap<String, Object> metaModelCache = new HashMap<>();
-	private boolean useDECENTBinary = true;
-	private boolean useMGBinary = true;
+	private boolean useDECENTBinary = false;
+	private boolean useMGBinary = false;
 
 	public IModel getDECENTModel(String location, boolean read, boolean write) throws Exception {
 		String resourceLocation = location+"/model.decent";
