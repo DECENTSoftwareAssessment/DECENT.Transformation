@@ -90,7 +90,7 @@ public class MassEpsilonLauncher {
 		String project = properties.getProperty("project");
 		String location = dataLocation+project;
 		for (String step : properties.getProperty("steps").split(",")) {
-			executeTransformation(step, location);
+			executeTransformation(step.replace("steps/", ""), location);
 		}
 	}	
 	public void executeTransformation(String step, String location) {
@@ -153,6 +153,9 @@ public class MassEpsilonLauncher {
 				break;
 			case "QUERY":
 				executeQUERY(location);
+				break;
+			case "STATS":
+				executeSTATS(location);
 				break;
 			case "BIN2DECENT":
 				//duplicates RT functionality
@@ -375,6 +378,12 @@ public class MassEpsilonLauncher {
 	private void executeQUERY(String location) throws Exception,
 			URISyntaxException, EolModelLoadingException, EolRuntimeException {
 		String source = "epsilon/query/decent.eol";
+		executeDECENTinPalace(location, source, true, false);
+	}
+
+	private void executeSTATS(String location) throws Exception,
+			URISyntaxException, EolModelLoadingException, EolRuntimeException {
+		String source = "epsilon/query/stats.eol";
 		executeDECENTinPalace(location, source, true, false);
 	}
 

@@ -1,0 +1,17 @@
+import "../libraries/decent/logging.eol";
+import "../libraries/decent/common.eol";
+
+ 	"Running decent stats".log(1);
+	var start = Native("java.lang.System").currentTimeMillis();
+
+
+  	("Models: "+DECENT!Model.allInstances().size()).log(1);
+  	var m = DECENT!Model.allInstances().first();
+  	for (c in m.content) {
+  		("  content: "+c).log(1);
+  	}
+
+	var end = Native("java.lang.System").currentTimeMillis();
+	var duration = end - start;
+	("Duration: "+duration.toMinutes().round(5)).log(1);
+  	
