@@ -4,13 +4,6 @@ import "../libraries/decent/logging.eol";
 "Running arffx2arff".log(1);
 var start = Native("java.lang.System").currentTimeMillis();
 
-var projectName = "yakuake"; 
-var filename = "/Users/philip-iii/Dev/workspaces/emf/DECENT.Data/input/"+projectName+"/model.arff";
-var writer;
-var file = new Native("java.io.File") (filename);
-writer = new Native("java.io.FileWriter") (file);
-
-
 var arff = ARFFx!Model.allInstances().first();
 var s = "\t";
 
@@ -35,12 +28,9 @@ var end = Native("java.lang.System").currentTimeMillis();
 var duration = end - start;
 ("Duration: "+duration.toMinutes().round(5)).log(1);
 
-writer.close();
 
 operation String printlno() {
 	self.println();
-    writer.write(self+"\n");
-    writer.flush();
 }	
 
 operation ARFFx!Instance getValues(s : String) : String {

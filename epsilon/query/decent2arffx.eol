@@ -20,38 +20,12 @@ var LinesPreHitsAttribute = ("LinesPreHits").getAttribute();
 var arff = new ARFFx!Model();
 arff.name = "Test";
 
-var projectName = DECENT!Project.allInstances().first().name.split("\\.")[0];
-var filename = "/Users/philip-iii/Dev/workspaces/emf/DECENT.Data/input/"+projectName+"/result.csv";
-var writer;
-var file = new Native("java.io.File") (filename);
-writer = new Native("java.io.FileWriter") (file);
-
-/*
-for (a in Artifact.allInstances().select(x|x.name = "terminal_splitter.cpp")) {
-    for (s in a.states.sortBy(x|x.ID)) {
-    	s.println();
-    }
-	
-}
-
-for (a in Agent.allInstances()) {
-	var difference = a.activities.sortBy(ax|ax.date.time).last().date.time - a.activities.sortBy(ax|ax.date.time).first().date.time;
-	difference = difference.asDouble() / (3600*1000*24);
-	(a.name + " active for " +difference +" days").println();
-	for (ax in a.activities) {
-		("  "+ax.date).println();
-	}
-}
-*/
-
 "Running decent2arffx".log(1);
 var start = Native("java.lang.System").currentTimeMillis();
 
 
 iterateOverArtifacts(CodeArtifactType);
 //iterateOverAffectedArtifacts(MethodArtifactType);
-
-writer.close();
 
 var end = Native("java.lang.System").currentTimeMillis();
 var duration = end - start;
@@ -62,8 +36,6 @@ var duration = end - start;
 
 operation String printlno() {
 	self.println();
-    writer.write(self+"\n");
-    writer.flush();
 }	
 
 
