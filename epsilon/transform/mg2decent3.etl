@@ -169,8 +169,8 @@ rule Action2State
 		s.addValue(FileSizeAttribute, a.revision.content.select(c|c.file = a.file).first().size.asDouble());
 		s.addValue(LOCAttribute, a.revision.content.select(c|c.file = a.file).first().loc.asDouble());
 	} else {
-		s.addValue(FileSizeAttribute, -1.asDouble());
-		s.addValue(LOCAttribute, -1.asDouble());
+		s.addValue(FileSizeAttribute, 0.asDouble());
+		s.addValue(LOCAttribute, 0.asDouble());
 	}
 
     s.addValue(AggregateFragmentCountAttribute, a.revision.lineBlames->select(l|l.file = a.file).size().asDouble());
