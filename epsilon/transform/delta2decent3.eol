@@ -1,7 +1,9 @@
 import "../libraries/decent/common.eol";
 import "../libraries/decent/logging.eol";
 
-"Running delta2decent ".log(1);
+var step = "delta2decent3"; 
+("Running "+step).log(1);
+
 var start = Native("java.lang.System").currentTimeMillis();
 
 var Model = DECENT!Model.allInstances().first();
@@ -16,8 +18,9 @@ for (a in DECENT!Artifact.allInstances()) {
 }
 
 
-Model.content.add("delta2decent3");
-
 var end = Native("java.lang.System").currentTimeMillis();
 var duration = end - start;
+Model.content.add(step);
+Model.addStep(step,duration.toMinutes().round(5));
+
 ("Duration: "+duration.toMinutes().round(5)).log(1);

@@ -27,6 +27,14 @@ operation Any addValue(attribute : DECENT!Attribute, content : String) : DECENT!
     return self.addValue(attribute, content, value);
 }
 
+operation DECENT!Model addStep(name : String, duration : Real) {
+	var step : new DECENT!Step();
+	step.name = name;
+	step.duration = duration.toString();
+	self.steps.add(step);
+}
+
+
 //NOTE: order matters, otherwise integers are mistakenly treated as reals
 operation Any addValue(attribute : DECENT!Attribute, content : Integer) : DECENT!Value {
 	var value = self.getValue(attribute);

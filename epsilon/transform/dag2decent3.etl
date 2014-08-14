@@ -5,7 +5,8 @@ pre dagInitPre {
 
   //Some initialization
   //More generic (might be simplified)
-  "Running dag2decent v3".log(1);
+  var step = "dag2decent3"; 
+  ("Running "+step).log(1);
   var start = Native("java.lang.System").currentTimeMillis();
   /********************************** INIT (1x) *******************************/
   var Model = DECENT!Model.allInstances().first();
@@ -26,11 +27,11 @@ post dagInitPost{
   assignAgentStatesToActivities();
    
  
-  Model.content.add("dag2decent3");
-
-  var end = Native("java.lang.System").currentTimeMillis();
-  var duration = end - start;
-  ("Duration: "+duration.toMinutes().round(5)).log(1);
+  	var end = Native("java.lang.System").currentTimeMillis();
+  	var duration = end - start;
+	Model.content.add(step);
+  	Model.addStep(step,duration.toMinutes().round(5));
+	("Duration: "+duration.toMinutes().round(5)).log(1);
   
 }
 

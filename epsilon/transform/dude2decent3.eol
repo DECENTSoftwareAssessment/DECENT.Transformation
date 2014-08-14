@@ -1,7 +1,8 @@
 import "../libraries/decent/common.eol";
 import "../libraries/decent/logging.eol";
 
-"Running dude2decent ".log(1);
+var step = "dude2decent3"; 
+("Running "+step).log(1);
 var start = Native("java.lang.System").currentTimeMillis();
 //TODO: could also be integrated back into famix2decent as inline checking 
 //to further filter out unchanged elements 
@@ -65,8 +66,9 @@ for (s in states) {
 }
 
 
-Model.content.add("dude2decent3");
 
 var end = Native("java.lang.System").currentTimeMillis();
 var duration = end - start;
+Model.content.add(step);
+Model.addStep(step,duration.toMinutes().round(5));
 ("Duration: "+duration.toMinutes().round(5)).log(1);

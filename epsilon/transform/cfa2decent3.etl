@@ -5,7 +5,8 @@ import "../libraries/decent/logging.eol";
 
 pre {
   //Some initialization
-  "Running cfa2decent3".log(1);
+  var step = "cfa2decent3"; 
+  ("Running "+step).log(1);
   var start = Native("java.lang.System").currentTimeMillis();
   
   ("DECENT States: "+DECENT!State.allInstances().size()).log(2);
@@ -118,10 +119,10 @@ pre {
 }
 
 post {
-  	Model.content.add("cfa2decent3");
-  
     var end = Native("java.lang.System").currentTimeMillis();
     var duration = end - start;
+  	Model.content.add(step);
+  	Model.addStep(step,duration.toMinutes().round(5));
     ("Duration: "+duration.toMinutes().round(5)).log(1);
     //TODO: use this check to enable BZ based processing
 }

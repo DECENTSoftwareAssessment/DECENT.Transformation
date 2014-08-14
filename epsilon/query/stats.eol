@@ -7,8 +7,8 @@ import "../libraries/decent/common.eol";
 
   	("Models: "+DECENT!Model.allInstances().size()).log(1);
   	var m = DECENT!Model.allInstances().first();
-  	for (c in m.content) {
-  		("  content: "+c).log(1);
+  	for (s in m.steps) {
+  		("  content: "+s.name + "\t"+s.duration).log(1);
   	}
 
 	var end = Native("java.lang.System").currentTimeMillis();

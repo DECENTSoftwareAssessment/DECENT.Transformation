@@ -4,7 +4,11 @@ import "../libraries/decent/logging.eol";
 
 pre {
   //Some initialization
-  "Running famix2decent3".log(1);
+  var revisionId = FAMIX!AnchoredElement.allInstances().first().revisionId;
+  
+  var step = "famix2decent3 @ "+revisionId; 
+  ("Running "+step).log(1);
+  
   var start = Native("java.lang.System").currentTimeMillis();
   
   ("DECENT States: "+DECENT!State.allInstances().size()).log(2);
@@ -118,10 +122,10 @@ post {
 	//- endLine = e.anchor.endLine
 	//then
 	//- select(l|l >= startLine and l <= endLine)
-	Model.content.add("famix2decent3@"+revisionId);
-	
 	var end = Native("java.lang.System").currentTimeMillis();
     var duration = end - start;
+	Model.content.add(step);
+  	Model.addStep(step,duration.toMinutes().round(5));
     ("Duration: "+duration.toMinutes().round(5)).log(1);
 	
 }

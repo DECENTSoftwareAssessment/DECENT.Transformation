@@ -1,7 +1,9 @@
 import "../libraries/decent/common.eol";
 import "../libraries/decent/logging.eol";
 
-  "Running temporal2decent".log(1);
+  var step = "temporal2decent3"; 
+  ("Running "+step).log(1);
+  
   var start = Native("java.lang.System").currentTimeMillis();
 
   var Model = DECENT!Model.allInstances().first();
@@ -54,10 +56,10 @@ import "../libraries/decent/logging.eol";
   }
   
 
-  Model.content.add("temporal2decent3");
-
   var end = Native("java.lang.System").currentTimeMillis();
   var duration = end - start;
+  Model.content.add(step);
+  Model.addStep(step,duration.toMinutes().round(5));
   ("Duration: "+duration.toMinutes().round(5)).log(1);
 
 
