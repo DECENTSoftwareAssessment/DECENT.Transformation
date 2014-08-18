@@ -1,0 +1,20 @@
+import "../libraries/decent/common.eol";
+import "../libraries/decent/logging.eol";
+
+("Executing live").println();
+var Type = DECENT!ArtifactType.allInstances().select(a|a.name = "code").first();
+var CodeArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "code").first();
+var ClassArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "Class").first();
+var MethodArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "Method").first();
+var FunctionArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "Function").first();
+var ModuleArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "Module").first();
+
+for (a in DECENT!Artifact.all().select(x|x.type.name = "Method")) {
+	("Artifact: "+a.name).println();
+	for (s in a.states) {
+		("  State: "+ s.ID).println();
+		for (cs in s.parent) {
+			("    Parent State: "+ cs.ID + " of artifact "+cs.artifact.name).println();
+		}
+	}
+}

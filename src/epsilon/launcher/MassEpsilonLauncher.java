@@ -402,12 +402,10 @@ public class MassEpsilonLauncher {
 			TimerTask task = new FileWatcher(new File(source)) {
 				protected void onChange(File file) {
 					try {
-						System.out.println(decentModel.allContents().size());
 						IEolExecutableModule module = loadModule(source);
 						module.getContext().getModelRepository().addModel(decentModel);
 						module.execute();
 						module.reset();
-						System.out.println(decentModel.allContents().size());
 					} catch (URISyntaxException e) {
 					} catch (EolRuntimeException e) {
 						String path = e.getAst().getUri().getPath();
