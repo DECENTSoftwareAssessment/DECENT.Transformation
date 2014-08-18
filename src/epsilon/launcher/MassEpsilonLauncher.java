@@ -160,6 +160,9 @@ public class MassEpsilonLauncher {
 			case "STATS":
 				executeSTATS(location);
 				break;
+			case "FIX":
+				executeFIX(location);
+				break;
 			case "LIVE":
 				executeLIVE(location);
 				break;
@@ -385,6 +388,12 @@ public class MassEpsilonLauncher {
 			URISyntaxException, EolModelLoadingException, EolRuntimeException {
 		String source = "epsilon/query/decent.eol";
 		executeDECENTinPalace(location, source, true, false);
+	}
+
+	private void executeFIX(String location) throws Exception,
+			URISyntaxException, EolModelLoadingException, EolRuntimeException {
+		String source = "epsilon/transform/fix.eol";
+		executeDECENTinPalace(location, source, true, true);
 	}
 
 	private void executeSTATS(String location) throws Exception,

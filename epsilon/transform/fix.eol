@@ -1,0 +1,18 @@
+import "../libraries/decent/logging.eol";
+import "../libraries/decent/common.eol";
+
+ 	"Running decent stats".log(1);
+	var start = Native("java.lang.System").currentTimeMillis();
+
+	for (a in DECENT!Artifact.all().select(x|x.type.name = "code")) {
+		for (c in a.children) {
+			for (cs in c.states) {
+				cs.parent = a.states.select(x|x.ID = cs.ID).first();
+			}
+		}
+	}   
+
+	var end = Native("java.lang.System").currentTimeMillis();
+	var duration = end - start;
+	("Duration: "+duration.toMinutes().round(5)).log(1);
+	
