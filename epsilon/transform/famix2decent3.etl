@@ -281,7 +281,7 @@ rule Method2State
 
     guard : m.sourceAnchor_IN_FileAnchor.fileName <> "_unknown_path" and checkParentArtifactStateExists(m.revisionId, m.sourceAnchor_IN_FileAnchor.fileName)
 
-    s.mapAnchoredElement(m, MethodArtifactType, m.signature);
+    s.mapAnchoredElement(m, MethodArtifactType, m.parentType_IN_Class.first().name+"::"+m.signature);
 
     m.~done = true;
     (FAMIX!Method.allInstances().select(m|m.~done == true).size()+"/"+potentiallyAffectedMethods.size() + " done").log(1);   
