@@ -19,9 +19,12 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Properties;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import org.eclipse.emf.common.util.URI;
 import org.eclipse.emf.ecore.EPackage;
@@ -156,6 +159,9 @@ public class MassEpsilonLauncher {
 				break;
 			case "STATS":
 				executeSTATS(location);
+				break;
+			case "LIVE":
+				executeLIVE(location);
 				break;
 			case "BIN2DECENT":
 				//duplicates RT functionality
@@ -387,6 +393,45 @@ public class MassEpsilonLauncher {
 		executeDECENTinPalace(location, source, true, false);
 	}
 
+	private void executeLIVE(String location)  {
+		final String source = "epsilon/query/live.eol";
+		try {
+			final IModel decentModel = modelHandler.getDECENTModel(location, true, false);
+			decentModel.load();
+
+			TimerTask task = new FileWatcher(new File(source)) {
+				protected void onChange(File file) {
+					try {
+						System.out.println(decentModel.allContents().size());
+						IEolExecutableModule module = loadModule(source);
+						module.getContext().getModelRepository().addModel(decentModel);
+						module.execute();
+						module.reset();
+						System.out.println(decentModel.allContents().size());
+					} catch (URISyntaxException e) {
+					} catch (EolRuntimeException e) {
+						String path = e.getAst().getUri().getPath();
+						System.out.println("  Epsilon Runtime Exception:" +
+								"\n\tReason: "+e.getReason()+
+								"\n\tWhere:  "+e.getAst().getUri()+" at "+e.getLine() + " : "+e.getColumn() +
+								"\n\tLink:   ("+path.substring(path.lastIndexOf("/")+1)+":"+e.getLine()+")");
+
+					} catch (Exception e) {
+						
+					}
+				}
+			};
+
+			Timer timer = new Timer();
+			// repeat the check every second
+			timer.schedule(task, new Date(), 1000);
+
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
 	private void executeARFFx2ARFF(String location) throws Exception,
 			URISyntaxException, EolModelLoadingException, EolRuntimeException {
 		String source = "epsilon/query/arffx2arff.eol";
@@ -500,7 +545,7 @@ public class MassEpsilonLauncher {
 			for (ParseProblem problem : module.getParseProblems()) {
 				System.err.println(problem.toString());
 			}
-			System.exit(-1);
+			//System.exit(-1);
 		}
 
 		return module;
