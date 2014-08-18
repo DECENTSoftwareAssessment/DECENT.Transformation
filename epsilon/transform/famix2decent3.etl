@@ -144,30 +144,27 @@ operation DECENT!State mapAnchoredElement(c : FAMIX!AnchoredElement, artifactTyp
     var fileName = c.sourceAnchor_IN_FileAnchor.fileName;
     ("Transforming "+artifactType.name+" " +name +" at revision "+c.revisionId+" located in "+fileName).log(3);
 
-    //("  File Anchor at "+fileName).log(1);
     var candidateParentStates = DECENT!State.allInstances().select(s|s.ID = c.revisionId  and s.artifact.type = CodeArtifactType and s.values.select(v|v.ofAttribute = FilePathAttribute).first().content = fileName);
-    //("    Candidate Parent States Count: "+candidateParentStates.size()).log(1);
     //TODO: what if more than one?
-    var parent = candidateParentStates.first().artifact;
-    //("      Candidate Parent Artifact: "+parent.name).log(1);
-    var candidateArtifacts = parent.children.select(child|child.name = name and child.type = artifactType);
+    var parentArtifact = candidateParentStates.first().artifact;
+    self.parent = candidateParentStates.first();
+    var candidateArtifacts = parentArtifact.children.select(child|child.name = name and child.type = artifactType);
     var artifact = null;
     if (candidateArtifacts.size() > 0) {
-        //("      Candidate Artifacts: "+candidateArtifacts.size()).log(1);
         //TODO: what if more than one?
         artifact = candidateArtifacts.first();
     } else {
         artifact = new DECENT!Artifact;
         artifact.name = name;
         artifact.type = artifactType;
-        artifact.parent = parent;
+        artifact.parent = parentArtifact;
     }
 
     var lastState = null; 
 
     if (artifact.states.size() > 0) {
     	//TODO: what if more than one?
-    	var parentPrevious = candidateParentStates.first().previous.first();
+    	var parentPrevious = self.parent.previous.first();
     	if (parentPrevious.isDefined()) {
 	    	lastState = artifact.states.select(s|s.ID = parentPrevious.ID).first();
 	        //lastState = artifact.states.last();
@@ -177,7 +174,7 @@ operation DECENT!State mapAnchoredElement(c : FAMIX!AnchoredElement, artifactTyp
     	}
     }
 
-    self.name = candidateParentStates.first().name;
+    self.name = self.parent.name;
     self.ID = c.revisionId;
     artifact.states.add(self);
 
@@ -190,7 +187,7 @@ operation DECENT!State mapAnchoredElement(c : FAMIX!AnchoredElement, artifactTyp
     activity.state = lastState;            
     activity.targetState = self;
     //TODO: need to properly select corresponding parent activity, this is only the naive approach
-    var parentArtifactActivity = candidateParentStates.first().fromActivity.first();
+    var parentArtifactActivity = self.parent.fromActivity.first();
     activity.date = parentArtifactActivity.date;
     activity.type = parentArtifactActivity.type;
     activity.agent = parentArtifactActivity.agent;
@@ -207,7 +204,7 @@ operation DECENT!State mapAnchoredElement(c : FAMIX!AnchoredElement, artifactTyp
         //    artifact.attributes.add(attribute);
         //}
         
-        if ((attr.getEAttributeType().getName() == "EDouble")) {
+        if ((attr.getEAttributeType().getName() == "EDouble") or (attr.getEAttributeType().getName() == "Boolean")) {
             self.addValue(attribute, c.eGet(attr));
         }
     }
