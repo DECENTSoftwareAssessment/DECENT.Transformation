@@ -1,0 +1,17 @@
+operation ARFFx!Instance addValue(content : String, attribute : String) {
+	var value = new ARFFx!Value();
+	value.ofAttribute = attribute.getARFFAttribute();
+	value.content = content;
+	self.values.add(value);	    	
+}
+
+@cached
+operation String getARFFAttribute() : ARFFx!Attribute {
+	var attribute = ARFFx!Attribute.allInstances.select(a|a.name = self).first();
+	if (attribute.isUndefined()) {
+		attribute = new ARFFx!Attribute();
+		attribute.name = self;
+		ARFFx!Model.allInstances().first().attributes.add(attribute);
+	}
+	return attribute;
+}
