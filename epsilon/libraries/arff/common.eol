@@ -15,3 +15,10 @@ operation String getARFFAttribute() : ARFFx!Attribute {
 	}
 	return attribute;
 }
+
+operation String getSelectedAttributes() : Sequence {
+	var file = new Native("java.io.File")(self);
+	var content = Native("org.apache.commons.io.FileUtils").readLines(file);
+	content = content.select(x|not x.startsWith("#")).closure(x|x.trim());
+	return content;
+}
