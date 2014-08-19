@@ -1,3 +1,4 @@
+import "../libraries/arff/common.eol";
 import "../libraries/decent/common.eol";
 import "../libraries/decent/logging.eol";
 
@@ -71,16 +72,6 @@ operation validateFAMIXCoverage (type:DECENT!ArtifactType) {
 }
 
 //use ETL equivalents instead...
-@cached
-operation String getARFFAttribute() : ARFFx!Attribute {
-	var attribute = ARFFx!Attribute.allInstances.select(a|a.name = self).first();
-	if (attribute.isUndefined()) {
-		attribute = new ARFFx!Attribute();
-		attribute.name = self;
-		arff.attributes.add(attribute);
-	}
-	return attribute;
-}
 
 operation iterateOverAgents (type:DECENT!ArtifactType) {
     var h = false;
@@ -153,7 +144,7 @@ operation iterateOverAffectedArtifacts (type:DECENT!ArtifactType) {
 	    	arff.data.add(i);
 	    	for (v in s.values) {
 	    		var value = new ARFFx!Value();
-	    		value.ofAttribute = v.name.getARFFAttribute();
+	    		value.ofAttribute = v.name.getARFFAttribute(NUMERIC);
 	    		value.content = v.content.asString();
 				i.values.add(value);	    	
 	    	}
@@ -188,8 +179,8 @@ operation iterateOverArtifacts (type:DECENT!ArtifactType) {
 	//TODO: need some safety checks...
 	var h = false;
 	var separator = "\t";
-//	for (a in Artifact.allInstances().select(x|x.type = type).sortBy(x|x.name)) {
-	for (a in Artifact.allInstances().sortBy(x|x.name)) {
+	for (a in Artifact.allInstances().select(x|x.type = type).sortBy(x|x.name)) {
+//	for (a in Artifact.allInstances().sortBy(x|x.name)) {
 	    var header = "";
 	    for (s in a.states.sortBy(x|x.ID)) {
 	        //(a.name+" at "+s.ID).println();
@@ -199,36 +190,19 @@ operation iterateOverArtifacts (type:DECENT!ArtifactType) {
 	    	var i = new ARFFx!Instance();
 	    	arff.data.add(i);
 
-    		var artifactName = new ARFFx!Value();
-    		artifactName.ofAttribute = ("Artifact.Name").getARFFAttribute();
-    		artifactName.content = s.artifact.name.asString();
-			i.values.add(artifactName);
-    		
-    		var stateID = new ARFFx!Value();
-    		stateID.ofAttribute = ("Artifact.StateID").getARFFAttribute();
-    		stateID.content = s.ID.asString();
-			i.values.add(stateID);
-			
+			i.addValue(s.artifact.name.asString(), "Artifact.Name");
+			i.addValue(s.ID.asString(), "Artifact.StateID");
 				    	
 	    	for (v in s.values.select(x|x.isTypeOf(DECENT!DoubleValue) or x.isTypeOf(DECENT!IntegerValue))) {
-	    		var value = new ARFFx!Value();
-	    		value.ofAttribute = ("Artifact."+v.name).getARFFAttribute();
-	    		value.content = v.content.asString();
-				i.values.add(value);	    	
+				i.addValue(v.content.asString(), "Artifact."+v.name);
 	    	}
 
 	        for (ax in s.fromActivity) {
 		    	for (v in ax.values.select(x|x.isTypeOf(DECENT!DoubleValue) or x.isTypeOf(DECENT!IntegerValue))) {
-		    		var value = new ARFFx!Value();
-		    		value.ofAttribute = ("Activity."+v.name).getARFFAttribute();
-		    		value.content = v.content.asString();
-					i.values.add(value);	    	
+					i.addValue(v.content.asString(), "Activity."+v.name);
 		    	}
 		    	for (v in ax.deltas) {
-		    		var value = new ARFFx!Value();
-		    		value.ofAttribute = ("Delta."+v.onAttribute.name).getARFFAttribute();
-		    		value.content = v.change.asString();
-					i.values.add(value);	    	
+					i.addValue(v.change.asString(), "Delta."+v.onAttribute.name);
 		    	}
 			}
         	continue;
