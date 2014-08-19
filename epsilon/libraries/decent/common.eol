@@ -168,6 +168,12 @@ operation addAttribute(name : String, description : String, dimension : String) 
   	return attribute;
 }
 
+operation String getSelectedAttributes() : Sequence {
+	var file = new Native("java.io.File")(self);
+	var content = Native("org.apache.commons.io.FileUtils").readLines(file);
+	content = content.select(x|not x.startsWith("#")).closure(x|x.trim());
+	return content;
+}
 
 operation DECENT!Model addAttributes(attributes : Map) {
 	for (a in attributes.keySet()) {
