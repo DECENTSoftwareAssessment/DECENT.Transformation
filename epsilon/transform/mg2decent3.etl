@@ -180,7 +180,6 @@ rule Action2State
 	//TODO: also add distances between bugs, own changes, all changes, bug lifetimes..
 	
 	//TODO: handle activities and deltas (as a post step?)
-	//TODO: deltas!
     var activity = new DECENT!Activity;
     activity.targetState = s;
     activity.state = lastState;            

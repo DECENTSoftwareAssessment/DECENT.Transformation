@@ -156,6 +156,18 @@ operation addAttribute(name : String, description : String) : DECENT!Attribute {
   	return attribute;
 }
 
+operation addAttribute(name : String, description : String, dimension : String) : DECENT!Attribute {
+	var attribute = addAttribute(name, description);
+	var Dimension = Model.dimensions.select(x|x.name = dimension).first();
+	if (Dimension.isUndefined()) {
+	  	Dimension = new DECENT!Dimension;
+	  	Dimension.name = dimension;
+      	Model.dimensions.add(Dimension);
+  	}
+  	attribute.dimension = Dimension;
+  	return attribute;
+}
+
 
 operation DECENT!Model addAttributes(attributes : Map) {
 	for (a in attributes.keySet()) {
