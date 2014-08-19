@@ -1,25 +1,34 @@
+import "../libraries/arff/common.eol";
 import "../libraries/decent/common.eol";
 import "../libraries/decent/logging.eol";
 
-"Running arffx2arff".log(1);
+"Running arffx2csv".log(1);
 var start = Native("java.lang.System").currentTimeMillis();
 
+var filename = ARFFx.getModelFile().substring(1).replace("arffx","csv");
+var writer;
+var file = new Native("java.io.File") (filename);
+writer = new Native("java.io.FileWriter") (file);
+
 var arff = ARFFx!Model.allInstances().first();
-var s = "\t";
 
-
-("@RELATION " + arff.name + " \n").printlno();
+var s = ",";
 
 var attributes = arff.attributes;
-for (a in attributes) {
-	//("@ATTRIBUTE " + a.name + " " + a.type.name).println();
-	("@ATTRIBUTE " + a.name + " NUMERIC").printlno();
-}
 
-("\n@DATA").printlno();
+//add labels
+var CONFIDENCE = "CONFIDENCE".getARFFAttribute();
+var LABEL = "LABEL".getARFFAttribute();
+
+var line = "";
+for (a in attributes) {
+	line = line + s +a.name;
+}
+(line.substring(1)).printlno();
 
 for (i in arff.data) {
-	i.getValues(s).printlno();
+	i.assignClassAndConfidence();
+	i.getValues(s).substring(1).printlno();
 	//TODO: order seems to be ensured anyways
 	//i.getSafeOrderValues(s, attributes).printlno();
 }
@@ -29,16 +38,37 @@ var duration = end - start;
 ("Duration: "+duration.toMinutes().round(5)).log(1);
 
 
+//validateFAMIXCoverage(CodeArtifactType);
+
+writer.close();
+
 operation String printlno() {
 	self.println();
+    writer.write(self+"\n");
+    writer.flush();
 }	
+
+operation ARFFx!Instance assignClassAndConfidence() {
+	var base = self.getValue("Artifact.BugFix.AverageWeight.Local".getARFFAttribute());
+	var label = "false";
+	var confidence = "high";
+	var threshold = 0.4.asDouble();
+	if (base.asDouble() > threshold) {
+		label = "true";
+		if (base.asDouble() < 0.1.asDouble()) {
+			confidence = "low";
+		}
+	}
+	self.addValue(confidence, CONFIDENCE.name);
+	self.addValue(label, LABEL.name);
+}
 
 operation ARFFx!Instance getValues(s : String) : String {
 	var line = "";
 	for (v in self.values) {
-		line = line + v.content + s;
+		line = line  + s + v.content;
 	}
-	return line;
+	return line.replace("NaN","0.0");
 }
 
 operation ARFFx!Instance getSafeOrderValues(s : String, attributes : Sequence) : String {
