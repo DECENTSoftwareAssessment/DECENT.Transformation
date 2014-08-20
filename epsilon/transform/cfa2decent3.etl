@@ -87,6 +87,8 @@ pre {
   Model.addAttributes(attributes);
   
   var CFAWeightFactor = "WeightFactor".getCFAAttribute();
+  var CFAAverageWeight = "AverageWeight".getCFAAttribute();
+  var CFATotalWeight = "TotalWeight".getCFAAttribute();
   var FilePathAttribute = "FilePath".getAttribute();
   
   
@@ -114,6 +116,7 @@ pre {
   //TODO: this needs to be rethought tho, as it is now it is providing too much noise
   addArtifactTemporals();
   addAgentTemporals();
+
   
   ("...done!").log(2);
 }
@@ -150,11 +153,26 @@ operation dumpAgentStates() {
   }
 }
 
+//TODO: move upstream and reuse in famix2decent, dude2decent and elsewhere
+@cached
+operation Integer getMatchingStatesForID() : Collection {
+	return DECENT!State.allInstances().select(x|x.artifact.isMGtype() and x.ID = self);
+}
+
+@cached
+operation Collection getMatchingStateForPath(filePath : String) : Collection {
+	return self.select(x|x.getValue(FilePathAttribute).content = filePath);
+}
+
+
 operation addArtifactTemporals() {
 	//TODO: these should be factor specific as well
   	("...adding artifact temporals...").log(2);
 
+	var start = CFA!GlobalState.allInstances().sortBy(x|x.revision.author_date.time).first().revision.author_date.time;
+
   	for (f in CFA!Factor.allInstances()) {
+  		
   		var AverageFixedLifespanAttribute = (f.name+".AverageFixedLifespan").getAttribute();
   		var AverageCausedLifespanAttribute = (f.name+".AverageCausedLifespan").getAttribute();
 
@@ -171,14 +189,12 @@ operation addArtifactTemporals() {
 		var distanceTime = new Sequence;
 		var resolution = 24*60*60*1000;//days*hours*minutes*seconds
 		//resolution = 60*1000;//minutes*seconds
-		  
-		var start = CFA!GlobalState.allInstances().sortBy(x|x.revision.author_date.time).first().revision.author_date.time;
-		  
+		
 		for (s in CFA!ArtifactState.allInstances()) {
 			("  " + s.file.file_name + " @ "+s.ID).log(3);
 		  	var fileName = s.file.file_name;
 		  	var filePath = s.action.current_file_path;
-		  	var matchedStates = DECENT!State.allInstances().select(m|m.artifact.isMGtype() and m.ID = s.ID and m.getValue(FilePathAttribute).content = filePath);
+		  	var matchedStates = s.ID.getMatchingStatesForID().getMatchingStateForPath(filePath);
 		  	var size = matchedStates.size();
 			//check if correct matches can be found 
 		  	if (size <> 1) {
@@ -188,6 +204,8 @@ operation addArtifactTemporals() {
 		  			//("      "+x.artifact.name+" at "+x.ID+" ("+x.getValue(FilePathAttribute).content+")").log(4);
 		  		//}
 		  	} else {
+
+
 		  		var state = matchedStates.first();
 		  
 		   		//TODO: consider moving to mg2cfa 
@@ -213,23 +231,28 @@ operation addArtifactTemporals() {
 		
 				var time = s.action.revision.author_date.time;
 				var totalFixedTime = 0;
-				for (c in s.fixes) {
+				//TODO: export threshold
+				var threshold = 0.1.asDouble();
+				//select only buggy changes
+				var selectedFixes = s.fixes.select(x|x.factors.get(f).get(CFAAverageWeight) > threshold);
+				for (c in selectedFixes) {
 					var causeTime = c.action.revision.author_date.time;
 					totalFixedTime = totalFixedTime + (time - causeTime);
 					relativeTime.add(((time - causeTime).asDouble()/(time - start).asDouble()));
 					distanceTime.add((time - causeTime).asDouble()/resolution);
 				}
-				if (s.fixes.size() > 0) {
-					averageFixedLifespan = s.factors.get(f).get(CFAWeightFactor)*(totalFixedTime / s.fixes.size().asDouble()).toDays();
+				if (selectedFixes.size() > 0) {
+					averageFixedLifespan = s.factors.get(f).get(CFAWeightFactor)*(totalFixedTime / selectedFixes.size().asDouble()).toDays();
 				}
-
+				//TODO: This should be inverse in fact Fixed...Attribute
 				state.addValue(CausedRelativeDistanceVarianceAttribute, relativeTime.getVariance());
 				state.addValue(CausedRelativeDistanceAverageAttribute, relativeTime.getMean());
 				state.addValue(CausesDistanceTimeVarianceAttribute, distanceTime.getVariance());
 		
 				relativeTime.clear();
 				distanceTime.clear();
-				
+
+				//TODO: This should be inverse in fact Fixed...Attribute
 				var totalCausedTime = 0;
 				var selectedCauses = s.causes.select(c|c.factors.get(f).get(CFAWeightFactor) > 0);
 				for (f in selectedCauses) {
@@ -295,7 +318,7 @@ operation addAgentTemporals() {
 				
 				relativeTime.clear();
 				distanceTime.clear();
-				
+				//TODO: adapt similar to artifact temporals above
 				for (c in s.fixes) {
 					var causeTime = c.revision.author_date.time;
 					totalFixedTime = totalFixedTime + (time - causeTime);
@@ -344,8 +367,8 @@ operation transformArtifactStates() {
 	("  " + s.file.file_name + " @ "+s.ID).log(3);
   	var fileName = s.file.file_name;
   	var filePath = s.action.current_file_path;
-  	var matchedStates = DECENT!State.allInstances().select(m|m.artifact.isMGtype() and m.ID = s.ID and m.getValue(FilePathAttribute).content = filePath);
-  	var size = matchedStates.size();
+  	var matchedStates = s.ID.getMatchingStatesForID().getMatchingStateForPath(filePath);
+   	var size = matchedStates.size();
 	//check if correct matches can be found 
   	if (size <> 1) {
   		("  "+size+" DECENT matches found for: "+fileName+" at "+s.ID).log(4);
@@ -358,6 +381,7 @@ operation transformArtifactStates() {
   		
 		//TODO: add proper backout  		
   		for (f in s.factors.keySet()) {
+  			
 		  	var factorValues = s.factors.get(f);
 		  	var globalStateFactorValues = s.globalState.factors.get(f);
 		  	for (a in factorValues.keySet()) {
@@ -376,6 +400,7 @@ operation transformArtifactStates() {
 	  		}
 	  		var ClearedWeightAttribute = (f.name+".ClearedWeight.Local").getAttribute();
 	   		state.addValue(ClearedWeightAttribute, clearedBugWeight);
+
 		}
   		
   		state.addValue(CausesCountAttribute, s.causes.size().asDouble());
