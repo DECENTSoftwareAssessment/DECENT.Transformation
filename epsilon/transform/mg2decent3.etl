@@ -31,6 +31,8 @@ pre mgInitPre {
   var LOCAttribute = addAttribute("LOC","Lines of code");
   var LinesAddedAttribute = addAttribute("LinesAdded","Lines added");
   var LinesRemovedAttribute = addAttribute("LinesRemoved","Lines removed");
+  var TagsAttribute = addAttribute("Tags","Assigned tags");
+  var TagsCountAttribute = addAttribute("TagsCount","Number of assigned tags");
   var IsBugFixAttribute = addAttribute("IsBugFix","Revision is labeled as bug fix");
   var BugFixCountAttribute = addAttribute("BugFixCount","Number of bug fixes in past revisions");
   var AggregateFragmentCountAttribute = addAttribute("AggregateFragmentCount","");
@@ -61,6 +63,31 @@ pre mgInitPre {
 }
 
 post mgInitPost{
+  ("Post processing...").log(1);
+
+  var tagsstart = Native("java.lang.System").currentTimeMillis();
+  for (a in DECENT!Artifact.allInstances()) {
+  	for (s in a.states) {
+		var content = new OrderedSet();
+		if (s.activity.size()>0) {
+			content.addAll(MG!Tag.allInstances().select(x|
+					x.revision.first().author_date.time <= s.activity.first().date.time and 
+					x.revision.first().author_date.time >= s.fromActivity.first().date.time
+				).collect(y|y.name));
+		} else {
+			content.addAll(MG!Tag.allInstances().select(x|
+					x.revision.first().author_date.time >= s.fromActivity.first().date.time
+				).collect(y|y.name));
+		}
+		s.addStringCollectionValue(TagsAttribute,content);  	
+		s.addValue(TagsCountAttribute,content.size());  	
+  	}
+  }
+  var tagsend = Native("java.lang.System").currentTimeMillis();
+  var tagsduration = tagsend - tagsstart;
+  ("Duration(tags): "+tagsduration.toMinutes().round(5)).log(1);
+
+
   var end = Native("java.lang.System").currentTimeMillis();
   var duration = end - start;
 
