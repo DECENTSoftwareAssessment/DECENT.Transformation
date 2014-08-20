@@ -24,8 +24,8 @@ arff.name = "Test";
 "Running decent2arffx".log(1);
 var start = Native("java.lang.System").currentTimeMillis();
 
-
-iterateOverArtifacts(CodeArtifactType);
+transferValuesToChildren();
+iterateOverArtifacts(MethodArtifactType);
 //iterateOverAffectedArtifacts(MethodArtifactType);
 
 var end = Native("java.lang.System").currentTimeMillis();
@@ -39,6 +39,23 @@ operation String printlno() {
 	self.println();
 }	
 
+operation transferValuesToChildren() {
+	//add filters or similar
+	//add different strategies
+	//default strategy is to just copy them (for hit artifacts)
+	
+	var attribute = "BugFix.AverageWeight.Local".getAttribute();
+	for (s in DECENT!State.allInstances().select(x|x.artifact.type = CodeArtifactType)) {
+		var parentValue = s.getValue(attribute);
+		for (c in s.children) {
+			var content = 0.asDouble();
+			if (c.isHit()) {
+				content = parentValue.content;				
+			}
+			c.addValue(attribute, content);
+		}
+	}
+}
 
 operation validateFAMIXCoverage (type:DECENT!ArtifactType) {
 	//TODO: need some safety checks...
@@ -99,6 +116,9 @@ operation iterateOverAgents (type:DECENT!ArtifactType) {
 }
 
 operation DECENT!State isHit() : Boolean {
+	if (self.artifact.isMGtype()) {
+		return true;
+	}
 	var pre = self.getValue(LinesPostHitsAttribute);
 	var post = self.getValue(LinesPreHitsAttribute);
 	return ((pre.isDefined() and pre.content.isDefined() and pre.content.size() > 0) 
@@ -182,7 +202,7 @@ operation iterateOverArtifacts (type:DECENT!ArtifactType) {
 	for (a in Artifact.allInstances().select(x|x.type = type).sortBy(x|x.name)) {
 //	for (a in Artifact.allInstances().sortBy(x|x.name)) {
 	    var header = "";
-	    for (s in a.states.sortBy(x|x.ID)) {
+	    for (s in a.states.excluding(a.states.first()).select(x|x.isHit()).sortBy(x|x.ID)) {
 	        //(a.name+" at "+s.ID).println();
 	        //TODO: note that because of this the last state is not shown!
 	        // - workaround this or show target state values
