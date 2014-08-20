@@ -6,32 +6,22 @@ import "../libraries/decent/logging.eol";
 var start = Native("java.lang.System").currentTimeMillis();
 
 var filename = ARFFx.getModelFile().substring(1).replace("arffx","csv");
-var writer;
-var file = new Native("java.io.File") (filename);
-writer = new Native("java.io.FileWriter") (file);
+var s = ",";
 
 var arff = ARFFx!Model.allInstances().first();
 
-var s = ",";
-
-var attributes = arff.attributes;
-
-//add labels
 var CONFIDENCE = "CONFIDENCE".getARFFAttribute();
 var LABEL = "LABEL".getARFFAttribute();
 
-var line = "";
-for (a in attributes) {
-	line = line + s +a.name;
-}
-(line.substring(1)).printlno();
+//arff.exportAll(filename,s);
 
-for (i in arff.data) {
-	i.assignClassAndConfidence();
-	i.getValues(s).substring(1).printlno();
-	//TODO: order seems to be ensured anyways
-	//i.getSafeOrderValues(s, attributes).printlno();
-}
+var filter = "filters/default";
+arff.exportAttributes(filter+"-last");
+
+//note that this is about 30%+ slower
+arff.exportFiltered(filename,filter,s);
+
+
 
 var end = Native("java.lang.System").currentTimeMillis();
 var duration = end - start;
@@ -40,19 +30,92 @@ var duration = end - start;
 
 //validateFAMIXCoverage(CodeArtifactType);
 
-writer.close();
 
-operation String printlno() {
-	self.println();
-    writer.write(self+"\n");
-    writer.flush();
-}	
+operation ARFFx!Model exportAttributes(filename : String) {
+	var file = new Native("java.io.File") (filename);
+	var writer = new Native("java.io.FileWriter") (file);
+	
+	self.attributes.collect(x|x.name).concat("\n").printlno(writer);
+
+	writer.close();
+}
+
+
+operation ARFFx!Model exportAll(filename : String, s : String) {
+	var file = new Native("java.io.File") (filename);
+	var writer = new Native("java.io.FileWriter") (file);
+	
+	self.attributes.collect(x|x.name).concat(s).printlno(writer);
+
+	for (i in self.data) {
+		i.assignClassAndConfidence();
+		i.getValues(s).substring(1).printlno(writer);
+		//TODO: order seems to be ensured anyways
+		//i.getSafeOrderValues(s, attributes).printlno();
+	}
+	
+	writer.close();
+}
+
+//deprecated: slow 
+operation ARFFx!Model assignClassAndConfidence() {
+	for (i in self.data) {
+		i.assignClassAndConfidence();
+	}
+}
+
+//deprecated: very very very slow!
+operation ARFFx!Model filterAttributes(filter : String, s : String) {
+	if (filter.isDefined()) {
+		var selected = filter.getSelectedAttributes();
+		
+		//Note: This takes a subset of the available attributes that are 
+		//also within the filtered set, rather than simply taking the 
+		//filtered set, which may include unavailable attributes as well 
+		var attributes = self.attributes.select(x|not selected.contains(x.name));
+		for (v in ARFFx!Value.all().select(x|attributes.contains(x.ofAttribute))) {
+			delete v;
+		}
+		for (a in attributes) {
+			delete a;
+		}
+	}
+}
+
+
+operation ARFFx!Model exportFiltered(filename : String, filter : String, s : String) {
+	var file = new Native("java.io.File") (filename);
+	var writer = new Native("java.io.FileWriter") (file);
+	var attributes = self.attributes;
+
+	var line = "";
+	if (filter.isDefined()) {
+		var selected = filter.getSelectedAttributes();
+		
+		//Note: This takes a subset of the available attributes that are 
+		//also within the filtered set, rather than simply taking the 
+		//filtered set, which may include unavailable attributes as well 
+		attributes = attributes.select(x|selected.contains(x.name));
+	}
+
+	attributes.collect(x|x.name).concat(s).printlno(writer);
+	
+	for (i in self.data) {
+		i.assignClassAndConfidence();
+		//Note: See above on why attributes rather than selected is used 
+		i.getFilteredValues(s,attributes).printlno(writer);
+		//TODO: order seems to be ensured anyways
+		//i.getSafeOrderValues(s, attributes).printlno();
+	}
+	
+	writer.close();
+}
 
 operation ARFFx!Instance assignClassAndConfidence() {
 	var base = self.getValue("Artifact.BugFix.AverageWeight.Local".getARFFAttribute());
 	var label = "false";
 	var confidence = "high";
-	var threshold = 0.4.asDouble();
+	var threshold = 0.1.asDouble();
 	if (base.asDouble() > threshold) {
 		label = "true";
 		if (base.asDouble() < 0.1.asDouble()) {
@@ -63,14 +126,23 @@ operation ARFFx!Instance assignClassAndConfidence() {
 	self.addValue(label, LABEL.name);
 }
 
+operation ARFFx!Instance getFilteredValues(s : String, filter : Collection) : String {
+	var line = "";
+	for (v in self.values.select(x|filter.contains(x.ofAttribute))) {
+		line = line  + s + v.content;
+	}
+	return line.replace("NaN","0.0").substring(1);
+}
+
 operation ARFFx!Instance getValues(s : String) : String {
 	var line = "";
 	for (v in self.values) {
 		line = line  + s + v.content;
 	}
-	return line.replace("NaN","0.0");
+	return line.replace("NaN","0.0").substring(1);
 }
 
+//deprecated
 operation ARFFx!Instance getSafeOrderValues(s : String, attributes : Sequence) : String {
 	var line = "";
 	for (a in attributes) {
@@ -79,8 +151,6 @@ operation ARFFx!Instance getSafeOrderValues(s : String, attributes : Sequence) :
 	return line;
 }
 
-
 operation ARFFx!Instance getValue(attribute : ARFFx!Attribute) : String {
-	//(attribute.name + " = " + self.values.select(v|v.ofAttribute = attribute).size()).println();
 	return self.values.select(v|v.ofAttribute = attribute).first().content;
 }
