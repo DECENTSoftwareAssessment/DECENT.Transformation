@@ -145,6 +145,11 @@ operation addAttribute(name : String) : DECENT!Attribute {
 	return addAttribute(name, "");
 }
 
+operation String printlno(writer) {
+    writer.write(self+"\n");
+    writer.flush();
+}	
+
 operation addAttribute(name : String, description : String) : DECENT!Attribute {
 	var attribute = Model.attributePool.attributes.select(att|att.name = name).first();
 	if (attribute.isUndefined()) {
