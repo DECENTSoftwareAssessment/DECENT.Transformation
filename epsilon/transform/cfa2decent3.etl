@@ -109,6 +109,8 @@ pre {
   //TODO: add ratios, e.g. averageBugWeight/averageWeight, also for totals, define interpretation
   //TODO: add lifespans
 
+  var profiler : new Native("org.eclipse.epsilon.eol.tools.ProfilerTool");
+
   transformArtifactStates();
   transformAgentStates();
   addCarriedWeights();
@@ -156,7 +158,9 @@ operation dumpAgentStates() {
 //TODO: move upstream and reuse in famix2decent, dude2decent and elsewhere
 @cached
 operation Integer getMatchingStatesForID() : Collection {
-	return DECENT!State.allInstances().select(x|x.artifact.isMGtype() and x.ID = self);
+	//this makes a huge difference!
+	//return DECENT!State.allInstances().select(x|x.artifact.isMGtype() and x.ID = self);
+	return DECENT!Artifact.allInstances().select(x|x.isMGtype()).collect(y|y.states).flatten().select(z|z.ID = self);
 }
 
 @cached
@@ -190,87 +194,92 @@ operation addArtifactTemporals() {
 		var resolution = 24*60*60*1000;//days*hours*minutes*seconds
 		//resolution = 60*1000;//minutes*seconds
 		
-		for (s in CFA!ArtifactState.allInstances()) {
-			("  " + s.file.file_name + " @ "+s.ID).log(3);
-		  	var fileName = s.file.file_name;
-		  	var filePath = s.action.current_file_path;
-		  	var matchedStates = s.ID.getMatchingStatesForID().getMatchingStateForPath(filePath);
-		  	var size = matchedStates.size();
-			//check if correct matches can be found 
-		  	if (size <> 1) {
-		  		("  "+size+" DECENT matches found for: "+fileName+" at "+s.ID).log(4);
-		  		("    Avaliable states at "+s.ID+" are:").log(4);
-		  		//for (x in DECENT!State.allInstances().select(x|x.artifact.isMGtype() and x.ID = s.ID)) {
-		  			//("      "+x.artifact.name+" at "+x.ID+" ("+x.getValue(FilePathAttribute).content+")").log(4);
-		  		//}
-		  	} else {
-
-
-		  		var state = matchedStates.first();
-		  
-		   		//TODO: consider moving to mg2cfa 
-		   		//TODO: consider filtering by weight
-		   		//TODO: considering adding further temporals
-		   		//TODO: describe intuitions (in particular for average caused lifespans):
-		   		// - average caused lifespan indicates the lifespan of the changes / lines changed in the state
-		   		// - average caused bug lifespan indicates the lifespan of the buggy changes / buggy lines changed in the state
-		   		// - difference between the two above would indicate that buggy parts were removed faster 
-		   		//   it would also create bias thus needs to be hidden for machine learning
-		   		//   but could be used for statistics, filtering, comparison with issue lifetimes and other purposes
-		   		//   could also be used as target for prediction (whether a piece looks like it may soon be changed, 
-		   		//   or perhaps also contain a bug that will survive a given number of days)
-		   		// - not sure what to make out of the average fixed lifespan - i.e. the age of the changed lines
-		   		//TODO: add for the global states as well for reference
-		   		//TODO: also consider projecting on the project, agent, and artifact lifespans
-		   		// - separate values can be calculated for agents
-		   		var averageFixedLifespan = 0.asDouble();
-		   		var averageCausedLifespan = 0.asDouble();
+	  	for (g in CFA!GlobalState.allInstances()) {
+  			var states = g.ID.getMatchingStatesForID();
 		
-				relativeTime.clear();
-				distanceTime.clear();
 		
-				var time = s.action.revision.author_date.time;
-				var totalFixedTime = 0;
-				//TODO: export threshold
-				var threshold = 0.1.asDouble();
-				//select only buggy changes
-				var selectedFixes = s.fixes.select(x|x.factors.get(f).get(CFAAverageWeight) > threshold);
-				for (c in selectedFixes) {
-					var causeTime = c.action.revision.author_date.time;
-					totalFixedTime = totalFixedTime + (time - causeTime);
-					relativeTime.add(((time - causeTime).asDouble()/(time - start).asDouble()));
-					distanceTime.add((time - causeTime).asDouble()/resolution);
+			for (s in g.artifactStates) {
+				("  " + s.file.file_name + " @ "+s.ID).log(3);
+			  	var fileName = s.file.file_name;
+			  	var filePath = s.action.current_file_path;
+			  	var matchedStates = states.getMatchingStateForPath(filePath);
+			  	var size = matchedStates.size();
+				//check if correct matches can be found 
+			  	if (size <> 1) {
+			  		("  "+size+" DECENT matches found for: "+fileName+" at "+s.ID).log(4);
+			  		("    Avaliable states at "+s.ID+" are:").log(4);
+			  		//for (x in DECENT!State.allInstances().select(x|x.artifact.isMGtype() and x.ID = s.ID)) {
+			  			//("      "+x.artifact.name+" at "+x.ID+" ("+x.getValue(FilePathAttribute).content+")").log(4);
+			  		//}
+			  	} else {
+	
+	
+			  		var state = matchedStates.first();
+			  
+			   		//TODO: consider moving to mg2cfa 
+			   		//TODO: consider filtering by weight
+			   		//TODO: considering adding further temporals
+			   		//TODO: describe intuitions (in particular for average caused lifespans):
+			   		// - average caused lifespan indicates the lifespan of the changes / lines changed in the state
+			   		// - average caused bug lifespan indicates the lifespan of the buggy changes / buggy lines changed in the state
+			   		// - difference between the two above would indicate that buggy parts were removed faster 
+			   		//   it would also create bias thus needs to be hidden for machine learning
+			   		//   but could be used for statistics, filtering, comparison with issue lifetimes and other purposes
+			   		//   could also be used as target for prediction (whether a piece looks like it may soon be changed, 
+			   		//   or perhaps also contain a bug that will survive a given number of days)
+			   		// - not sure what to make out of the average fixed lifespan - i.e. the age of the changed lines
+			   		//TODO: add for the global states as well for reference
+			   		//TODO: also consider projecting on the project, agent, and artifact lifespans
+			   		// - separate values can be calculated for agents
+			   		var averageFixedLifespan = 0.asDouble();
+			   		var averageCausedLifespan = 0.asDouble();
+			
+					relativeTime.clear();
+					distanceTime.clear();
+			
+					var time = s.action.revision.author_date.time;
+					var totalFixedTime = 0;
+					//TODO: export threshold
+					var threshold = 0.1.asDouble();
+					//select only buggy changes
+					var selectedFixes = s.fixes.select(x|x.factors.get(f).get(CFAAverageWeight) > threshold);
+					for (c in selectedFixes) {
+						var causeTime = c.action.revision.author_date.time;
+						totalFixedTime = totalFixedTime + (time - causeTime);
+						relativeTime.add(((time - causeTime).asDouble()/(time - start).asDouble()));
+						distanceTime.add((time - causeTime).asDouble()/resolution);
+					}
+					if (selectedFixes.size() > 0) {
+						averageFixedLifespan = s.factors.get(f).get(CFAWeightFactor)*(totalFixedTime / selectedFixes.size().asDouble()).toDays();
+					}
+					//TODO: This should be inverse in fact Fixed...Attribute
+					state.addValue(CausedRelativeDistanceVarianceAttribute, relativeTime.getVariance());
+					state.addValue(CausedRelativeDistanceAverageAttribute, relativeTime.getMean());
+					state.addValue(CausesDistanceTimeVarianceAttribute, distanceTime.getVariance());
+			
+					relativeTime.clear();
+					distanceTime.clear();
+	
+					//TODO: This should be inverse in fact Fixed...Attribute
+					var totalCausedTime = 0;
+					var selectedCauses = s.causes.select(c|c.factors.get(f).get(CFAWeightFactor) > 0);
+					for (f in selectedCauses) {
+						var fixTime = f.action.revision.author_date.time;
+						totalCausedTime = totalCausedTime + (fixTime - time);
+						relativeTime.add(((fixTime - time).asDouble()/(fixTime - start).asDouble()));
+						distanceTime.add((fixTime - time).asDouble()/resolution);
+					}
+					if (selectedCauses.size() > 0) {
+						averageCausedLifespan = (totalCausedTime / selectedCauses.size().asDouble()).toDays();
+					}
+					
+					state.addValue(FixedRelativeDistanceVarianceAttribute, relativeTime.getVariance());
+					state.addValue(FixedRelativeDistanceAverageAttribute, relativeTime.getMean());
+					state.addValue(FixesDistanceTimeVarianceAttribute, distanceTime.getVariance());
+					
+			   		state.addValue(AverageFixedLifespanAttribute, averageFixedLifespan);
+			   		state.addValue(AverageCausedLifespanAttribute, averageCausedLifespan);
 				}
-				if (selectedFixes.size() > 0) {
-					averageFixedLifespan = s.factors.get(f).get(CFAWeightFactor)*(totalFixedTime / selectedFixes.size().asDouble()).toDays();
-				}
-				//TODO: This should be inverse in fact Fixed...Attribute
-				state.addValue(CausedRelativeDistanceVarianceAttribute, relativeTime.getVariance());
-				state.addValue(CausedRelativeDistanceAverageAttribute, relativeTime.getMean());
-				state.addValue(CausesDistanceTimeVarianceAttribute, distanceTime.getVariance());
-		
-				relativeTime.clear();
-				distanceTime.clear();
-
-				//TODO: This should be inverse in fact Fixed...Attribute
-				var totalCausedTime = 0;
-				var selectedCauses = s.causes.select(c|c.factors.get(f).get(CFAWeightFactor) > 0);
-				for (f in selectedCauses) {
-					var fixTime = f.action.revision.author_date.time;
-					totalCausedTime = totalCausedTime + (fixTime - time);
-					relativeTime.add(((fixTime - time).asDouble()/(fixTime - start).asDouble()));
-					distanceTime.add((fixTime - time).asDouble()/resolution);
-				}
-				if (selectedCauses.size() > 0) {
-					averageCausedLifespan = (totalCausedTime / selectedCauses.size().asDouble()).toDays();
-				}
-				
-				state.addValue(FixedRelativeDistanceVarianceAttribute, relativeTime.getVariance());
-				state.addValue(FixedRelativeDistanceAverageAttribute, relativeTime.getMean());
-				state.addValue(FixesDistanceTimeVarianceAttribute, distanceTime.getVariance());
-				
-		   		state.addValue(AverageFixedLifespanAttribute, averageFixedLifespan);
-		   		state.addValue(AverageCausedLifespanAttribute, averageCausedLifespan);
 			}
 		}
 	}
@@ -362,54 +371,62 @@ operation addAgentTemporals() {
 
 operation transformArtifactStates() {
   ("...transforming artifact states...").log(2);
-  
-  for (s in CFA!ArtifactState.allInstances()) {
-	("  " + s.file.file_name + " @ "+s.ID).log(3);
-  	var fileName = s.file.file_name;
-  	var filePath = s.action.current_file_path;
-  	var matchedStates = s.ID.getMatchingStatesForID().getMatchingStateForPath(filePath);
-   	var size = matchedStates.size();
-	//check if correct matches can be found 
-  	if (size <> 1) {
-  		("  "+size+" DECENT matches found for: "+fileName+" at "+s.ID).log(4);
-  		("    Avaliable states at "+s.ID+" are:").log(4);
-  		//for (x in DECENT!State.allInstances().select(x|x.artifact.isMGtype() and x.ID = s.ID)) {
-  			//("      "+x.artifact.name+" at "+x.ID+" ("+x.getValue(FilePathAttribute).content+")").log(4);
-  		//}
-  	} else {
-  		var state = matchedStates.first();
-  		
-		//TODO: add proper backout  		
-  		for (f in s.factors.keySet()) {
-  			
-		  	var factorValues = s.factors.get(f);
-		  	var globalStateFactorValues = s.globalState.factors.get(f);
-		  	for (a in factorValues.keySet()) {
-	  			var LocalAttribute = (f.name+"."+a.name+".Local").getAttribute();
-	  			var GlobalAttribute = (f.name+"."+a.name+".Global").getAttribute();
-	  			//state.values.removeAll(state.values.select(v|v.ofAttribute.name = LocalAttribute));
-	  			//state.values.removeAll(state.values.select(v|v.ofAttribute.name = GlobalAttribute));
-	  			state.addValue(LocalAttribute,factorValues.get(a));
-	  			state.addValue(GlobalAttribute,globalStateFactorValues.get(a));
-		  	}
-		  	
-  	  		var clearedBugWeight = 0.asDouble();
-	  		if (s.fixes.size()>0) {
-	  			//TODO: what's the sense behind the multiplication below???
-	  			clearedBugWeight = factorValues.get(CFAWeightFactor) * (s.fixes.size().asDouble()/s.fixes.size().asDouble());
-	  		}
-	  		var ClearedWeightAttribute = (f.name+".ClearedWeight.Local").getAttribute();
-	   		state.addValue(ClearedWeightAttribute, clearedBugWeight);
-
-		}
-  		
-  		state.addValue(CausesCountAttribute, s.causes.size().asDouble());
-  		state.addValue(FixesCountAttribute, s.fixes.size().asDouble());
-
-  		state.addValue(GlobalCausesCountAttribute, s.globalState.causes.size().asDouble());
-  		state.addValue(GlobalFixesCountAttribute, s.globalState.fixes.size().asDouble());
+  profiler.start("transformArtifactStates");
+  for (g in CFA!GlobalState.allInstances()) {
+  	profiler.start("transformArtifactStates.matching",g.ID);
+  	var states = g.ID.getMatchingStatesForID();
+    profiler.stop();
+	for (s in g.artifactStates) {
+		
+		("  " + s.file.file_name + " @ "+s.ID).log(3);
+	  	var fileName = s.file.file_name;
+	  	var filePath = s.action.current_file_path;
+	  	var matchedStates = states.getMatchingStateForPath(filePath);
+	   	var size = matchedStates.size();
+		//check if correct matches can be found 
+	  	if (size <> 1) {
+	  		("  "+size+" DECENT matches found for: "+fileName+" at "+s.ID).log(4);
+	  		("    Avaliable states at "+s.ID+" are:").log(4);
+	  		//for (x in DECENT!State.allInstances().select(x|x.artifact.isMGtype() and x.ID = s.ID)) {
+	  			//("      "+x.artifact.name+" at "+x.ID+" ("+x.getValue(FilePathAttribute).content+")").log(4);
+	  		//}
+	  	} else {
+	  		var state = matchedStates.first();
+	  		
+			//TODO: add proper backout  		
+	  		for (f in s.factors.keySet()) {
+	  			
+			  	var factorValues = s.factors.get(f);
+			  	var globalStateFactorValues = s.globalState.factors.get(f);
+			  	for (a in factorValues.keySet()) {
+		  			var LocalAttribute = (f.name+"."+a.name+".Local").getAttribute();
+		  			var GlobalAttribute = (f.name+"."+a.name+".Global").getAttribute();
+		  			//state.values.removeAll(state.values.select(v|v.ofAttribute.name = LocalAttribute));
+		  			//state.values.removeAll(state.values.select(v|v.ofAttribute.name = GlobalAttribute));
+		  			state.addValue(LocalAttribute,factorValues.get(a));
+		  			state.addValue(GlobalAttribute,globalStateFactorValues.get(a));
+			  	}
+			  	
+	  	  		var clearedBugWeight = 0.asDouble();
+		  		if (s.fixes.size()>0) {
+		  			//TODO: what's the sense behind the multiplication below???
+		  			clearedBugWeight = factorValues.get(CFAWeightFactor) * (s.fixes.size().asDouble()/s.fixes.size().asDouble());
+		  		}
+		  		var ClearedWeightAttribute = (f.name+".ClearedWeight.Local").getAttribute();
+		   		state.addValue(ClearedWeightAttribute, clearedBugWeight);
+	
+			}
+	  		
+	  		state.addValue(CausesCountAttribute, s.causes.size().asDouble());
+	  		state.addValue(FixesCountAttribute, s.fixes.size().asDouble());
+	
+	  		state.addValue(GlobalCausesCountAttribute, s.globalState.causes.size().asDouble());
+	  		state.addValue(GlobalFixesCountAttribute, s.globalState.fixes.size().asDouble());
+	  	}
   	}
   }
+  profiler.stop();
+  
 }
 
 operation addCarriedWeights() {
