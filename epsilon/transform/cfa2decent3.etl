@@ -153,19 +153,6 @@ operation dumpAgentStates() {
   }
 }
 
-//TODO: move upstream and reuse in famix2decent, dude2decent and elsewhere
-@cached
-operation Integer getMatchingStatesForID() : Collection {
-	//this makes a huge difference!
-	//return DECENT!State.allInstances().select(x|x.artifact.isMGtype() and x.ID = self);
-	return DECENT!Artifact.allInstances().select(x|x.isMGtype()).collect(y|y.states).flatten().select(z|z.ID = self);
-}
-
-@cached
-operation Collection getMatchingStateForPath(filePath : String) : Collection {
-	return self.select(x|x.getValue(FilePathAttribute).content = filePath);
-}
-
 
 operation addArtifactTemporals() {
 	//TODO: these should be factor specific as well
