@@ -180,7 +180,7 @@ operation addArtifactTemporals() {
 		//resolution = 60*1000;//minutes*seconds
 		
 	  	for (g in CFA!GlobalState.allInstances()) {
-  			var states = g.ID.getMatchingStatesForID();
+  			var states = g.ID.getMGStatesForID();
 		
 		
 			for (s in g.artifactStates) {
@@ -357,7 +357,7 @@ operation addAgentTemporals() {
 operation transformArtifactStates() {
   ("...transforming artifact states...").log(2);
   for (g in CFA!GlobalState.allInstances()) {
-  	var states = g.ID.getMatchingStatesForID();
+  	var states = g.ID.getMGStatesForID();
 	for (s in g.artifactStates) {
 		
 		("  " + s.file.file_name + " @ "+s.ID).log(3);
