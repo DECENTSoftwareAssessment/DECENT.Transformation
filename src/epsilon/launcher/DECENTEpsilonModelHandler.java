@@ -4,12 +4,14 @@ import java.io.File;
 import java.net.URISyntaxException;
 import java.util.HashMap;
 
+import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EPackage;
 import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.epsilon.common.util.StringProperties;
 import org.eclipse.epsilon.emc.emf.EmfModel;
 import org.eclipse.epsilon.emc.emf.InMemoryEmfModel;
 import org.eclipse.epsilon.eol.exceptions.models.EolModelLoadingException;
+import org.eclipse.epsilon.eol.models.CachedModel;
 import org.eclipse.epsilon.eol.models.IModel;
 
 import resource.tools.DECENTResourceTool;
@@ -24,7 +26,7 @@ public class DECENTEpsilonModelHandler {
 
 	public IModel getDECENTModel(String location, boolean read, boolean write) throws Exception {
 		String resourceLocation = location+"/model.decent";
-		IModel model;
+		EmfModel model;
 		
 		if (isUseDECENTBinary()) {
 			unregisterMetaModels("decent");
@@ -43,7 +45,8 @@ public class DECENTEpsilonModelHandler {
 			model = new InMemoryEmfModel("DECENT", resourceBin, DECENTPackage.eINSTANCE);
 			model.setStoredOnDisposal(write);
 			model.setReadOnLoad(read);
-		
+			model.setCachingEnabled(true);
+			model.load();
 			restoreMetaModels();		
 		} else {
 			model = createEmfModel("DECENT", resourceLocation, "../DECENT.Meta/model/DECENTv3.ecore", read, write);
@@ -54,7 +57,7 @@ public class DECENTEpsilonModelHandler {
 
 	public IModel getMGModel(String location,boolean read, boolean write) throws Exception {
 		String resourceLocation = location+"/model.mg";
-		IModel model;
+		EmfModel model;
 		if (isUseMGBinary()) {
 			unregisterMetaModels("");
 			
@@ -69,6 +72,7 @@ public class DECENTEpsilonModelHandler {
 			model = new InMemoryEmfModel("MG", resourceBin, MGPackage.eINSTANCE);
 			model.setStoredOnDisposal(write);
 			model.setReadOnLoad(read);
+			model.setCachingEnabled(true);
 			
 			restoreMetaModels();		
 		} else {
@@ -155,6 +159,7 @@ public class DECENTEpsilonModelHandler {
 		InMemoryEmfModel emfModel = new InMemoryEmfModel("DECENT", resourceBin, DECENTPackage.eINSTANCE);
 		emfModel.setStoredOnDisposal(storedOnDisposal);
 		emfModel.setReadOnLoad(readOnLoad);
+		emfModel.setCachingEnabled(true);
 		restoreMetaModels();		
 
 //		sampleModel(emfModel);
@@ -173,6 +178,7 @@ public class DECENTEpsilonModelHandler {
 				"file:/" + getFile(model).getAbsolutePath());
 		properties.put(EmfModel.PROPERTY_IS_METAMODEL_FILE_BASED, "true");
 		properties.put(EmfModel.PROPERTY_READONLOAD, readOnLoad + "");
+		properties.put(EmfModel.PROPERTY_CACHED, "true");
 		properties.put(EmfModel.PROPERTY_STOREONDISPOSAL, 
 				storeOnDisposal + "");
 		emfModel.load(properties, null);
@@ -190,6 +196,7 @@ public class DECENTEpsilonModelHandler {
 				"file:/" + getFile(model).getAbsolutePath());
 		properties.put(EmfModel.PROPERTY_IS_METAMODEL_FILE_BASED, "false");
 		properties.put(EmfModel.PROPERTY_READONLOAD, readOnLoad + "");
+		properties.put(EmfModel.PROPERTY_CACHED, "true");
 		properties.put(EmfModel.PROPERTY_STOREONDISPOSAL, 
 				storeOnDisposal + "");
 		emfModel.load(properties, null);
