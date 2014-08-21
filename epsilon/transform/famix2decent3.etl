@@ -32,7 +32,7 @@ pre {
   
   var codeStatesInRevision = new OrderedSet;
   var cleaned = false;
-  var profiler : new Native("org.eclipse.epsilon.eol.tools.ProfilerTool");
+  //var profiler : new Native("org.eclipse.epsilon.eol.tools.ProfilerTool");
    
   if (FAMIX!FileAnchor.allInstances().size() > 0) {
 	  revisionId = FAMIX!FileAnchor.allInstances().first().revisionId;
@@ -67,12 +67,10 @@ pre {
   	  //TODO: consider generating separate decent instances for each revision (or a set of revisinos) which may be 
   	  //handled as a resource set
   }
-  profiler.start("all");
 
 }
 
 post {
-	profiler.stop();
 	("Updating broken activities...").log(2);
 	("DECENT Code States in "+revisionId + ": "+codeStatesInRevision.size()).log(2);
 	
