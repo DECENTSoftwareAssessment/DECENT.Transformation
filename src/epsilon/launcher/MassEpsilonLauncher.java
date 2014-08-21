@@ -313,7 +313,7 @@ public class MassEpsilonLauncher {
 		String header = String.format(layout, "Name", "Execution Count", "Aggregate Time", "Individual Time", "Average Time");
 		System.out.println("	"+header);
 		for (ProfilerTargetSummary s : summaries) {
-			String e = String.format(layout, s.getName(), s.getExecutionCount(), s.getExecutionTime().getAggregate(), s.getExecutionTime().getIndividual(), ((double)s.getExecutionTime().getIndividual())/s.getExecutionCount());
+			String e = String.format(layout, s.getName(), s.getExecutionCount(), s.getExecutionTime().getAggregate(), s.getExecutionTime().getIndividual(), ((double)s.getExecutionTime().getAggregate())/s.getExecutionCount());
 			System.out.println("	"+e);
 		}
 	}
