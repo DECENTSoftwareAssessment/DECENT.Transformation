@@ -42,17 +42,14 @@ pre {
 	  potentiallyAffectedMethods = FAMIX!Method.getPotentiallyAffectedAnchoredElements();
 	  ("FAMIX Classes in "+revisionId + ": "+potentiallyAffectedClasses.size()+"/"+FAMIX!Class.allInstances().size()).log(2);
 	  ("FAMIX Methods in "+revisionId + ": "+potentiallyAffectedMethods.size()+"/"+FAMIX!Class.allInstances().size()).log(2);
-	  codeStatesInRevision = DECENT!State.allInstances().select(s|s.ID = revisionId and s.artifact.type = CodeArtifactType);
+	  //TODO: use new or adapted operation from cfa2decent 
+	  codeStatesInRevision = revisionId.getCodeStatesForID();
 	  ("DECENT Code States in "+revisionId + ": "+codeStatesInRevision.size()).log(2);
 	  for (s in codeStatesInRevision) {
 	    ("  Changed state of Code artifact " + s.values.select(v|v.ofAttribute = FilePathAttribute).first().content).log(3);
 	  }
 	
-	  var existingStatesInRevision = DECENT!State.allInstances().select(s|s.ID = revisionId and 
-	  								   (s.artifact.type = ClassArtifactType or 
-	  									s.artifact.type = MethodArtifactType or 
-	  									s.artifact.type = ModuleArtifactType or 
-	  									s.artifact.type = FunctionArtifactType));
+	  var existingStatesInRevision = revisionId.getFAMIXStatesForID();
 	  ("Existing DECENT Anchored Element States in "+revisionId + ": "+existingStatesInRevision.size()).log(2);
 	  var fromActivities = new OrderedSet;
 	  
@@ -71,9 +68,11 @@ pre {
   	  //TODO: consider generating separate decent instances for each revision (or a set of revisinos) which may be 
   	  //handled as a resource set
   }
+  //var profiler : new Native("org.eclipse.epsilon.eol.tools.ProfilerTool");
 }
 
 post {
+
 	("Updating broken activities...").log(2);
 	("DECENT Code States in "+revisionId + ": "+codeStatesInRevision.size()).log(2);
 	
@@ -143,8 +142,7 @@ operation checkParentArtifactStateExists(stateId : Integer, filePath : String) :
 operation DECENT!State mapAnchoredElement(c : FAMIX!AnchoredElement, artifactType : DECENT!ArtifactType, name : String) {
     var fileName = c.sourceAnchor_IN_FileAnchor.fileName;
     ("Transforming "+artifactType.name+" " +name +" at revision "+c.revisionId+" located in "+fileName).log(3);
-
-    var candidateParentStates = DECENT!State.allInstances().select(s|s.ID = c.revisionId  and s.artifact.type = CodeArtifactType and s.values.select(v|v.ofAttribute = FilePathAttribute).first().content = fileName);
+    var candidateParentStates = codeStatesInRevision.getMatchingStateForPath(fileName);
     //TODO: what if more than one?
     var parentArtifact = candidateParentStates.first().artifact;
     self.parent = candidateParentStates.first();
@@ -161,7 +159,6 @@ operation DECENT!State mapAnchoredElement(c : FAMIX!AnchoredElement, artifactTyp
     }
 
     var lastState = null; 
-
     if (artifact.states.size() > 0) {
     	//TODO: what if more than one?
     	var parentPrevious = self.parent.previous.first();
@@ -192,22 +189,24 @@ operation DECENT!State mapAnchoredElement(c : FAMIX!AnchoredElement, artifactTyp
     activity.type = parentArtifactActivity.type;
     activity.agent = parentArtifactActivity.agent;
     
-    for (attr in c.eClass().getEAllAttributes()) {
+    for (attr in c.eClass().getSelectedAttributes()) {
         var attribute = attr.getName().getAttribute(); 
         if (not attribute.isDefined()){
         	attribute = addAttribute(attr.getName(),"See FAMIX attributes.");
             attribute.artifactTypes.add(artifactType);
         }
-        //TODO: needs to be checked when using multiple revisions to avoid adding multiple instances
-        //OR: try and see whether the "unique" takes care of that => doesn't seem to be the case'
-        //if (artifact.attributes.select(a|a.name = attr.getName()).size() = 0) {
-        //    artifact.attributes.add(attribute);
-        //}
-        
-        if ((attr.getEAttributeType().getName() == "EDouble") or (attr.getEAttributeType().getName() == "Boolean")) {
-            self.addValue(attribute, c.eGet(attr));
-        }
+        self.addValue(attribute, c.eGet(attr));
     }
+}
+
+@cached
+operation String isSelectedAttribute() : Boolean {
+	return self == "EDouble" or self == "Boolean";
+}
+
+@cached
+operation FAMIX!EClass getSelectedAttributes() : Collection {
+	return self.getEAllAttributes().select(x|x.getEAttributeType().getName().isSelectedAttribute());
 }
 
 rule Class2State
