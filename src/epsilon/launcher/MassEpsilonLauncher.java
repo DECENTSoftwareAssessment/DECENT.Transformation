@@ -27,6 +27,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import org.eclipse.emf.common.util.URI;
+import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EPackage;
 import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.epsilon.common.parse.problem.ParseProblem;
@@ -42,6 +43,9 @@ import org.eclipse.epsilon.eol.exceptions.EolRuntimeException;
 import org.eclipse.epsilon.eol.exceptions.models.EolModelLoadingException;
 import org.eclipse.epsilon.eol.models.IModel;
 import org.eclipse.epsilon.etl.EtlModule;
+import org.eclipse.epsilon.profiling.Profiler;
+import org.eclipse.epsilon.profiling.ProfilerTargetSummary;
+import org.eclipse.epsilon.profiling.ProfilingExecutionListener;
 
 import DECENT.DECENTPackage;
 import MG.MGPackage;
@@ -174,6 +178,7 @@ public class MassEpsilonLauncher {
 				System.out.println("ERROR: Unknown step "+step);
 				break;
 			}
+			getProfilingSummary();
 		} catch (EolModelLoadingException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -217,8 +222,6 @@ public class MassEpsilonLauncher {
 		IEolExecutableModule module = loadModule(source);
 		IModel decentModel = modelHandler.getDECENTModel(location, true, true);
 		IModel traceModel = modelHandler.getTRACEModel(location, true, false);
-//		traceModel.load();
-//		decentModel.load();
 		module.getContext().getModelRepository().addModel(traceModel);
 		module.getContext().getModelRepository().addModel(decentModel);
 		module.execute();
@@ -236,8 +239,6 @@ public class MassEpsilonLauncher {
 		IModel mgModel = modelHandler.getMGModel(location, true, false);
 		IModel bzModel = modelHandler.getBZModel(location);
 		IModel traceModel = modelHandler.getTRACEModel(location, false, true);
-//		mgModel.load();
-//		bzModel.load();
 		module.getContext().getModelRepository().addModel(mgModel);
 		module.getContext().getModelRepository().addModel(bzModel);
 		module.getContext().getModelRepository().addModel(traceModel);
@@ -255,9 +256,6 @@ public class MassEpsilonLauncher {
 		IEolExecutableModule module = loadModule(source);
 		IModel decentModel = modelHandler.getDECENTModel(location, true, true);
 		IModel dagModel = modelHandler.getDAGModel(location);
-		// mgModel.load();
-		// cfaModel.load();
-		// decentModel.load();
 		module.getContext().getModelRepository().addModel(dagModel);
 		module.getContext().getModelRepository().addModel(decentModel);
 		module.execute();
@@ -274,9 +272,6 @@ public class MassEpsilonLauncher {
 		IEolExecutableModule module = loadModule(source);
 		IModel decentModel = modelHandler.getDECENTModel(location, true, true);
 		IModel dudeModel = modelHandler.getDUDEModel(location);
-		// mgModel.load();
-		// cfaModel.load();
-		// decentModel.load();
 		module.getContext().getModelRepository().addModel(dudeModel);
 		module.getContext().getModelRepository().addModel(decentModel);
 		module.execute();
@@ -293,9 +288,6 @@ public class MassEpsilonLauncher {
 		IModel decentModel = modelHandler.getDECENTModel(location, true, true);
 		//TODO: consider removing reliance on MG especially if it is only needed in one line
 		IModel cfaModel = modelHandler.getCFAModel(location, true, false);
-//		mgModel.load();
-//		cfaModel.load();
-//		decentModel.load();
 		module.getContext().getModelRepository().addModel(cfaModel);
 		module.getContext().getModelRepository().addModel(decentModel);
 		module.execute();
@@ -305,13 +297,33 @@ public class MassEpsilonLauncher {
 		module.reset();
 	}
 
+	private void getProfilingSummary() {
+		List<ProfilerTargetSummary> summaries = org.eclipse.epsilon.profiling.Profiler.INSTANCE.getTargetSummaries();
+		if (summaries.size() == 0) {
+			return;
+		}
+		System.out.println("Profiling summary:");
+		int maxLength = 0;
+		for (ProfilerTargetSummary s : summaries) {
+			if (s.getName().length() > maxLength) {
+				maxLength = s.getName().length();
+			}
+		}
+		String layout = "%-"+maxLength+"s %16s %16s %16s %16s";
+		String header = String.format(layout, "Name", "Execution Count", "Aggregate Time", "Individual Time", "Average Time");
+		System.out.println("	"+header);
+		for (ProfilerTargetSummary s : summaries) {
+			String e = String.format(layout, s.getName(), s.getExecutionCount(), s.getExecutionTime().getAggregate(), s.getExecutionTime().getIndividual(), ((double)s.getExecutionTime().getIndividual())/s.getExecutionCount());
+			System.out.println("	"+e);
+		}
+	}
+
 	private void executeMG2CFA(String location) throws Exception, URISyntaxException,
 			EolModelLoadingException, EolRuntimeException {
 		String source = "epsilon/transform/mg2cfa.etl";
 		IEolExecutableModule module = loadModule(source);
 		IModel mgModel = modelHandler.getMGModel(location, true, false);
 		IModel cfaModel = modelHandler.getCFAModel(location, false, true);
-//		mgModel.load();
 		module.getContext().getModelRepository().addModel(cfaModel);
 		module.getContext().getModelRepository().addModel(mgModel);
 		module.execute();
@@ -327,7 +339,6 @@ public class MassEpsilonLauncher {
 		IEolExecutableModule module = loadModule(source);
 		IModel cfaModel = modelHandler.getCFAModel(location, true, true);
 		IModel traceModel = modelHandler.getTRACEModel(location, true, false);
-		//mgModel.load();
 		module.getContext().getModelRepository().addModel(cfaModel);
 		module.getContext().getModelRepository().addModel(traceModel);
 		module.execute();
@@ -342,7 +353,6 @@ public class MassEpsilonLauncher {
 		String source = "epsilon/transform/extra2cfa.eol";
 		IEolExecutableModule module = loadModule(source);
 		IModel cfaModel = modelHandler.getCFAModel(location, true, true);
-		// mgModel.load();
 		module.getContext().getModelRepository().addModel(cfaModel);
 		module.execute();
 		// can be stored and retained alternatively
@@ -360,7 +370,6 @@ public class MassEpsilonLauncher {
 			URISyntaxException, EolRuntimeException {
 		IEolExecutableModule module = loadModule(source);
 		IModel decentModel = modelHandler.getDECENTModel(location, read, write);
-//		decentModel.load();
 		module.getContext().getModelRepository().addModel(decentModel);
 		module.execute();
 		decentModel.dispose();
@@ -457,7 +466,6 @@ public class MassEpsilonLauncher {
 		IEolExecutableModule module = loadModule(source);
 		IModel decentModel = modelHandler.getDECENTModel(location, true, false);
 		IModel arffxModel = modelHandler.getARFFxModel(location, false, true);;
-		// decentModel.load();
 		module.getContext().getModelRepository().addModel(decentModel);
 		module.getContext().getModelRepository().addModel(arffxModel);
 		module.execute();
@@ -472,7 +480,6 @@ public class MassEpsilonLauncher {
 		String source = "epsilon/transform/mg2normalized_hunks.eol";
 		IEolExecutableModule module = loadModule(source);
 		IModel mgModel = modelHandler.getMGModel(location, true, true);
-//		mgModel.load();
 		module.getContext().getModelRepository().addModel(mgModel);
 		module.execute();
 		mgModel.dispose();
@@ -487,7 +494,6 @@ public class MassEpsilonLauncher {
 		IEolExecutableModule module = loadModule(source);
 		IModel decentModel = modelHandler.getDECENTModel(location, false, true);
 		IModel mgModel = modelHandler.getMGModel(location, true, false);
-//		mgModel.load();
 		module.getContext().getModelRepository().addModel(decentModel);
 		module.getContext().getModelRepository().addModel(mgModel);
 		module.execute();
@@ -505,7 +511,6 @@ public class MassEpsilonLauncher {
 		//TODO: add option "use binary"
 		IModel decentModel = modelHandler.getDECENTModel(location, true, true);
 		//module.getContext().getModelRepository().addModel(decentModel);
-		//decentModel.load();
 		
 
 		String[] commits = getSortedCommits(location);
