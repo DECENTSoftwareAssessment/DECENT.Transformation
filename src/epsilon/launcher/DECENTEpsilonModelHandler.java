@@ -41,12 +41,15 @@ public class DECENTEpsilonModelHandler {
 			}
 			
 			Resource resourceBin = tool.loadResourceFromBinary(resourceLocation+"bin","decentbin", DECENTPackage.eINSTANCE);
+			//alternative pattern
+//			model = createInMemoryEmfModel("DECENT", resourceLocation, "../DECENT.Meta/model/DECENTv3.ecore", read, write, resourceBin, DECENTPackage.eINSTANCE);
+//			restoreMetaModels();
+
 			//NOTE: Adding the package is essential as otherwise epsilon breaks
 			model = new InMemoryEmfModel("DECENT", resourceBin, DECENTPackage.eINSTANCE);
 			model.setStoredOnDisposal(write);
 			model.setReadOnLoad(read);
 			model.setCachingEnabled(true);
-			model.load();
 			restoreMetaModels();		
 		} else {
 			model = createEmfModel("DECENT", resourceLocation, "../DECENT.Meta/model/DECENTv3.ecore", read, write);
@@ -166,6 +169,26 @@ public class DECENTEpsilonModelHandler {
 		return emfModel;
 	}
 
+	protected EmfModel createInMemoryEmfModel(String name, String model, 
+			String metamodel, boolean readOnLoad, boolean storeOnDisposal, Resource resource, EPackage einstance) 
+					throws EolModelLoadingException, URISyntaxException {
+		EmfModel emfModel = new InMemoryEmfModel(name, resource, einstance);
+		StringProperties properties = new StringProperties();
+		properties.put(EmfModel.PROPERTY_NAME, name);
+		properties.put(EmfModel.PROPERTY_FILE_BASED_METAMODEL_URI, 
+				"file:/" + getFile(metamodel).getAbsolutePath());
+		properties.put(EmfModel.PROPERTY_MODEL_URI, 
+				"file:/" + getFile(model).getAbsolutePath());
+		properties.put(EmfModel.PROPERTY_IS_METAMODEL_FILE_BASED, "true");
+		properties.put(EmfModel.PROPERTY_READONLOAD, readOnLoad + "");
+		properties.put(EmfModel.PROPERTY_CACHED, "true");
+		properties.put(EmfModel.PROPERTY_STOREONDISPOSAL, 
+				storeOnDisposal + "");
+		emfModel.load(properties, null);
+		return emfModel;
+	}
+
+	
 	protected EmfModel createEmfModel(String name, String model, 
 			String metamodel, boolean readOnLoad, boolean storeOnDisposal) 
 					throws EolModelLoadingException, URISyntaxException {
