@@ -109,8 +109,7 @@ pre {
   //TODO: add ratios, e.g. averageBugWeight/averageWeight, also for totals, define interpretation
   //TODO: add lifespans
 
-  var profiler : new Native("org.eclipse.epsilon.eol.tools.ProfilerTool");
-
+  //var profiler : new Native("org.eclipse.epsilon.eol.tools.ProfilerTool");
   transformArtifactStates();
   transformAgentStates();
   addCarriedWeights();
@@ -131,7 +130,6 @@ post {
     ("Duration: "+duration.toMinutes().round(5)).log(1);
     //TODO: use this check to enable BZ based processing
 }
-
 
 operation dumpAgentStates() {
   var separator = "\t";
@@ -371,11 +369,8 @@ operation addAgentTemporals() {
 
 operation transformArtifactStates() {
   ("...transforming artifact states...").log(2);
-  profiler.start("transformArtifactStates");
   for (g in CFA!GlobalState.allInstances()) {
-  	profiler.start("transformArtifactStates.matching",g.ID);
   	var states = g.ID.getMatchingStatesForID();
-    profiler.stop();
 	for (s in g.artifactStates) {
 		
 		("  " + s.file.file_name + " @ "+s.ID).log(3);
@@ -425,7 +420,6 @@ operation transformArtifactStates() {
 	  	}
   	}
   }
-  profiler.stop();
   
 }
 
