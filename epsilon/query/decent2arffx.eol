@@ -116,7 +116,7 @@ operation iterateOverAgents (type:DECENT!ArtifactType) {
 }
 
 operation DECENT!State isHit() : Boolean {
-	if (self.artifact.isMGtype()) {
+	if (self.artifact.isMGType()) {
 		return true;
 	}
 	var pre = self.getValue(LinesPostHitsAttribute);
@@ -199,8 +199,8 @@ operation iterateOverArtifacts (type:DECENT!ArtifactType) {
 	//TODO: need some safety checks...
 	var h = false;
 	var separator = "\t";
-	for (a in Artifact.allInstances().select(x|x.type = type).sortBy(x|x.name)) {
-//	for (a in Artifact.allInstances().sortBy(x|x.name)) {
+//	for (a in Artifact.allInstances().select(x|x.type = type).sortBy(x|x.name)) {
+	for (a in Artifact.allInstances().sortBy(x|x.name)) {
 	    var header = "";
 	    for (s in a.states.excluding(a.states.first()).select(x|x.isHit()).sortBy(x|x.ID)) {
 	        //(a.name+" at "+s.ID).println();

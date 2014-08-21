@@ -38,7 +38,7 @@ var states = DECENT!AgentState.allInstances();
 for (s in states) {
 	var run = DUDE!Run.allInstances().select(r|r.commit_id = s.ID).first();
 	var count = 0;
-	for (a in s.activities.select(x|x.targetState.artifact.isMGtype())) {
+	for (a in s.activities.select(x|x.targetState.artifact.isMGType())) {
 		var content = new OrderedSet();
 		if (a.targetState.getValue(ClonedLinesPostAttribute).isDefined()) {
 			a.targetState.addIntegerCollectionValue(ClonedLinesPostAttribute, content);

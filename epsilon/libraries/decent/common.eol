@@ -134,9 +134,17 @@ operation Real round(places : Integer) : Real {
 @cached
 operation Integer getMatchingStatesForID() : Collection {
 	//this makes a huge difference!
-	//return DECENT!State.allInstances().select(x|x.artifact.isMGtype() and x.ID = self);
-	return DECENT!Artifact.allInstances().select(x|x.isMGtype()).collect(y|y.states).flatten().select(z|z.ID = self);
+	//return DECENT!State.allInstances().select(x|x.artifact.isMGType() and x.ID = self);
+	return DECENT!Artifact.allInstances().select(x|x.isMGType()).collect(y|y.states).flatten().select(z|z.ID = self);
 }
+
+@cached
+operation Integer getMatchingCodeStatesForID() : Collection {
+	//this makes a huge difference!
+	//return DECENT!State.allInstances().select(x|x.artifact.isCodeType() and x.ID = self);
+	return DECENT!Artifact.allInstances().select(x|x.isCodeType()).collect(y|y.states).flatten().select(z|z.ID = self);
+}
+
 
 @cached
 operation Collection getMatchingStateForPath(filePath : String) : Collection {
@@ -216,7 +224,7 @@ operation Real normalize(min : Real, max : Real) : Real {
 }
 
 @cached
-operation DECENT!Artifact isMGtype() : Boolean {
+operation DECENT!Artifact isMGType() : Boolean {
 	return self.type.name = "code" or 
 		self.type.name = "documentation" or 
 		self.type.name = "image" or 
@@ -225,6 +233,12 @@ operation DECENT!Artifact isMGtype() : Boolean {
 		self.type.name = "build" or 
 		self.type.name = "ui";
 }
+
+@cached
+operation DECENT!Artifact isCodeType() : Boolean {
+	return self.type.name = "code";
+}
+
 
 operation Collection getMean() : Real {
 	if (self.size <= 1) {

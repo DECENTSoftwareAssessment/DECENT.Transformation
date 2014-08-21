@@ -193,7 +193,7 @@ operation addArtifactTemporals() {
 			  	if (size <> 1) {
 			  		("  "+size+" DECENT matches found for: "+fileName+" at "+s.ID).log(4);
 			  		("    Avaliable states at "+s.ID+" are:").log(4);
-			  		//for (x in DECENT!State.allInstances().select(x|x.artifact.isMGtype() and x.ID = s.ID)) {
+			  		//for (x in DECENT!State.allInstances().select(x|x.artifact.isMGType() and x.ID = s.ID)) {
 			  			//("      "+x.artifact.name+" at "+x.ID+" ("+x.getValue(FilePathAttribute).content+")").log(4);
 			  		//}
 			  	} else {
@@ -369,7 +369,7 @@ operation transformArtifactStates() {
 	  	if (size <> 1) {
 	  		("  "+size+" DECENT matches found for: "+fileName+" at "+s.ID).log(4);
 	  		("    Avaliable states at "+s.ID+" are:").log(4);
-	  		//for (x in DECENT!State.allInstances().select(x|x.artifact.isMGtype() and x.ID = s.ID)) {
+	  		//for (x in DECENT!State.allInstances().select(x|x.artifact.isMGType() and x.ID = s.ID)) {
 	  			//("      "+x.artifact.name+" at "+x.ID+" ("+x.getValue(FilePathAttribute).content+")").log(4);
 	  		//}
 	  	} else {
@@ -423,7 +423,7 @@ operation addCarriedWeights() {
 	  	var GlobalClearedWeightAttribute = (f.name+".ClearedWeight.Global").getAttribute();
 
 		//TODO: check for negatives
-	    for (a in DECENT!Artifact.allInstances().select(x|x.isMGtype())) {
+	    for (a in DECENT!Artifact.allInstances().select(x|x.isMGType())) {
 		  	var lastWeight = 0.asDouble();
 	  		for (s in a.states) {
 	  			var totalWeight = s.getValue(TotalWeightAttribute).content;
