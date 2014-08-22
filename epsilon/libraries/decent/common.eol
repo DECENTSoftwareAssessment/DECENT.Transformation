@@ -46,6 +46,12 @@ operation String getAttribute() : DECENT!Attribute {
     return DECENT!Attribute.allInstances().select(a|a.name = self).first();
 }
 
+@cached
+operation String getArtifactType() : DECENT!ArtifactType {
+    return DECENT!ArtifactType.allInstances().select(a|a.name = self).first();
+}
+
+
 operation Any addValue(attribute : DECENT!Attribute, content : String) : DECENT!Value {
 	var value = self.getValue(attribute);
 	if (value.isUndefined()) {
@@ -205,6 +211,16 @@ operation String printlno(writer) {
     writer.write(self+"\n");
     writer.flush();
 }	
+
+operation addArtifactType(name : String) : DECENT!ArtifactType {
+	var type = DECENT!ArtifactType.select(x|x.name = name).first();
+	if (type.isUndefined()) {
+	  	type = new DECENT!ArtifactType;
+	  	type.name = name;
+  	}
+  	return type;
+}
+
 
 operation addAttribute(name : String, description : String) : DECENT!Attribute {
 	var attribute = Model.attributePool.attributes.select(att|att.name = name).first();
