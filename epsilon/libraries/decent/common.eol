@@ -10,6 +10,33 @@ operation Any addValue(attribute : DECENT!Attribute, content : Any, value : DECE
     return value;
 }
 
+operation getProfiler(activated : Boolean) : Any {
+	if (activated) {
+		var profiler : new Native("org.eclipse.epsilon.eol.tools.ProfilerTool");
+		return profiler;
+	} else {
+		return null;
+	}
+}
+
+operation Any startProfiling(target : String) {
+	if (self.isDefined()) {
+		self.start(target);
+	}
+}
+
+operation Any stopProfiling() {
+	if (self.isDefined()) {
+		self.stop();
+	}
+}
+
+operation Any startProfiling(target : String, data : Any) {
+	if (self.isDefined()) {
+		self.start(target,data);
+	}
+}
+
 operation Any getValue(attribute : DECENT!Attribute) : DECENT!Value {
     return self.values.select(v|v.ofAttribute = attribute).first();
 }
