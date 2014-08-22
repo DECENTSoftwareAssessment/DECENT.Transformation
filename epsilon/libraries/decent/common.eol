@@ -213,7 +213,7 @@ operation String printlno(writer) {
 }	
 
 operation addArtifactType(name : String) : DECENT!ArtifactType {
-	var type = DECENT!ArtifactType.select(x|x.name = name).first();
+	var type = DECENT!ArtifactType.allInstances().select(x|x.name = name).first();
 	if (type.isUndefined()) {
 	  	type = new DECENT!ArtifactType;
 	  	type.name = name;
@@ -254,19 +254,6 @@ operation DECENT!Model addAttributes(attributes : Map) {
 	      	Model.attributePool.attributes.add(Attribute);
       	}
   	}
-}
-
-operation DECENT!Artifact setArtifactType(fileType : String) {
-    var artifactType = DECENT!ArtifactType.allInstances().
-        select(at|at.name = fileType).first;
-    if (not artifactType.isDefined()){
-        //("  Artifact type not defined. Initializing "+fcl.child.file_type+" ").println();
-        artifactType = new DECENT!ArtifactType;
-        artifactType.name = fileType;
-        Model.artifactTypeHierarchy.types.add(artifactType);
-    }
-    self.type = artifactType;
-
 }
 
 operation Real normalize(min : Real, max : Real) : Real {

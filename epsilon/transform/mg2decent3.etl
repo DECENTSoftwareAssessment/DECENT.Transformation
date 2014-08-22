@@ -125,7 +125,7 @@ rule File2Artifact
     guard : filterBranches.size()=0 or filterBranches.includes(f.getBranch().name)
     
     a.name = f.file_name;
-   	a.setArtifactType(f.file_type);
+   	a.type = addArtifactType(f.file_type);
     var parentName = "ROOT";
     if (f.parentLinks.size()>0) {
     	("Adding parents... "+f.parentLinks.get(0).parent.equivalent().name).log(4);
