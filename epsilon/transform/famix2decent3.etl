@@ -32,8 +32,9 @@ pre {
   
   var codeStatesInRevision = new OrderedSet;
   var cleaned = false;
-  //var profiler : new Native("org.eclipse.epsilon.eol.tools.ProfilerTool");
-   
+  //extract as operation taking a configuration argument
+  var p = getProfiler(false);
+  
   if (FAMIX!FileAnchor.allInstances().size() > 0) {
 	  revisionId = FAMIX!FileAnchor.allInstances().first().revisionId;
 	  codeStatesInRevision = revisionId.getCodeStatesForID();
@@ -67,7 +68,6 @@ pre {
   	  //TODO: consider generating separate decent instances for each revision (or a set of revisinos) which may be 
   	  //handled as a resource set
   }
-
 }
 
 post {
