@@ -286,7 +286,8 @@ operation DECENT!Artifact isMGType() : Boolean {
 
 @cached
 operation DECENT!Artifact isFAMIXType() : Boolean {
-	return self.type.name = "Class" or 
+	return self.type.name = "Class" or
+		self.type.name = "ParameterizableClass" or 
 		self.type.name = "Method" or 
 		self.type.name = "Function" or 
 		self.type.name = "Module";
