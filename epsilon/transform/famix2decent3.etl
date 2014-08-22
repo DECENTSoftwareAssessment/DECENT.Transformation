@@ -14,16 +14,17 @@ pre {
   ("DECENT States: "+DECENT!State.allInstances().size()).log(2);
   var Model = DECENT!Model.allInstances().first();
   
-  var ClassArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "Class").first();
-  var MethodArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "Method").first();
-  var FunctionArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "Function").first();
-  var ModuleArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "Module").first();
+  var ClassArtifactType = addArtifactType("Class");
+  var ParameterizableClassArtifactType = addArtifactType("ParameterizableClass");
+  var MethodArtifactType = addArtifactType("Method");
+  var FunctionArtifactType = addArtifactType("Function");
+  var ModuleArtifactType = addArtifactType("Module");
 
   var StartLineAttribute = addAttribute("StartLine", "Artifact start line");
   var EndLineAttribute = addAttribute("EndLine", "Artifact end line");
+  var FileAnchorAttribute = addAttribute("FileAnchor", "File anchor summary");
   
   var LinesPostHitsAttribute = "LinesPostHits".getAttribute();
-  var FileAnchorAttribute = "FileAnchor".getAttribute();
   var FilePathAttribute = "FilePath".getAttribute();
   
   var revisionId = -1;
@@ -32,7 +33,7 @@ pre {
   
   var codeStatesInRevision = new OrderedSet;
   var cleaned = false;
-  //extract as operation taking a configuration argument
+  //TODO: add to all modules?
   var p = getProfiler(false);
   
   if (FAMIX!FileAnchor.allInstances().size() > 0) {
@@ -128,7 +129,8 @@ post {
 }
 
 operation Any getPotentiallyAffectedAnchoredElements() : Sequence {
-	return self.allInstances.select(c|c.sourceAnchor_IN_FileAnchor.fileName <> "_unknown_path" and c.sourceAnchor_IN_FileAnchor.fileName.checkParentArtifactStateExists());
+	//new condition: deal with methods in enums (strange ocurrence): c.sourceAnchor_IN_FileAnchor.isDefined()
+	return self.allInstances.select(c|c.sourceAnchor_IN_FileAnchor.isDefined() and c.sourceAnchor_IN_FileAnchor.fileName <> "_unknown_path" and c.sourceAnchor_IN_FileAnchor.fileName.checkParentArtifactStateExists());
 }
 
 @cached
@@ -218,12 +220,22 @@ rule Class2State
     transform c : FAMIX!Class 
     to s : DECENT!State {
     
-    guard : c.sourceAnchor_IN_FileAnchor.fileName <> "_unknown_path" and c.sourceAnchor_IN_FileAnchor.fileName.checkParentArtifactStateExists()
+    guard : c.sourceAnchor_IN_FileAnchor.isDefined() and c.sourceAnchor_IN_FileAnchor.fileName <> "_unknown_path" and c.sourceAnchor_IN_FileAnchor.fileName.checkParentArtifactStateExists()
 
     s.mapAnchoredElement(c, ClassArtifactType, c.name);
     c.~done = true;
     (FAMIX!Class.allInstances().select(c|c.~done == true).size()+"/"+potentiallyAffectedClasses.size() + " done").log(1);
 
+}
+
+rule ParameterizableClass2State
+    transform c : FAMIX!ParameterizableClass 
+    to s : DECENT!State {
+    
+    guard : c.sourceAnchor_IN_FileAnchor.isDefined() and c.sourceAnchor_IN_FileAnchor.fileName <> "_unknown_path" and c.sourceAnchor_IN_FileAnchor.fileName.checkParentArtifactStateExists()
+
+    s.mapAnchoredElement(c, ParameterizableClassArtifactType, c.name);
+    c.~done = true;
 }
 
 rule Module2State 
