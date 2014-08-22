@@ -1,4 +1,3 @@
-import "../libraries/famix/init.etl";
 import "../libraries/mg/common.eol";
 import "../libraries/decent/common.eol";
 import "../libraries/decent/logging.eol";
