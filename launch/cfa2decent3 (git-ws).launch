@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<launchConfiguration type="org.epsilon.etl.eclipse.dt.launching.EtlLaunchConfigurationDelegate">
+<stringAttribute key="bad_container_name" value="/DECENT.Transformations/launch/cfa2decent3-git-ws.launch"/>
+<booleanAttribute key="fine_grained_profiling" value="true"/>
+<listAttribute key="models">
+<listEntry value="#&#10;#Wed Aug 20 19:29:46 CEST 2014&#10;isMetamodelFileBased=false&#10;name=CFA&#10;readOnLoad=true&#10;storeOnDisposal=false&#10;aliases=CFA&#10;cached=true&#10;fileBasedMetamodelUri=&#10;metamodelUri=http\://CFA/1.0&#10;modelUri=platform\:/resource/DECENT.Data/input/git-ws/model.cfa&#10;type=EMF&#10;modelFile=/DECENT.Data/input/git-ws/model.cfa&#10;expand=true&#10;metamodelFile=&#10;"/>
+<listEntry value="#&#10;#Wed Aug 20 19:29:56 CEST 2014&#10;isMetamodelFileBased=false&#10;name=DECENT&#10;readOnLoad=true&#10;storeOnDisposal=true&#10;aliases=DECENT&#10;cached=true&#10;fileBasedMetamodelUri=&#10;metamodelUri=http\://decent/3.0&#10;modelUri=platform\:/resource/DECENT.Data/input/git-ws/model.decent&#10;type=EMF&#10;modelFile=/DECENT.Data/input/git-ws/model.decent&#10;expand=true&#10;metamodelFile=&#10;"/>
+</listAttribute>
+<booleanAttribute key="profile_model_loading" value="true"/>
+<booleanAttribute key="profiling_enabled" value="true"/>
+<booleanAttribute key="reset_profiler" value="true"/>
+<stringAttribute key="source" value="/DECENT.Transformations/epsilon/transform/cfa2decent3.etl"/>
+</launchConfiguration>
