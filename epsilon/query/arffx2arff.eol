@@ -13,7 +13,7 @@ var arff = ARFFx!Model.allInstances().first();
 var CONFIDENCE = "CONFIDENCE".getARFFAttribute();
 var LABEL = "LABEL".getARFFAttribute();
 
-//arff.exportAll(filename,s);
+arff.exportAll(filename+".all.csv",s);
 
 var filter = "filters/default";
 arff.exportAttributes(filter+"-last");
@@ -137,6 +137,7 @@ operation ARFFx!Instance getFilteredValues(s : String, filter : Collection) : St
 operation ARFFx!Instance getValues(s : String) : String {
 	var line = "";
 	for (v in self.values) {
+		//line = line  + s + v.ofAttribute.name+"="+v.content;
 		line = line  + s + v.content;
 	}
 	return line.replace("NaN","0.0").substring(1);
