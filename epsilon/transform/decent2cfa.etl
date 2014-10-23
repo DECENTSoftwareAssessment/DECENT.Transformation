@@ -1,0 +1,136 @@
+import "../libraries/cfa/common.eol";
+import "../libraries/decent/common.eol";
+import "../libraries/decent/logging.eol";
+
+pre {
+  	"Running decent2cfa".log(1);
+
+  	var start = Native("java.lang.System").currentTimeMillis();
+	
+  	var WeightFactorAttribute = "WeightFactor".getCFAAttribute();
+  	var TotalWeightAttribute = "TotalWeight".getCFAAttribute();
+  	var AverageWeightAttribute = "AverageWeight".getCFAAttribute();
+	
+	var StartLineAttribute = "StartLine".getAttribute();
+	var EndLineAttribute = "EndLine".getAttribute();
+	var LinesPreHitsAttribute = "LinesPreHits".getAttribute();
+	var LinesPostHitsAttribute = "LinesPostHits".getAttribute();
+  	var FilePathAttribute = "FilePath".getAttribute();
+
+  	var WeightFactorAttribute = "WeightFactor".getCFAAttribute();
+  	var TotalWeightAttribute = "TotalWeight".getCFAAttribute();
+  	var AverageWeightAttribute = "AverageWeight".getCFAAttribute();
+
+  	var BugFixFactor = CFA!Factor.allInstances().select(a|a.name = "BugFix").first();
+  	var DefaultFactor = CFA!Factor.allInstances().select(a|a.name = "Default").first();
+
+	//addFAMIXLogicalStates();
+	//calculateTotalFactorWeights(RefactoringMessageFactor);
+	//calculateAverageFactorWeights();
+
+}
+
+post {
+    ("Post processing... ").log(2);
+    calculateTotalFactorWeights();
+    calculateAverageFactorWeights();
+
+    var end = Native("java.lang.System").currentTimeMillis();
+    var duration = end - start;
+    ("Duration: "+duration.toMinutes().round(5)).log(1);
+}
+
+rule States
+    transform a : DECENT!State 
+    to s : CFA!LogicalState {
+    
+    guard : a.artifact.isFAMIXType()
+    
+    s.state = a;
+    s.ID = a.ID;
+    s.name = ""+a.ID;
+    s.globalState = a.ID.getGlobalState();
+    var r = s.globalState.revision;
+    //TODO: split based on count?
+    s.addFactor(BugFixFactor, r.is_bug_fix.asDouble());
+    s.addFactor(DefaultFactor, 1.asDouble());
+    
+	var startLine = a.getValue(StartLineAttribute).content;
+	var endLine = a.getValue(EndLineAttribute).content;
+	var filePath = a.parent.getValue(FilePathAttribute).content;
+	var artifactFile = r.actions.select(a|a.current_file_path = filePath).first().file;
+	var fileHunks = r.hunks.select(x|x.file = artifactFile);
+	var hunks = fileHunks.select(h|not (startLine > h.new_end_line_normalized or endLine < h.new_start_line_normalized));
+	for (h in hunks) {
+		for (hb in h.hunkBlame) {
+			var candidateCauses = hb.lastRevision.commit_id.getHitFAMIXStatesForID();
+			//TODO: what if more than one?
+			var causeState = candidateCauses.select(x|x.artifact = a.artifact).first();
+			if (causeState.isDefined()) {
+				var cause = CFA!LogicalState.allInstances().select(x|x.state = causeState).first();
+				s.fixes.add(cause);
+			} else {
+				//("   -> Cause in "+hb.lastRevision.commit_id + " not found!").println();
+			}
+			//TODO: also handle renamed artifacts
+		}
+	}	
+}
+
+@cached
+operation Integer getGlobalState() : CFA!GlobalState {
+	return CFA!GlobalState.allInstances().select(s|s.ID = self).first();
+}
+
+operation addFAMIXLogicalStates() {
+	for (g in CFA!GlobalState.allInstances()) {
+		var famixStates = g.ID.getHitFAMIXStatesForID();
+		if (famixStates.size()>0) {
+			("Global State: "+g.ID + " : "+famixStates.size()+"/"+g.ID.getFAMIXStatesForID().size()+" FAMIX states").println();
+		}
+		for (fs in famixStates) {
+			("  "+fs.artifact.type.name+" : "+fs.artifact.name).println();
+			var startLine = fs.getValue(StartLineAttribute).content;
+			var endLine = fs.getValue(EndLineAttribute).content;
+			var filePath = fs.parent.getValue(FilePathAttribute).content;
+			("    "+startLine+" - "+endLine).println();
+			var artifactFile = g.revision.actions.select(a|a.current_file_path = filePath).first().file;
+			("    "+artifactFile.file_name).println();
+			("      All hunks "+g.revision.hunks.size()).println();
+			var fileHunks = g.revision.hunks.select(x|x.file = artifactFile);
+			("      All file hunks "+fileHunks.size()).println();
+			var hunks = fileHunks.select(h|not (startLine > h.new_end_line_normalized or endLine < h.new_start_line_normalized));
+			("      Selected file hunks "+hunks.size()).println();
+			for (h in hunks) {
+				("      "+h.new_end_line_normalized+" - "+h.new_end_line_normalized).println();
+				for (hb in h.hunkBlame) {
+					var candidateCauses = hb.lastRevision.commit_id.getHitFAMIXStatesForID();
+					//TODO: what if more than one?
+					var cause = candidateCauses.select(x|x.artifact = fs.artifact).first();
+					if (cause.isDefined()) {
+						("   -> Cause: "+cause.artifact.name + " @ "+cause.ID).println();
+					} else {
+						("   -> Cause in "+hb.lastRevision.commit_id + " not found!").println();
+					}
+					//TODO: also handle renamed artifacts
+				}
+			}	
+			
+			//TODO: alternativea approach by navigating existing artifact causes
+			
+			var p = fs.previous.first();
+			if (false and p.isDefined()) { //redundant
+				var p_startLine = p.getValue(StartLineAttribute).content;
+				var p_endLine = p.getValue(EndLineAttribute).content;
+			
+				var p_hunks = fileHunks.select(h|not (p_startLine > h.old_end_line_normalized or p_endLine < h.old_start_line_normalized));
+				("      Selected file hunks (previous) "+hunks.size()).println();
+				for (h in p_hunks) {
+					("      "+h.old_end_line_normalized+" - "+h.old_end_line_normalized).println();
+				}	
+			}		
+		}
+	}
+}
+
+	
