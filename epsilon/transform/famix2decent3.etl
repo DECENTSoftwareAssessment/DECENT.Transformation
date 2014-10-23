@@ -24,7 +24,6 @@ pre {
   var EndLineAttribute = addAttribute("EndLine", "Artifact end line");
   var FileAnchorAttribute = addAttribute("FileAnchor", "File anchor summary");
   
-  var LinesPostHitsAttribute = "LinesPostHits".getAttribute();
   var FilePathAttribute = "FilePath".getAttribute();
   
   var revisionId = -1;
