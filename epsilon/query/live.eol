@@ -9,12 +9,57 @@ var MethodArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "M
 var FunctionArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "Function").first();
 var ModuleArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "Module").first();
 
-for (a in DECENT!Artifact.all().select(x|x.type.name = "Method")) {
+//var filter = "filters/default";
+
+//filter.getSelectedAttributes();
+
+for (x in DECENT!ArtifactType.allInstances()) {
+	x.name.println();
+}
+
+for (a in DECENT!Artifact.all().select(x|x.name = "PageIterator.java")) {
 	("Artifact: "+a.name).println();
 	for (s in a.states) {
-		("  State: "+ s.ID).println();
-		for (cs in s.parent) {
-			("    Parent State: "+ cs.ID + " of artifact "+cs.artifact.name).println();
+		var tags = s.getValue("Tags".getAttribute()).content;
+		("  State: "+ s.ID + " Tags: "+tags.size()).println();
+		for (t in tags) {
+		("  	Tag: "+ t + " ").println();
+		}	
+	}
+	for (c in a.children) {
+		("  "+ c.name + " / " + c.type.name).println();
+		for (s in c.states) {
 		}
 	}
 }
+
+operation showTags() {
+	for (a in DECENT!Artifact.all()) {
+		("Artifact: "+a.name).println();
+		for (s in a.states) {
+			var tags = s.getValue("Tags".getAttribute()).content;
+			("  State: "+ s.ID + " Tags: "+tags.size()).println();
+			for (t in tags) {
+			("  	Tag: "+ t + " ").println();
+			}	
+		}
+	}
+}
+
+operation showHitsAndWeights() {
+	for (a in DECENT!Artifact.all().select(x|x.type.name = "none")) {
+		("Artifact: "+a.name).println();
+		for (s in a.states) {
+			var postHits = s.getValue("LinesPostHits".getAttribute()).content;
+			var preHits = s.getValue("LinesPostHits".getAttribute()).content;
+			if (postHits.size() > 0 or preHits.size() > 0) {
+				("  State: "+ s.ID + " Hits: " + postHits + " / " + preHits).println();
+	//			for (v in s.parent.values) {
+					//("    "+v.name + " = " + v.content).println();
+	//			}
+				("  BugFix.AverageWeight.Local " + s.parent.getValue("BugFix.AverageWeight.Local".getAttribute()).content).println();
+			}
+		}
+	} 
+}
+
