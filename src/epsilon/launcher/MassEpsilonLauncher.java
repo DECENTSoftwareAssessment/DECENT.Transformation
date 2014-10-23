@@ -120,6 +120,9 @@ public class MassEpsilonLauncher {
 			case "EXTRA2CFA":
 				executeEXTRA2CFA(location);
 				break;
+			case "DECENT2CFA":
+				executeDECENT2CFA(location);
+				break;
 			case "CFA2DECENT":
 				executeCFA2DECENT(location);
 				break;
@@ -293,6 +296,23 @@ public class MassEpsilonLauncher {
 		module.execute();
 		cfaModel.dispose();
 		//can be stored and retained alternatively
+		decentModel.dispose();
+		module.reset();
+	}
+
+	private void executeDECENT2CFA(String location) throws Exception,
+			URISyntaxException, EolModelLoadingException, EolRuntimeException {
+		String source = "epsilon/transform/decent2cfa.etl";
+		IEolExecutableModule module = loadModule(source);
+		IModel decentModel = modelHandler.getDECENTModel(location, true, false);
+		// TODO: consider removing reliance on MG especially if it is only
+		// needed in one line
+		IModel cfaModel = modelHandler.getCFAModel(location, true, true);
+		module.getContext().getModelRepository().addModel(cfaModel);
+		module.getContext().getModelRepository().addModel(decentModel);
+		module.execute();
+		cfaModel.dispose();
+		// can be stored and retained alternatively
 		decentModel.dispose();
 		module.reset();
 	}
