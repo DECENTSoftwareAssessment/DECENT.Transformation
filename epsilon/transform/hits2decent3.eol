@@ -22,6 +22,10 @@ var EndLineAttribute = "EndLine".getAttribute();
 var LinesPreAttribute = "LinesPre".getAttribute();
 var LinesPostAttribute = "LinesPost".getAttribute();
 
+var VarianceLinesPreAttribute = "VarianceLinesPre".getAttribute();
+var VarianceLinesPostAttribute = "VarianceLinesPost".getAttribute();
+
+
 var existingStatesInRevision = DECENT!State.allInstances().select(s|
 									s.artifact.type = ClassArtifactType or 
   									s.artifact.type = MethodArtifactType or 
@@ -29,10 +33,9 @@ var existingStatesInRevision = DECENT!State.allInstances().select(s|
   									s.artifact.type = FunctionArtifactType);
 for (s in existingStatesInRevision) {
 	("Processing "+s.artifact.name+" at "+s.ID+" ...").log(3);
-	var startLine = s.values.select(v|v.ofAttribute = StartLineAttribute).first().content;
-	var endLine = s.values.select(v|v.ofAttribute = EndLineAttribute).first().content;
-	var parentState = s.artifact.parent.states.select(p|p.ID = s.ID).first();
-	var linesPost = parentState.values.select(v|v.ofAttribute = LinesPostAttribute).first().content;
+	var startLine = s.getValue(StartLineAttribute).content;
+	var endLine = s.getValue(EndLineAttribute).content;
+	var linesPost = s.parent.getValue(LinesPostAttribute).content;
 	var linesPostHits = linesPost.select(l|l >= startLine and l <= endLine);
 
 /*
@@ -41,18 +44,17 @@ for (s in existingStatesInRevision) {
 	("      "+linesPost).log(1);
 	("        "+linesPostHits).log(1);
 */	
-	s.values.removeAll(s.values.select(v|v.ofAttribute = LinesPostHitsAttribute));
 	s.addIntegerCollectionValue(LinesPostHitsAttribute, linesPostHits);
-	
+	s.addValue(VarianceLinesPostAttribute, linesPostHits.getVariance());	
 	var p = s.previous.first();
 	if (p.isDefined()) {
-		var p_startLine = p.values.select(v|v.ofAttribute = StartLineAttribute).first().content;
-		var p_endLine = p.values.select(v|v.ofAttribute = EndLineAttribute).first().content;
+		var p_startLine = p.getValue(StartLineAttribute).content;
+		var p_endLine = p.getValue(EndLineAttribute).content;
 	
-		var linesPre = parentState.values.select(v|v.ofAttribute = LinesPreAttribute).first().content;
+		var linesPre = s.parent.getValue(LinesPreAttribute).content;
 		var linesPreHits = linesPre.select(l|l >= p_startLine and l <= p_endLine);
-		s.values.removeAll(s.values.select(v|v.ofAttribute = LinesPreHitsAttribute));
 		s.addIntegerCollectionValue(LinesPreHitsAttribute, linesPreHits);
+		s.addValue(VarianceLinesPreAttribute, linesPreHits.getVariance());	
 	}
 }
 
