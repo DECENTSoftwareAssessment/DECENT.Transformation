@@ -4,7 +4,7 @@ operation String getCFAAttribute() : CFA!Attribute {
 }
 
 operation calculateTotalFactorWeights(selectedFactor : CFA!Factor) {
-    for (s in CFA!State.allInstances()) {
+    for (s in CFA!CFAState.allInstances()) {
     	var fixes = s.fixes.size().asDouble();
     	if (fixes = 0) {
     		fixes = 1.asDouble();
@@ -20,7 +20,7 @@ operation calculateTotalFactorWeights(selectedFactor : CFA!Factor) {
 
 operation resetTotalWeights() {
     var defaultValue = 0.asDouble();
-    for (s in CFA!State.allInstances()) {
+    for (s in CFA!CFAState.allInstances()) {
     	for (factor in s.factors) {
     		factor.value.put(TotalWeightAttribute,value);
     	}
@@ -28,7 +28,7 @@ operation resetTotalWeights() {
 }
 
 operation calculateTotalFactorWeights() {
-    for (s in CFA!State.allInstances()) {
+    for (s in CFA!CFAState.allInstances()) {
     	var fixes = s.fixes.size().asDouble();
     	if (fixes = 0) {
     		fixes = 1.asDouble();
@@ -44,7 +44,7 @@ operation calculateTotalFactorWeights() {
 }
 
 operation calculateAverageFactorWeights() {
-    for (s in CFA!State.allInstances()) {
+    for (s in CFA!CFAState.allInstances()) {
     	var causes = s.causes.size().asDouble();
     	if (causes = 0) {
     		causes = 1.asDouble();
@@ -56,8 +56,16 @@ operation calculateAverageFactorWeights() {
     	}
     }
 }
-
-operation CFA!State addFactor(factor : CFA!Factor, weightFactor : Real) {
+//State needs to be renamed to CFAState to avoid ambiguity due to DECENT import
+//TODO: commit and describe
+//TODO: adapt other instances CFA!State -> CFA!CFAState, also for attributes?
+//TODO: adapt cfa2decent or create a separate transformation?
+//TODO: keep in mind implications of direct logical-global association and weighting vs logical-artifact-global weighting
+//TODO: double check whether weights need to be distributed among contained artifacts
+//TODO: distinguish among different artifact and logical types?
+//      - filter code only
+//      - different weighting for classes and methods?
+operation CFA!CFAState addFactor(factor : CFA!Factor, weightFactor : Real) {
     var defaultValue = 0.asDouble();
     self.factors.put(factor,new Map);
     self.factors.get(factor).put(WeightFactorAttribute, weightFactor);
