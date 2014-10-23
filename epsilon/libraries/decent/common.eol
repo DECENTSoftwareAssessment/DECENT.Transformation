@@ -185,6 +185,20 @@ operation Integer getFAMIXStatesForID() : Collection {
 	return DECENT!Artifact.allInstances().select(x|x.isFAMIXType()).collect(y|y.states).flatten().select(z|z.ID = self);
 }
 
+@cached
+operation Integer getHitFAMIXStatesForID() : Collection {
+	//this makes a huge difference!
+	//return DECENT!State.allInstances().select(x|x.artifact.isCodeType() and x.ID = self);
+	return self.getFAMIXStatesForID().select(x|x.isHit());
+}
+
+@cached
+operation DECENT!State isHit() : Boolean {
+	var pre = self.getValue("LinesPostHits".getAttribute());
+	var post = self.getValue("LinesPreHits".getAttribute());
+	return ((pre.isDefined() and pre.content.isDefined() and pre.content.size() > 0) 
+	     or (post.isDefined() and post.content.isDefined() and post.content.size() > 0));
+}
 
 @cached
 operation Collection getMatchingStateForPath(filePath : String) : Collection {
