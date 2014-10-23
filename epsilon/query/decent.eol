@@ -113,13 +113,6 @@ operation iterateOverAgents (type:DECENT!ArtifactType) {
 
 }
 
-operation DECENT!State isHit() : Boolean {
-	var pre = self.getValue(LinesPostHitsAttribute);
-	var post = self.getValue(LinesPreHitsAttribute);
-	return ((pre.isDefined() and pre.content.isDefined() and pre.content.size() > 0) 
-	     or (post.isDefined() and post.content.isDefined() and post.content.size() > 0));
-}
-
 
 operation DECENT!Activity dumpNonZeroDeltas() : String {
 	var output = "Deltas";
