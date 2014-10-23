@@ -25,7 +25,8 @@ arff.name = "Test";
 var start = Native("java.lang.System").currentTimeMillis();
 
 transferValuesToChildren();
-iterateOverArtifacts(MethodArtifactType);
+iterateOverArtifacts(Type);
+//iterateOverArtifacts(MethodArtifactType);
 //iterateOverAffectedArtifacts(MethodArtifactType);
 
 var end = Native("java.lang.System").currentTimeMillis();
@@ -199,8 +200,8 @@ operation iterateOverArtifacts (type:DECENT!ArtifactType) {
 	//TODO: need some safety checks...
 	var h = false;
 	var separator = "\t";
-//	for (a in Artifact.allInstances().select(x|x.type = type).sortBy(x|x.name)) {
-	for (a in Artifact.allInstances().sortBy(x|x.name)) {
+	for (a in Artifact.allInstances().select(x|x.type = type).sortBy(x|x.name)) {
+	//for (a in Artifact.allInstances().sortBy(x|x.name)) {
 	    var header = "";
 	    for (s in a.states.excluding(a.states.first()).select(x|x.isHit()).sortBy(x|x.ID)) {
 	        //(a.name+" at "+s.ID).println();
@@ -210,7 +211,7 @@ operation iterateOverArtifacts (type:DECENT!ArtifactType) {
 	    	var i = new ARFFx!Instance();
 	    	arff.data.add(i);
 
-			i.addValue(s.artifact.name.asString(), "Artifact.Name");
+			i.addValue('\"'+s.artifact.name.asString()+'\"', "Artifact.Name");
 			i.addValue(s.ID.asString(), "Artifact.StateID");
 				    	
 	    	for (v in s.values.select(x|x.isTypeOf(DECENT!DoubleValue) or x.isTypeOf(DECENT!IntegerValue))) {
