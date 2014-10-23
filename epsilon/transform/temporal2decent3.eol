@@ -103,7 +103,7 @@ operation OrderedSet addAgentTemporalCharacteristics() {
   		var distanceRunningAverage = (age/revisions).asDouble();
   		s.addValue(DistanceRunningAverageAttribute, distanceRunningAverage);
 
-		var frequency = ((revisions.asDouble()-1)/age).asDouble();
+		var frequency = ((revisions.asDouble()-1)/(age)).asDouble();
   		s.addValue(FrequencyAttribute, frequency);
   		
   		var frequencyAverage = ((self.size().asDouble()-1)/(lifespan.asDouble()/resolution)).asDouble();

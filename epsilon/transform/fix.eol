@@ -1,7 +1,7 @@
 import "../libraries/decent/logging.eol";
 import "../libraries/decent/common.eol";
 
- 	"Running decent stats".log(1);
+ 	"Running decent fix".log(1);
 	var start = Native("java.lang.System").currentTimeMillis();
 
 	for (a in DECENT!Artifact.all().select(x|x.type.name = "code")) {
