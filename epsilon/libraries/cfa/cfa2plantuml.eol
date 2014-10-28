@@ -31,15 +31,25 @@ operation Sequence cfaToPlantUML() {
 		s.~uniqueName = "Mr"+s.ID;
         ("processing object "+s.~uniqueName).println();
         var color = "";
+       	var colorR = "AA";
+       	var colorG = "AA";
+       	var colorB = "AA";
        	
   		for (f in s.factors.keySet()) {
   			//TODO: handle multiple factors
 		  	var factorValues = s.factors.get(f);
 		  	if (factorValues.get(TotalWeightAttribute) > 0) {
-	        	color = " #FFAAAA";
+		  		switch (f.name) {
+			  		case "Default":
+		        		colorG = "EE";
+			  		case "BugFix" :
+		        		colorR = "EE";
+			  		default :
+		        		colorB = "EE";
+		  		}
 		  	}
 		}        
-
+		color = " #" + colorR + colorG + colorB;
         ("object "+s.~uniqueName + color).printlno();
 
   		for (f in s.factors.keySet()) {
@@ -110,15 +120,26 @@ operation Sequence cfaToPlantUML() {
         	a.~uniqueName = a.~uniqueName.replaceAll("[\\.\\/]", "_");
 	        //("object "+a.~uniqueName).printlno();
 	        var color = "";
+	       	var colorR = "AA";
+	       	var colorG = "AA";
+	       	var colorB = "AA";
 
 		    for (f in a.factors.keySet()) {
 	  			//TODO: handle multiple factors
 			  	var factorValues = a.factors.get(f);
 			  	if (factorValues.get(TotalWeightAttribute) > 0) {
-		        	color = " #FFAAAA";
+			  		switch (f.name) {
+				  		case "Default":
+			        		colorG = "EE";
+				  		case "BugFix" :
+			        		colorR = "EE";
+				  		default :
+			        		colorB = "EE";
+			  		}
 			  	}
 			}        
-	        
+
+    		color = " #" + colorR + colorG + colorB;
 	        ("object "+a.~uniqueName + color).printlno();
 
 	  		for (f in a.factors.keySet()) {

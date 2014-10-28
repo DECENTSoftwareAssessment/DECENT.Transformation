@@ -1,10 +1,10 @@
-
+import "../libraries/cfa/common.eol";
 import "../libraries/cfa/cfa2plantuml.eol";
 
-var lowerBound = 20;
-lowerBound = 0;
+var lowerBound = 0;
+//lowerBound = 125;
 var upperBound = 2310;
-upperBound = 20;
+//upperBound = 130;
 
     //visualization
 var projectName = CFA!CFN.allInstances().first().name;
