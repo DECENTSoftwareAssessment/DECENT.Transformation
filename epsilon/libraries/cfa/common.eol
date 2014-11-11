@@ -35,7 +35,7 @@ operation resetTotalWeights() {
     var defaultValue = 0.asDouble();
     for (s in CFA!CFAState.allInstances()) {
     	for (factor in s.factors) {
-    		factor.put(TotalWeightAttribute,defaultValue);
+    		factor.value.put(TotalWeightAttribute,defaultValue);
     	}
     }
 }
