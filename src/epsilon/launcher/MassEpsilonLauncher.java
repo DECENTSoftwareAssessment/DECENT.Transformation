@@ -120,6 +120,9 @@ public class MassEpsilonLauncher {
 			case "EXTRA2CFA":
 				executeEXTRA2CFA(location);
 				break;
+			case "SHARED2CFA":
+				executeSHARED2CFA(location);
+				break;
 			case "DECENT2CFA":
 				executeDECENT2CFA(location);
 				break;
@@ -304,10 +307,10 @@ public class MassEpsilonLauncher {
 			URISyntaxException, EolModelLoadingException, EolRuntimeException {
 		String source = "epsilon/transform/decent2cfa.etl";
 		IEolExecutableModule module = loadModule(source);
+		IModel cfaModel = modelHandler.getCFAModel(location, true, true);
 		IModel decentModel = modelHandler.getDECENTModel(location, true, false);
 		// TODO: consider removing reliance on MG especially if it is only
 		// needed in one line
-		IModel cfaModel = modelHandler.getCFAModel(location, true, true);
 		module.getContext().getModelRepository().addModel(cfaModel);
 		module.getContext().getModelRepository().addModel(decentModel);
 		module.execute();
@@ -379,6 +382,19 @@ public class MassEpsilonLauncher {
 		cfaModel.dispose();
 		module.reset();
 	}
+
+	private void executeSHARED2CFA(String location) throws Exception,
+		URISyntaxException, EolModelLoadingException, EolRuntimeException {
+		String source = "epsilon/transform/shared2cfa.eol";
+		IEolExecutableModule module = loadModule(source);
+		IModel cfaModel = modelHandler.getCFAModel(location, true, true);
+		module.getContext().getModelRepository().addModel(cfaModel);
+		module.execute();
+		// can be stored and retained alternatively
+		cfaModel.dispose();
+		module.reset();
+	}
+
 	
 	private void executeEXPERIENCE2DECENT(String location) throws Exception, URISyntaxException,
 			EolModelLoadingException, EolRuntimeException {
