@@ -54,6 +54,9 @@ operation CFA!GlobalState getRefactoringWeight() : Real {
 operation CFA!ArtifactState getRefactoringWeight() : Real {
 	return self.action.revision.message.getRefactoringWeight();
 }
+operation CFA!LogicalState getRefactoringWeight() : Real {
+	return self.globalState.getRefactoringWeight();
+}
 
 
 	
