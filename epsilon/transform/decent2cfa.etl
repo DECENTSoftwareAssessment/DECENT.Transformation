@@ -32,6 +32,7 @@ pre {
 
 post {
     ("Post processing... ").log(2);
+    resetTotalWeights();
     calculateTotalFactorWeights();
     calculateAverageFactorWeights();
 
@@ -44,26 +45,47 @@ rule States
     transform a : DECENT!State 
     to s : CFA!LogicalState {
     
-    guard : a.artifact.isFAMIXType()
+    guard : a.artifact.isFAMIXType() and a.isHit() and not a.isDECENTStateMapped()
     
     s.state = a;
+    s.artifact = a.artifact; //may be redundant
     s.ID = a.ID;
-    s.name = ""+a.ID;
+    s.name = a.artifact.name;
     s.globalState = a.ID.getGlobalState();
     var r = s.globalState.revision;
     //TODO: split based on count?
     s.addFactor(BugFixFactor, r.is_bug_fix.asDouble());
     s.addFactor(DefaultFactor, 1.asDouble());
     
+    var affectedArtifactsOfType = r.commit_id.getHitFAMIXStatesForID().select(x|x.artifact.type = a.artifact.type);
+    s.addFactor(BugFixSharedFactor, r.is_bug_fix.asDouble()/affectedArtifactsOfType.size().asDouble());
+    
 	var startLine = a.getValue(StartLineAttribute).content;
 	var endLine = a.getValue(EndLineAttribute).content;
 	var filePath = a.parent.getValue(FilePathAttribute).content;
-	var artifactFile = r.actions.select(a|a.current_file_path = filePath).first().file;
+	var artifactFile = r.actions.select(x|x.current_file_path = filePath).first().file;
+	
+	s.artifactState = s.globalState.artifactStates.select(x|x.file = artifactFile).first();
+
+	//HIT2DECENT is REQUIRED!!!!!!!!!!!
+
 	var fileHunks = r.hunks.select(x|x.file = artifactFile);
 	var hunks = fileHunks.select(h|not (startLine > h.new_end_line_normalized or endLine < h.new_start_line_normalized));
 	for (h in hunks) {
 		for (hb in h.hunkBlame) {
 			var candidateCauses = hb.lastRevision.commit_id.getHitFAMIXStatesForID();
+			
+			/*
+			("  artifacts: " + DECENT!Artifact.allInstances().size()).println();
+			("  causes: " + candidateCauses.size()).println();
+			("    breakdown: " + hb.lastRevision.commit_id + " ---> ...").println();
+			for (fa in DECENT!Artifact.allInstances()) {
+				("      FAMIX artifact "+fa.name).println();
+				for (fs in fa.collect(y|y.states).flatten().select(z|z.ID = hb.lastRevision.commit_id)) {
+					("        state "+fs.name + " at "+fs.ID + " Hit: "+fs.isHit()).println();
+				}
+			}
+			*/
 			//TODO: what if more than one?
 			var causeState = candidateCauses.select(x|x.artifact = a.artifact).first();
 			if (causeState.isDefined()) {
@@ -72,6 +94,7 @@ rule States
 			} else {
 				//("   -> Cause in "+hb.lastRevision.commit_id + " not found!").println();
 			}
+			//TODO: add containing artifacts?
 			//TODO: also handle renamed artifacts
 		}
 	}	
@@ -80,6 +103,11 @@ rule States
 @cached
 operation Integer getGlobalState() : CFA!GlobalState {
 	return CFA!GlobalState.allInstances().select(s|s.ID = self).first();
+}
+
+@cached
+operation DECENT!State isDECENTStateMapped() : Boolean {
+	return CFA!LogicalState.allInstances().exists(s|s.state = self);
 }
 
 operation addFAMIXLogicalStates() {
