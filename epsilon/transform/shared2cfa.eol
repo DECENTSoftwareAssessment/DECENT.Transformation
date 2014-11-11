@@ -7,6 +7,8 @@ import "../libraries/decent/logging.eol";
 
   	var start = Native("java.lang.System").currentTimeMillis();
 	
+	var cfn = CFA!CFN.allInstances().first();
+	
   	var WeightFactorAttribute = "WeightFactor".getCFAAttribute();
   	var TotalWeightAttribute = "TotalWeight".getCFAAttribute();
   	var AverageWeightAttribute = "AverageWeight".getCFAAttribute();
@@ -14,7 +16,7 @@ import "../libraries/decent/logging.eol";
 	var suffix = ".EqualSplit";
   	var factors = new Map;
 
-	var cfaFactors = CFA!Factor.allInstances().select(x|x.name.endsWith(suffix));
+	var cfaFactors = CFA!Factor.allInstances().select(x|not x.name.endsWith(suffix));
 	for (f in cfaFactors) {
 	  	factors.put(f.name+suffix, f.description + "(equal split)");
 	  	f.~sharedName = f.name+suffix; //for lookup later
@@ -25,40 +27,60 @@ import "../libraries/decent/logging.eol";
 			var factor = new CFA!Factor;
 			factor.name = a;
 			factor.description = factors.get(a);
+			cfn.factors.add(factor);
 		}
   	}
 
 	addFactors();
-	calculateTotalFactorWeights(RefactoringMessageFactor);
-	calculateAverageFactorWeights();
-
+  	
+  	for (a in factors.keySet()) {
+  		var f = a.getCFAFactor();
+  		resetTotalWeights(f);
+		calculateTotalFactorWeights(f);
+		calculateAverageFactorWeights();
+	}
+	
     var end = Native("java.lang.System").currentTimeMillis();
     var duration = end - start;
     ("Duration: "+duration.toMinutes().round(5)).log(1);
 
 operation addFactors() {
+	for (s in CFA!GlobalState.allInstances) {
+  		var splitCount = 1.asDouble();
+  		s.addSharedFactors(splitCount);
+	}
 	for (s in CFA!ArtifactState.allInstances) {
   		var splitCount = s.globalState.getArtifactSplitCount();
-  		s.addSharedFactors();
+  		s.addSharedFactors(splitCount);
 	}
 	for (s in CFA!LogicalState.allInstances) {
   		var splitCount = s.globalState.getLogicalSplitCount(s.artifact.type);
-  		s.addSharedFactors();
+  		s.addSharedFactors(splitCount);
 	}
 }
 
-operation CFA!State addSharedFactors(splitCount : Real) {
+operation CFA!CFAState addSharedFactors(splitCount : Real) {
   	for (a in factors.keySet()) {
   		var f = a.getCFAFactor();
-  		var baseWeightFactor = s.globalState.getBaseWeightFactor(a);
-		s.addFactor(f, baseWeightFactor/splitCount);
+  		var baseWeightFactor = self.getBaseWeightFactor(a);
+		self.addFactor(f, baseWeightFactor/splitCount);
 	}
 }
 
 @cached
 operation CFA!GlobalState getBaseWeightFactor(sharedFactorName : String) : Real {
-	return self.factors.get(sharedFactorName).get(WeightFactorAttribute);
+  	var f = sharedFactorName.getBaseFactor();
+	return self.factors.get(f).get(WeightFactorAttribute);
 }
+
+operation CFA!ArtifactState getBaseWeightFactor(sharedFactorName : String) : Real {
+	return self.globalState.getBaseWeightFactor(sharedFactorName);
+}
+
+operation CFA!LogicalState getBaseWeightFactor(sharedFactorName : String) : Real {
+	return self.globalState.getBaseWeightFactor(sharedFactorName);
+}
+
 
 @cached
 operation CFA!GlobalState getArtifactSplitCount() : Real {
