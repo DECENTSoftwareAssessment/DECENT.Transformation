@@ -42,7 +42,7 @@ operation addFactors() {
   		s.addSharedFactors();
 	}
 	for (s in CFA!LogicalState.allInstances) {
-  		var splitCount = s.globalState.getLogicalSplitCount();
+  		var splitCount = s.globalState.getLogicalSplitCount(s.artifact.type);
   		s.addSharedFactors();
 	}
 }
@@ -67,8 +67,8 @@ operation CFA!GlobalState getArtifactSplitCount() : Real {
 
 //TODO: do we also need a split for artifact/logical.count?
 @cached
-operation CFA!GlobalState getLogicalSplitCount() : Real {
-	return self.logicalStates.size().asDouble();
+operation CFA!GlobalState getLogicalSplitCount(type : DECENT!ArtifactType) : Real {
+	return self.logicalStates.select(x|x.artifact.type = type).size().asDouble();
 }
 
 @cached
