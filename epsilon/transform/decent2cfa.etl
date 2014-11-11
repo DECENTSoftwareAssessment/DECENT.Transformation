@@ -57,9 +57,6 @@ rule States
     s.addFactor(BugFixFactor, r.is_bug_fix.asDouble());
     s.addFactor(DefaultFactor, 1.asDouble());
     
-    var affectedArtifactsOfType = r.commit_id.getHitFAMIXStatesForID().select(x|x.artifact.type = a.artifact.type);
-    s.addFactor(BugFixSharedFactor, r.is_bug_fix.asDouble()/affectedArtifactsOfType.size().asDouble());
-    
 	var startLine = a.getValue(StartLineAttribute).content;
 	var endLine = a.getValue(EndLineAttribute).content;
 	var filePath = a.parent.getValue(FilePathAttribute).content;
