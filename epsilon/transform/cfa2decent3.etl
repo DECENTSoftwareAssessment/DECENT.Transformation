@@ -20,7 +20,7 @@ pre {
   
   for (f in CFA!Factor.allInstances()) {
   	//TODO: add dimension
-  	for (a in CFA!Attribute.allInstances()) {
+  	for (a in CFA!CFAAttribute.allInstances()) {
   		//TODO: assign dimensions
 		attributes.put(f.name+"."+a.name+".Local","Local/Artifact: "+a.description+" ("+f.name+")");
 		attributes.put(f.name+"."+a.name+".Global","Global/Agent: "+a.description+" ("+f.name+")");
@@ -111,6 +111,7 @@ pre {
 
   //var profiler : new Native("org.eclipse.epsilon.eol.tools.ProfilerTool");
   transformArtifactStates();
+  transformLogicalStates();
   transformAgentStates();
   addCarriedWeights();
   
@@ -377,7 +378,6 @@ operation transformArtifactStates() {
 	  		
 			//TODO: add proper backout  		
 	  		for (f in s.factors.keySet()) {
-	  			
 			  	var factorValues = s.factors.get(f);
 			  	var globalStateFactorValues = s.globalState.factors.get(f);
 			  	for (a in factorValues.keySet()) {
@@ -396,7 +396,6 @@ operation transformArtifactStates() {
 		  		}
 		  		var ClearedWeightAttribute = (f.name+".ClearedWeight.Local").getAttribute();
 		   		state.addValue(ClearedWeightAttribute, clearedBugWeight);
-	
 			}
 	  		
 	  		state.addValue(CausesCountAttribute, s.causes.size().asDouble());
@@ -409,6 +408,44 @@ operation transformArtifactStates() {
   }
   
 }
+
+operation transformLogicalStates() {
+  ("...transforming logical states...").log(2);
+  for (g in CFA!GlobalState.allInstances()) {
+	for (s in g.logicalStates) {
+		//TODO: add proper backout  		
+  		for (f in s.factors.keySet()) {
+		  	var factorValues = s.factors.get(f);
+		  	var globalStateFactorValues = s.globalState.factors.get(f);
+		  	for (a in factorValues.keySet()) {
+	  			var LocalAttribute = (f.name+"."+a.name+".Local").getAttribute();
+	  			var GlobalAttribute = (f.name+"."+a.name+".Global").getAttribute();
+	  			//state.values.removeAll(state.values.select(v|v.ofAttribute.name = LocalAttribute));
+	  			//state.values.removeAll(state.values.select(v|v.ofAttribute.name = GlobalAttribute));
+	  			s.state.addValue(LocalAttribute,factorValues.get(a));
+	  			s.state.addValue(GlobalAttribute,globalStateFactorValues.get(a));
+		  	}
+		  	
+  	  		var clearedBugWeight = 0.asDouble();
+	  		if (s.fixes.size()>0) {
+	  			//TODO: what's the sense behind the multiplication below???
+	  			clearedBugWeight = factorValues.get(CFAWeightFactor) * (s.fixes.size().asDouble()/s.fixes.size().asDouble());
+	  		}
+	  		var ClearedWeightAttribute = (f.name+".ClearedWeight.Local").getAttribute();
+	   		s.state.addValue(ClearedWeightAttribute, clearedBugWeight);
+
+		}
+	  		
+  		s.state.addValue(CausesCountAttribute, s.causes.size().asDouble());
+  		s.state.addValue(FixesCountAttribute, s.fixes.size().asDouble());
+
+  		s.state.addValue(GlobalCausesCountAttribute, s.globalState.causes.size().asDouble());
+  		s.state.addValue(GlobalFixesCountAttribute, s.globalState.fixes.size().asDouble());
+  	}
+  }
+  
+}
+
 
 operation addCarriedWeights() {
   ("...adding carried weights...").log(2);
