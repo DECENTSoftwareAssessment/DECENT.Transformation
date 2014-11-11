@@ -14,7 +14,7 @@ import "../libraries/decent/logging.eol";
   	var AverageWeightAttribute = "AverageWeight".getCFAAttribute();
 
   	var factors = new Map;
-  	factors.put("RefactoringMessage","Based on commit messages");
+  	factors.put("Refactoring","Based on commit messages");
   	
   	//TODO: factor out
   	for (a in factors.keySet()) {
@@ -26,7 +26,7 @@ import "../libraries/decent/logging.eol";
 		}
   	}
 
-  	var RefactoringMessageFactor = CFA!Factor.allInstances().select(a|a.name = "RefactoringMessage").first();
+  	var RefactoringMessageFactor = CFA!Factor.allInstances().select(a|a.name = "Refactoring").first();
 
 	addFactors();
 	resetTotalWeights(RefactoringMessageFactor);
