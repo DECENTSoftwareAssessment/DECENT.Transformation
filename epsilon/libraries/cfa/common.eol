@@ -1,6 +1,11 @@
 @cached
-operation String getCFAAttribute() : CFA!Attribute {
-    return CFA!Attribute.allInstances().select(a|a.name = self).first();
+operation String getCFAAttribute() : CFA!CFAAttribute {
+    return CFA!CFAAttribute.allInstances().select(a|a.name = self).first();
+}
+
+@cached
+operation String getCFAFactor() : CFA!Factor {
+    return CFA!Factor.allInstances().select(a|a.name = self).first();
 }
 
 operation calculateTotalFactorWeights(selectedFactor : CFA!Factor) {
@@ -22,7 +27,7 @@ operation resetTotalWeights() {
     var defaultValue = 0.asDouble();
     for (s in CFA!CFAState.allInstances()) {
     	for (factor in s.factors) {
-    		factor.value.put(TotalWeightAttribute,value);
+    		factor.value.put(TotalWeightAttribute,defaultValue);
     	}
     }
 }
