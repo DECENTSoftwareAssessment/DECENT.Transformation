@@ -11,8 +11,6 @@ pre mgInitPre {
   var start = Native("java.lang.System").currentTimeMillis();
   /********************************** INIT (1x) *******************************/
 
-  var cfn = CFA!CFN.allInstances().first();
-
   var attributes = new Map;
   attributes.put("WeightFactor","Weight factor for state used in calculating weights for causes");
   attributes.put("TotalWeight","Calculated total weight reflecting all caused states disregarding whether they were labelled as states of interest and assigned a corresponding weight factor");
@@ -40,7 +38,6 @@ pre mgInitPre {
 	var factor = new CFA!Factor;
 	factor.name = a;
 	factor.description = factors.get(a);
-	cfn.factors.add(factor);
   }
   
   var BugFixFactor = CFA!Factor.allInstances().select(a|a.name = "BugFix").first();
