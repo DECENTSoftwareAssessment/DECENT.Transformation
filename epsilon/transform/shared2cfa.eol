@@ -14,29 +14,25 @@ import "../libraries/decent/logging.eol";
   	var AverageWeightAttribute = "AverageWeight".getCFAAttribute();
 
 	var suffix = ".EqualSplit";
-  	var factors = new Map;
 
-	var cfaFactors = CFA!Factor.allInstances().select(x|not x.name.endsWith(suffix));
+	var cfaFactors = cfn.factors.select(x|not x.name.endsWith(suffix));
 	for (f in cfaFactors) {
-	  	factors.put(f.name+suffix, f.description + "(equal split)");
-	  	f.~sharedName = f.name+suffix; //for lookup later
-	}
-	
-  	for (a in factors.keySet()) {
-  		if (CFA!Factor.allInstances().select(x|x.name = a).size() = 0) {
+	  	f.~sharedName = f.name+suffix;
+
+  		if (CFA!Factor.allInstances().select(x|x.name = f.~sharedName).size() = 0) {
 			var factor = new CFA!Factor;
-			factor.name = a;
-			factor.description = factors.get(a);
+			factor.name = f.~sharedName;
+			factor.description = f.description + " (equal split)";
 			cfn.factors.add(factor);
 		}
   	}
 
 	addFactors();
   	
-  	for (a in factors.keySet()) {
-  		var f = a.getCFAFactor();
-  		resetTotalWeights(f);
-		calculateTotalFactorWeights(f);
+	for (f in cfaFactors) {
+  		var sf = f.~sharedName.getCFAFactor();
+  		resetTotalWeights(sf);
+		calculateTotalFactorWeights(sf);
 		calculateAverageFactorWeights();
 	}
 	
@@ -60,10 +56,10 @@ operation addFactors() {
 }
 
 operation CFA!CFAState addSharedFactors(splitCount : Real) {
-  	for (a in factors.keySet()) {
-  		var f = a.getCFAFactor();
-  		var baseWeightFactor = self.getBaseWeightFactor(a);
-		self.addFactor(f, baseWeightFactor/splitCount);
+	for (f in cfaFactors) {
+  		var sf = f.~sharedName.getCFAFactor();
+  		var baseWeightFactor = self.getBaseWeightFactor(f.~sharedName); //TODO: change to factor? 
+		self.addFactor(sf, baseWeightFactor/splitCount);
 	}
 }
 
