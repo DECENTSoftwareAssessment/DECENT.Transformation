@@ -17,7 +17,7 @@ pre mgInitPre {
   attributes.put("AverageWeight","Calculated average weight by dividing the total weight by the number of caused states");
   
   for (a in attributes.keySet()) {
-	var Attribute = new CFA!Attribute;
+	var Attribute = new CFA!CFAAttribute;
 	Attribute.name = a;
 	Attribute.description = attributes.get(a);
   }
@@ -31,6 +31,7 @@ pre mgInitPre {
   var factors = new Map;
   factors.put("BugFix","Bug Fix factor derived from revision label based on regular expressions applied to revision messages");
   factors.put("Default","Default factor - for every change, used as a baseline");
+  factors.put("BugFixShared","Bug Fix factor derived from revision label based on regular expressions applied to revision messages, equal split among lower level states");
 
   //var traceAvailable = repository.getModelByNameSafe("TRACE").isDefined();
 
@@ -42,6 +43,7 @@ pre mgInitPre {
   
   var BugFixFactor = CFA!Factor.allInstances().select(a|a.name = "BugFix").first();
   var DefaultFactor = CFA!Factor.allInstances().select(a|a.name = "Default").first();
+  var BugFixSharedFactor = CFA!Factor.allInstances().select(a|a.name = "BugFixShared").first();
 }
 
 
@@ -84,6 +86,7 @@ rule Revisions
     
     s.addFactor(BugFixFactor, r.is_bug_fix.asDouble());
     s.addFactor(DefaultFactor, 1.asDouble());
+    s.addFactor(BugFixSharedFactor, r.is_bug_fix.asDouble());
 	
     s.hunks = r.hunks.size();
     s.bugFix = r.is_bug_fix.asDouble();
@@ -93,7 +96,7 @@ rule Revisions
         for (hb in h.hunkBlame) {
             var cause = hb.lastRevision.equivalent(); 
             s.fixes.add(cause);
-            cause.causes.add(s); //this ought to be redundant
+            //cause.causes.add(s); //this ought to be redundant
         }
     }        
 }
@@ -115,9 +118,14 @@ rule Actions
     //TODO: restructure such that network is created as default and factors and weights are added afterwards
     //as separate modules 
     //TODO: split these across the number of artifact states?
+    //->default inherits the bug_fix as is
+    //->change only if sufficient evidence present
+    //->perform necessary investigations to collect evidence
     s.addFactor(BugFixFactor, a.revision.is_bug_fix.asDouble());
     s.addFactor(DefaultFactor, 1.asDouble());
+    s.addFactor(BugFixSharedFactor, a.revision.is_bug_fix.asDouble()/a.revision.actions.size().asDouble());
     
+    //legacy
     var hunks = a.revision.hunks.select(h|h.file = a.file);
     s.hunks = hunks.size();
     s.bugFix = a.revision.is_bug_fix.asDouble();
@@ -138,13 +146,13 @@ rule Actions
 
             if (cause.isDefined()) {
 	            s.fixes.add(cause);
-	            cause.causes.add(s); //this ought to be redundant
+	            //cause.causes.add(s); //this ought to be redundant
             } 
             else {
             	cause = hb.lastRevision.actions.select(ax|ax.file = a.file.~copyFrom).first().equivalent();
 	            if (cause.isDefined()) {
 		            s.fixes.add(cause);
-		            cause.causes.add(s); //this ought to be redundant
+		            //cause.causes.add(s); //this ought to be redundant
 	            } else {
 	            	("  Cause link for File "+a.file.file_name+" from Revision "+h.revision.commit_id+" to Revision "+hb.lastRevision.commit_id+" still cannot be resolved.. Investigate!").log(2);
 	            } 
