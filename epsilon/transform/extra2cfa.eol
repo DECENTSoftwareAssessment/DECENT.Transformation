@@ -7,6 +7,8 @@ import "../libraries/decent/logging.eol";
 
   	var start = Native("java.lang.System").currentTimeMillis();
 	
+	var cfn = CFA!CFN.allInstances().first();
+  	
   	var WeightFactorAttribute = "WeightFactor".getCFAAttribute();
   	var TotalWeightAttribute = "TotalWeight".getCFAAttribute();
   	var AverageWeightAttribute = "AverageWeight".getCFAAttribute();
@@ -14,11 +16,13 @@ import "../libraries/decent/logging.eol";
   	var factors = new Map;
   	factors.put("RefactoringMessage","Based on commit messages");
   	
+  	//TODO: factor out
   	for (a in factors.keySet()) {
   		if (CFA!Factor.allInstances().select(x|x.name = a).size() = 0) {
 			var factor = new CFA!Factor;
 			factor.name = a;
 			factor.description = factors.get(a);
+			cfn.factors.add(factor);
 		}
   	}
 
