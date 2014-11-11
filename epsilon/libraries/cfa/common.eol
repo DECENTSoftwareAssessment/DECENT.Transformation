@@ -23,6 +23,14 @@ operation calculateTotalFactorWeights(selectedFactor : CFA!Factor) {
     }
 }
 
+operation resetTotalWeights(selectedFactor : CFA!Factor) {
+    var defaultValue = 0.asDouble();
+    for (s in CFA!CFAState.allInstances()) {
+    	var factor = s.factors.get(selectedFactor);
+		factor.value.put(TotalWeightAttribute,defaultValue);
+    }
+}
+
 operation resetTotalWeights() {
     var defaultValue = 0.asDouble();
     for (s in CFA!CFAState.allInstances()) {
