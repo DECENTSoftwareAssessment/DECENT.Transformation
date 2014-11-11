@@ -25,6 +25,7 @@ import "../libraries/decent/logging.eol";
   	var RefactoringMessageFactor = CFA!Factor.allInstances().select(a|a.name = "RefactoringMessage").first();
 
 	addFactors();
+	resetTotalWeights(RefactoringMessageFactor);
 	calculateTotalFactorWeights(RefactoringMessageFactor);
 	calculateAverageFactorWeights();
 
