@@ -61,7 +61,7 @@ operation CFA!GlobalState getBaseWeightFactor(sharedFactorName : String) : Real 
 }
 
 @cached
-operation CFA!GlobalState getSplitCount() : Real {
+operation CFA!GlobalState getArtifactSplitCount() : Real {
 	return self.artifactStates.size().asDouble();
 }
 
