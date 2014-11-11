@@ -38,7 +38,7 @@ import "../libraries/decent/logging.eol";
     ("Duration: "+duration.toMinutes().round(5)).log(1);
 
 operation addFactors() {
-	for (s in CFA!State.allInstances) {
+	for (s in CFA!CFAState.allInstances) {
 		s.addFactor(RefactoringMessageFactor, s.getRefactoringWeight());
 	}
 }
