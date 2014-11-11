@@ -1,0 +1,78 @@
+import "../libraries/cfa/common.eol";
+import "../libraries/decent/common.eol";
+import "../libraries/decent/logging.eol";
+
+
+  	"Running shared2cfa".log(1);
+
+  	var start = Native("java.lang.System").currentTimeMillis();
+	
+  	var WeightFactorAttribute = "WeightFactor".getCFAAttribute();
+  	var TotalWeightAttribute = "TotalWeight".getCFAAttribute();
+  	var AverageWeightAttribute = "AverageWeight".getCFAAttribute();
+
+	var suffix = ".EqualSplit";
+  	var factors = new Map;
+
+	var cfaFactors = CFA!Factor.allInstances().select(x|x.name.endsWith(suffix));
+	for (f in cfaFactors) {
+	  	factors.put(f.name+suffix, f.description + "(equal split)");
+	  	f.~sharedName = f.name+suffix; //for lookup later
+	}
+	
+  	for (a in factors.keySet()) {
+  		if (CFA!Factor.allInstances().select(x|x.name = a).size() = 0) {
+			var factor = new CFA!Factor;
+			factor.name = a;
+			factor.description = factors.get(a);
+		}
+  	}
+
+	addFactors();
+	calculateTotalFactorWeights(RefactoringMessageFactor);
+	calculateAverageFactorWeights();
+
+    var end = Native("java.lang.System").currentTimeMillis();
+    var duration = end - start;
+    ("Duration: "+duration.toMinutes().round(5)).log(1);
+
+operation addFactors() {
+	for (s in CFA!ArtifactState.allInstances) {
+  		var splitCount = s.globalState.getArtifactSplitCount();
+  		s.addSharedFactors();
+	}
+	for (s in CFA!LogicalState.allInstances) {
+  		var splitCount = s.globalState.getLogicalSplitCount();
+  		s.addSharedFactors();
+	}
+}
+
+operation CFA!State addSharedFactors(splitCount : Real) {
+  	for (a in factors.keySet()) {
+  		var f = a.getCFAFactor();
+  		var baseWeightFactor = s.globalState.getBaseWeightFactor(a);
+		s.addFactor(f, baseWeightFactor/splitCount);
+	}
+}
+
+@cached
+operation CFA!GlobalState getBaseWeightFactor(sharedFactorName : String) : Real {
+	return self.factors.get(sharedFactorName).get(WeightFactorAttribute);
+}
+
+@cached
+operation CFA!GlobalState getSplitCount() : Real {
+	return self.artifactStates.size().asDouble();
+}
+
+//TODO: do we also need a split for artifact/logical.count?
+@cached
+operation CFA!GlobalState getLogicalSplitCount() : Real {
+	return self.logicalStates.size().asDouble();
+}
+
+@cached
+operation String getBaseFactor() : CFA!Factor {
+	return cfaFactors.select(x|x.~sharedName = self).first();
+}
+	
