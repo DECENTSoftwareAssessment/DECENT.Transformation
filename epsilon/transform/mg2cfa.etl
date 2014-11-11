@@ -82,8 +82,8 @@ rule Revisions
     s.ID = r.commit_id;
     s.name = ""+r.commit_id;
     
-    s.addFactor(BugFixFactor, r.is_bug_fix.asDouble());
     s.addFactor(DefaultFactor, 1.asDouble());
+    s.addFactor(BugFixFactor, r.is_bug_fix.asDouble());
 	
     s.hunks = r.hunks.size();
     s.bugFix = r.is_bug_fix.asDouble();
@@ -117,8 +117,8 @@ rule Actions
     //->default inherits the bug_fix as is
     //->change only if sufficient evidence present
     //->perform necessary investigations to collect evidence
-    s.addFactor(BugFixFactor, a.revision.is_bug_fix.asDouble());
     s.addFactor(DefaultFactor, 1.asDouble());
+    s.addFactor(BugFixFactor, a.revision.is_bug_fix.asDouble());
     
     //legacy
     var hunks = a.revision.hunks.select(h|h.file = a.file);
