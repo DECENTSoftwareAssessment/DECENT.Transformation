@@ -1,6 +1,11 @@
 
 operation String log(level : Integer) {
 	var levelLimit = 1;
+	//TODO: check if this has performance implications -> minor ~3-5% depending on density of logging
+	var logSetting = Native("java.lang.System").getProperty("epsilon.logLevel");
+	if (logSetting.isDefined()) {
+		levelLimit = logSetting.asInteger();
+	}
 	if (level <= levelLimit) {
 		var system = Native("java.lang.System");
 		var t = system.currentTimeMillis();
