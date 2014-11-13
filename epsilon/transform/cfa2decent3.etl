@@ -10,7 +10,7 @@ pre {
   var start = Native("java.lang.System").currentTimeMillis();
   
   ("DECENT States: "+DECENT!State.allInstances().size()).log(2);
-  var Model = DECENT!Model.allInstances().first();
+  var Model = DECENT!DECENT::Model.allInstances().first();	
 
 
   ("Initializing CFA definitions").log(2);
@@ -29,30 +29,6 @@ pre {
   	attributes.put(f.name+".CarriedWeight.Local","Local/Artifact: Carried weight ("+f.name+")");
   	attributes.put(f.name+".ClearedWeight.Global","Global/Agent: Cleared weight ("+f.name+")");
   	attributes.put(f.name+".CarriedWeight.Global","Global/Agent: Carried weight ("+f.name+")");
-
- 	attributes.put(f.name+".AverageFixedLifespan","");
-  	attributes.put(f.name+".AverageCausedLifespan","");
-
- 	attributes.put(f.name+".FixedRelativeDistanceVariance","Variance of distance divided by relative time");
-  	attributes.put(f.name+".CausedRelativeDistanceVariance","Variance of distance divided by relative time");
- 	attributes.put(f.name+".FixedRelativeDistanceAverage","Average of distance divided by relative time");
-  	attributes.put(f.name+".CausedRelativeDistanceAverage","Average of distance divided by relative time");
-
-  	attributes.put(f.name+".CausesAbsoluteTime","Set of distances for causing states to the beginning of time");
-  	attributes.put(f.name+".CausesRelativeTime","Set of distances for causing states to the first state");
-  	attributes.put(f.name+".CausesDistanceTime","Set of distances for causing states to fixing state");
-
-  	attributes.put(f.name+".CausesAbsoluteTimeVariance","Variance of distances for causing states to the beginning of time");
-  	attributes.put(f.name+".CausesRelativeTimeVariance","Variance of distances for causing states to the first state");
-  	attributes.put(f.name+".CausesDistanceTimeVariance","Variance of distances for causing states to fixing state");
-
-  	attributes.put(f.name+".FixesAbsoluteTime","Set of distances for fixing states to the beginning of time");
-  	attributes.put(f.name+".FixesRelativeTime","Set of distances for fixing states to the first state");
-  	attributes.put(f.name+".FixesDistanceTime","Set of distances for fixing states to causing states");
-
-  	attributes.put(f.name+".FixesAbsoluteTimeVariance","Variance of distances for fixing states to the beginning of time");
-  	attributes.put(f.name+".FixesRelativeTimeVariance","Variance of distances for fixing states to the first state");
-  	attributes.put(f.name+".FixesDistanceTimeVariance","Variance of distances for fixing states to causing state");
   	
   	attributes.put(f.name+".CausesCount.Local","Number of caused changes in future states of artifact");
   	attributes.put(f.name+".FixesCount.Local","Number of causing past states of artifact");
@@ -61,24 +37,8 @@ pre {
   }
 
   //TODO: initialize attributes automagically?
-  //TODO: cleanup
-  attributes.put("BugFix","Local (artifact) label as bug fix from revision message");
-  attributes.put("WeightFactor","Local (artifact) weight factor from CFA analysis");
-  attributes.put("TotalWeight","Total local (artifact) cause weight from CFA analysis (total weight for caused changes)");
-  attributes.put("AverageWeight","Average local (artifact) cause weight from CFA analysis (average weight for caused changes)");
-  attributes.put("TotalBugWeight","Total local (artifact) bug cause weight from CFA analysis (total weight for caused fixes)");
-  attributes.put("AverageBugWeight","Average local (artifact) bug cause weight from CFA analysis (average weight for caused fixes)");
   attributes.put("CausesCount","Number of caused changes in future states of artifact");
   attributes.put("FixesCount","Number of causing past states of artifact");
-  attributes.put("GlobalBugFix","Global label as bug fix from revision message");
-  attributes.put("GlobalWeightFactor","Global (revision) weight factor from CFA analysis");
-  attributes.put("GlobalTotalWeight","Total global (revision) cause weight from CFA analysis (total weight for caused changes)");
-  attributes.put("GlobalAverageWeight","Average global (revision) cause weight from CFA analysis (average weight for caused changes)");
-  attributes.put("GlobalTotalBugWeight","Total global (revision) bug cause weight from CFA analysis (total weight for caused fixes)");
-  attributes.put("GlobalAverageBugWeight","Average global (revision) bug cause weight from CFA analysis (average weight for caused fixes)");
-
-  attributes.put("CarriedTotalBugWeight","Accumulated total local (artifact) bug cause weight from past states");
-  attributes.put("ClearedTotalBugWeight","Cleared total local (artifact) bug cause weight");
 
   var GlobalCausesCountAttribute = addAttribute("GlobalCausesCount","Number of caused changes in future states of global state (revision)");
   var GlobalFixesCountAttribute = addAttribute("GlobalFixesCount","Number of causing past states of global state (revision)");
@@ -114,12 +74,6 @@ pre {
   transformLogicalStates();
   transformAgentStates();
   addCarriedWeights();
-  
-  //TODO: this needs to be rethought tho, as it is now it is providing too much noise
-  addArtifactTemporals();
-  addAgentTemporals();
-
-  
   ("...done!").log(2);
 }
 
@@ -153,207 +107,6 @@ operation dumpAgentStates() {
   	o.replaceAll("\\.",",").println();
   }
 }
-
-
-operation addArtifactTemporals() {
-	//TODO: these should be factor specific as well
-  	("...adding artifact temporals...").log(2);
-
-	var start = CFA!GlobalState.allInstances().sortBy(x|x.revision.author_date.time).first().revision.author_date.time;
-
-  	for (f in CFA!Factor.allInstances()) {
-  		
-  		var AverageFixedLifespanAttribute = (f.name+".AverageFixedLifespan").getAttribute();
-  		var AverageCausedLifespanAttribute = (f.name+".AverageCausedLifespan").getAttribute();
-
-  		var FixedRelativeDistanceVarianceAttribute = (f.name+".FixedRelativeDistanceVariance").getAttribute();
-  		var CausedRelativeDistanceVarianceAttribute = (f.name+".CausedRelativeDistanceVariance").getAttribute();
-
-  		var FixedRelativeDistanceAverageAttribute = (f.name+".FixedRelativeDistanceAverage").getAttribute();
-  		var CausedRelativeDistanceAverageAttribute = (f.name+".CausedRelativeDistanceAverage").getAttribute();
-
-  		var CausesDistanceTimeVarianceAttribute = (f.name+".CausesDistanceTimeVariance").getAttribute();
-  		var FixesDistanceTimeVarianceAttribute = (f.name+".FixesDistanceTimeVariance").getAttribute();
-
-		var relativeTime = new Sequence;
-		var distanceTime = new Sequence;
-		var resolution = 24*60*60*1000;//days*hours*minutes*seconds
-		//resolution = 60*1000;//minutes*seconds
-		
-	  	for (g in CFA!GlobalState.allInstances()) {
-  			var states = g.ID.getMGStatesForID();
-		
-		
-			for (s in g.artifactStates) {
-				("  " + s.file.file_name + " @ "+s.ID).log(3);
-			  	var fileName = s.file.file_name;
-			  	var filePath = s.action.current_file_path;
-			  	var matchedStates = states.getMatchingStateForPath(filePath);
-			  	var size = matchedStates.size();
-				//check if correct matches can be found 
-			  	if (size <> 1) {
-			  		("  "+size+" DECENT matches found for: "+fileName+" at "+s.ID).log(4);
-			  		("    Avaliable states at "+s.ID+" are:").log(4);
-			  		//for (x in DECENT!State.allInstances().select(x|x.artifact.isMGType() and x.ID = s.ID)) {
-			  			//("      "+x.artifact.name+" at "+x.ID+" ("+x.getValue(FilePathAttribute).content+")").log(4);
-			  		//}
-			  	} else {
-	
-	
-			  		var state = matchedStates.first();
-			  
-			   		//TODO: consider moving to mg2cfa 
-			   		//TODO: consider filtering by weight
-			   		//TODO: considering adding further temporals
-			   		//TODO: describe intuitions (in particular for average caused lifespans):
-			   		// - average caused lifespan indicates the lifespan of the changes / lines changed in the state
-			   		// - average caused bug lifespan indicates the lifespan of the buggy changes / buggy lines changed in the state
-			   		// - difference between the two above would indicate that buggy parts were removed faster 
-			   		//   it would also create bias thus needs to be hidden for machine learning
-			   		//   but could be used for statistics, filtering, comparison with issue lifetimes and other purposes
-			   		//   could also be used as target for prediction (whether a piece looks like it may soon be changed, 
-			   		//   or perhaps also contain a bug that will survive a given number of days)
-			   		// - not sure what to make out of the average fixed lifespan - i.e. the age of the changed lines
-			   		//TODO: add for the global states as well for reference
-			   		//TODO: also consider projecting on the project, agent, and artifact lifespans
-			   		// - separate values can be calculated for agents
-			   		var averageFixedLifespan = 0.asDouble();
-			   		var averageCausedLifespan = 0.asDouble();
-			
-					relativeTime.clear();
-					distanceTime.clear();
-			
-					var time = s.action.revision.author_date.time;
-					var totalFixedTime = 0;
-					//TODO: export threshold
-					var threshold = 0.1.asDouble();
-					//select only buggy changes
-					var selectedFixes = s.fixes.select(x|x.factors.get(f).get(CFAAverageWeight) > threshold);
-					for (c in selectedFixes) {
-						var causeTime = c.action.revision.author_date.time;
-						totalFixedTime = totalFixedTime + (time - causeTime);
-						relativeTime.add(((time - causeTime).asDouble()/(time - start).asDouble()));
-						distanceTime.add((time - causeTime).asDouble()/resolution);
-					}
-					if (selectedFixes.size() > 0) {
-						averageFixedLifespan = s.factors.get(f).get(CFAWeightFactor)*(totalFixedTime / selectedFixes.size().asDouble()).toDays();
-					}
-					//TODO: This should be inverse in fact Fixed...Attribute
-					state.addValue(CausedRelativeDistanceVarianceAttribute, relativeTime.getVariance());
-					state.addValue(CausedRelativeDistanceAverageAttribute, relativeTime.getMean());
-					state.addValue(CausesDistanceTimeVarianceAttribute, distanceTime.getVariance());
-			
-					relativeTime.clear();
-					distanceTime.clear();
-	
-					//TODO: This should be inverse in fact Fixed...Attribute
-					var totalCausedTime = 0;
-					var selectedCauses = s.causes.select(c|c.factors.get(f).get(CFAWeightFactor) > 0);
-					for (f in selectedCauses) {
-						var fixTime = f.action.revision.author_date.time;
-						totalCausedTime = totalCausedTime + (fixTime - time);
-						relativeTime.add(((fixTime - time).asDouble()/(fixTime - start).asDouble()));
-						distanceTime.add((fixTime - time).asDouble()/resolution);
-					}
-					if (selectedCauses.size() > 0) {
-						averageCausedLifespan = (totalCausedTime / selectedCauses.size().asDouble()).toDays();
-					}
-					
-					state.addValue(FixedRelativeDistanceVarianceAttribute, relativeTime.getVariance());
-					state.addValue(FixedRelativeDistanceAverageAttribute, relativeTime.getMean());
-					state.addValue(FixesDistanceTimeVarianceAttribute, distanceTime.getVariance());
-					
-			   		state.addValue(AverageFixedLifespanAttribute, averageFixedLifespan);
-			   		state.addValue(AverageCausedLifespanAttribute, averageCausedLifespan);
-				}
-			}
-		}
-	}
-}
-
-operation addAgentTemporals() {
-  	("...adding agent temporals...").log(2);
-  
-    for (f in CFA!Factor.allInstances()) {
-  		var AverageFixedLifespanAttribute = (f.name+".AverageFixedLifespan").getAttribute();
-  		var AverageCausedLifespanAttribute = (f.name+".AverageCausedLifespan").getAttribute();
-
-  		var FixedRelativeDistanceVarianceAttribute = (f.name+".FixedRelativeDistanceVariance").getAttribute();
-  		var CausedRelativeDistanceVarianceAttribute = (f.name+".CausedRelativeDistanceVariance").getAttribute();
-
-  		var FixedRelativeDistanceAverageAttribute = (f.name+".FixedRelativeDistanceAverage").getAttribute();
-  		var CausedRelativeDistanceAverageAttribute = (f.name+".CausedRelativeDistanceAverage").getAttribute();
-
-  		var CausesDistanceTimeVarianceAttribute = (f.name+".CausesDistanceTimeVariance").getAttribute();
-  		var FixesDistanceTimeVarianceAttribute = (f.name+".FixesDistanceTimeVariance").getAttribute();
-  
-	  	var relativeTime = new Sequence;
-	  	var distanceTime = new Sequence;
-	  	var resolution = 24*60*60*1000;//days*hours*minutes*seconds
-	  	//resolution = 60*1000;//minutes*seconds
-	  
-	  	var start = CFA!GlobalState.allInstances().sortBy(x|x.revision.author_date.time).first().revision.author_date.time;
-	  
-	  	for (s in CFA!GlobalState.allInstances()) {
-			("  " + " @ "+s.ID).log(3);
-		  	var authorName = s.revision.author.name;
-		  	var matchedStates = DECENT!AgentState.allInstances().select(m|m.ID = s.ID);
-		  	var size = matchedStates.size();
-			//check if correct matches can be found 
-		  	if (size <> 1) {
-		  		("  "+size+" DECENT matches found for: "+authorName+" at "+s.ID).log(1);
-		  	} else {
-		  		var state = matchedStates.first();
-		  		
-		   		var averageFixedLifespan = 0.asDouble();
-		   		var averageCausedLifespan = 0.asDouble();
-		
-				var time = s.revision.author_date.time;
-				var totalFixedTime = 0;
-				
-				relativeTime.clear();
-				distanceTime.clear();
-				//TODO: adapt similar to artifact temporals above
-				for (c in s.fixes) {
-					var causeTime = c.revision.author_date.time;
-					totalFixedTime = totalFixedTime + (time - causeTime);
-					relativeTime.add(((time - causeTime).asDouble()/(time - start).asDouble()));
-					distanceTime.add((time - causeTime).asDouble()/resolution);
-				}
-				if (s.fixes.size() > 0) {
-					averageFixedLifespan = s.factors.get(f).get(CFAWeightFactor)*(totalFixedTime / s.fixes.size().asDouble()).toDays();
-				}
-
-				state.addValue(CausedRelativeDistanceVarianceAttribute, relativeTime.getVariance());
-				state.addValue(CausedRelativeDistanceAverageAttribute, relativeTime.getMean());
-				state.addValue(CausesDistanceTimeVarianceAttribute, distanceTime.getVariance());
-				
-				relativeTime.clear();
-				distanceTime.clear();
-				
-				var totalCausedTime = 0;
-				var selectedCauses = s.causes.select(c|c.factors.get(f).get(CFAWeightFactor) > 0);
-				for (f in selectedCauses) {
-					var fixTime = f.revision.author_date.time;
-					totalCausedTime = totalCausedTime + (fixTime - time);
-					relativeTime.add(((fixTime - time).asDouble()/(fixTime - start).asDouble()));
-					distanceTime.add((fixTime - time).asDouble()/resolution);
-				}
-				if (selectedCauses.size() > 0) {
-					averageCausedLifespan = (totalCausedTime / selectedCauses.size().asDouble()).toDays();
-				}
-
-				state.addValue(FixedRelativeDistanceVarianceAttribute, relativeTime.getVariance());
-				state.addValue(FixedRelativeDistanceAverageAttribute, relativeTime.getMean());
-				state.addValue(FixesDistanceTimeVarianceAttribute, distanceTime.getVariance());
-		
-		   		state.addValue(AverageFixedLifespanAttribute, averageFixedLifespan);
-		   		state.addValue(AverageCausedLifespanAttribute, averageCausedLifespan);
-			}	   		
-		}
-  	}
-}
-
 
 operation transformArtifactStates() {
   ("...transforming artifact states...").log(2);
