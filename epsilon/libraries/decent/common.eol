@@ -138,9 +138,15 @@ operation DECENT!Activity addDelta(attribute : DECENT!Attribute, value : DECENT!
 	// ***slighly negative performance impact for whatever reason*** 
     //delta.targetValue = value;
     if (self.state.isDefined()){
+    	var p = self.state;
+    	while (p.isDefined() and not p.isHit()) {
+    		//TODO: what if more than one?
+    		p = p.previous.first();
+    	}
     	//delta.sourceValue = self.state.getValue(attribute);
     	//delta.change = delta.targetValue.content - delta.sourceValue.content;
-        delta.change = (value.content - self.state.getValue(attribute).content).asDouble();
+    	//(self.targetState.artifact.name+":"+p.ID + "->"+self.targetState.ID + ":" + attribute.name+"="+p.getValue(attribute)).println();
+        delta.change = (value.content - p.getValue(attribute).content).asDouble();
     } else {
     	//delta.change = delta.targetValue.content;
         delta.change = value.content.asDouble();
