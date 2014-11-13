@@ -8,6 +8,22 @@ for (s in seq) {
 
 operation scratch1() {
 	var Model = DECENT!Model.allInstances().first();
+/*
+  //TODO: Useful for debugging => move to a more appropriate location
+  var Model = System.getContext().getModelRepository().getModelByName('DECENT');
+  for (e in Model.getAliases()) {
+  	e.println();
+  }  
+  for (e in Model.allContents()) {
+  	//(e.eClass.name+" : "+e.name + " : "+ Model.getFullyQualifiedTypeNameOf(e)).println();
+  }  
+  for (e in Model.getAllOfType("DECENT::State")) {
+  	(e.eClass.name+" : "+e.name + " : "+ Model.getFullyQualifiedTypeNameOf(e)).println();
+  }  
+  System.getContext().getModelRepository().getModelByName('DECENT').getAllOfType("DECENT::Model").println();
+*/
+	
+	
 	//var deltas = DECENT!Delta.allInstances().select(d|d.activity.deltas.select(x|x.onAttribute = d.onAttribute).size() > 1);
 	
 	var deltas = DECENT!Delta.allInstances().select(d|d.eContainer = null);
