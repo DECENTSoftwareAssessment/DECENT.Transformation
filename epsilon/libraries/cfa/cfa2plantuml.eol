@@ -12,6 +12,7 @@ operation Sequence cfaToPlantUML() {
     ("visualizing..").println();
 	var output = "";
 	("@startuml").printlno();
+	("skinparam shadowing false").printlno();
 	("skinparam classArrowColor #444488").printlno();
 	("skinparam objectBorderColor #444444").printlno();
 	("skinparam objectBackgroundColor #EDEDED").printlno();
@@ -41,7 +42,7 @@ operation Sequence cfaToPlantUML() {
 		  	if (factorValues.get(TotalWeightAttribute) > 0) {
 		  		switch (f.name) {
 			  		case "Default":
-		        		colorG = "EE";
+		        		colorG = "BB";
 			  		case "BugFix" :
 		        		colorR = "EE";
 			  		default :
@@ -130,7 +131,7 @@ operation Sequence cfaToPlantUML() {
 			  	if (factorValues.get(TotalWeightAttribute) > 0) {
 			  		switch (f.name) {
 				  		case "Default":
-			        		colorG = "EE";
+			        		colorG = "BB";
 				  		case "BugFix" :
 			        		colorR = "EE";
 				  		default :
