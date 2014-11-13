@@ -46,16 +46,18 @@ for (s in existingStatesInRevision) {
 */	
 	s.addIntegerCollectionValue(LinesPostHitsAttribute, linesPostHits);
 	s.addValue(VarianceLinesPostAttribute, linesPostHits.getVariance());	
+	
+	var linesPreHits = new OrderedSet;
 	var p = s.previous.first();
 	if (p.isDefined()) {
 		var p_startLine = p.getValue(StartLineAttribute).content;
 		var p_endLine = p.getValue(EndLineAttribute).content;
 	
 		var linesPre = s.parent.getValue(LinesPreAttribute).content;
-		var linesPreHits = linesPre.select(l|l >= p_startLine and l <= p_endLine);
-		s.addIntegerCollectionValue(LinesPreHitsAttribute, linesPreHits);
-		s.addValue(VarianceLinesPreAttribute, linesPreHits.getVariance());	
+		linesPreHits = linesPre.select(l|l >= p_startLine and l <= p_endLine);
 	}
+	s.addIntegerCollectionValue(LinesPreHitsAttribute, linesPreHits);
+	s.addValue(VarianceLinesPreAttribute, linesPreHits.getVariance());	
 }
 
 var end = Native("java.lang.System").currentTimeMillis();
