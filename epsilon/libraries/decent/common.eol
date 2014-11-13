@@ -60,7 +60,7 @@ operation Any addValue(attribute : DECENT!Attribute, content : String) : DECENT!
     return self.addValue(attribute, content, value);
 }
 
-operation DECENT!Model addStep(name : String, duration : Real) {
+operation DECENT!DECENT::Model addStep(name : String, duration : Real) {
 	var step : new DECENT!Step();
 	step.name = name;
 	step.duration = duration.toString();
@@ -140,10 +140,10 @@ operation DECENT!Activity addDelta(attribute : DECENT!Attribute, value : DECENT!
     if (self.state.isDefined()){
     	//delta.sourceValue = self.state.getValue(attribute);
     	//delta.change = delta.targetValue.content - delta.sourceValue.content;
-        delta.change = value.content - self.state.getValue(attribute).content;
+        delta.change = (value.content - self.state.getValue(attribute).content).asDouble();
     } else {
     	//delta.change = delta.targetValue.content;
-        delta.change = value.content;
+        delta.change = value.content.asDouble();
     }
     self.deltas.add(delta);
     return delta;
@@ -194,6 +194,9 @@ operation Integer getHitFAMIXStatesForID() : Collection {
 
 @cached
 operation DECENT!State isHit() : Boolean {
+	if (self.artifact.isMGType()) {
+		return true;
+	}
 	var pre = self.getValue("LinesPostHits".getAttribute());
 	var post = self.getValue("LinesPreHits".getAttribute());
 	return ((pre.isDefined() and pre.content.isDefined() and pre.content.size() > 0) 
@@ -259,13 +262,13 @@ operation addAttribute(name : String, description : String, dimension : String) 
   	return attribute;
 }
 
-operation DECENT!Model addAttributes(attributes : Map) {
+operation DECENT!DECENT::Model addAttributes(attributes : Map) {
 	for (a in attributes.keySet()) {
-    	if (Model.attributePool.attributes.select(att|att.name = a).size() = 0) {
+    	if (self.attributePool.attributes.select(att|att.name = a).size() = 0) {
 		  	var Attribute = new DECENT!Attribute;
 		  	Attribute.name = a;
 		  	Attribute.description = attributes.get(a);
-	      	Model.attributePool.attributes.add(Attribute);
+	      	self.attributePool.attributes.add(Attribute);
       	}
   	}
 }
