@@ -5,31 +5,30 @@ import "../libraries/decent/logging.eol";
 "Running arffx2csv".log(1);
 var start = Native("java.lang.System").currentTimeMillis();
 
-var arff = ARFFx!Model.allInstances().first();
-var filename = ARFFx.getModelFile().substring(1).replace("arffx","csv");
-var modelFile = new Native("java.io.File") (ARFFx.getModelFile());
-filename = modelFile.getParent()+"/"+arff.name+".csv";
 
 var s = ",";
+var modelFile = new Native("java.io.File") (ARFFx.getModelFile());
 var targetAttributes = new Map;
 targetAttributes.put("Artifact.BugFix.AverageWeight.Local",0.1);
 targetAttributes.put("Artifact.Refactoring.AverageWeight.Local",0.1);
-arff.checkTargetAttributes(targetAttributes);
+
 
 //var CONFIDENCE = "CONFIDENCE".getARFFAttribute();
 //var LABEL = "LABEL".getARFFAttribute();
 
-arff.assignClassAndConfidence(targetAttributes);
 
-arff.checkForCompleteness();
+for (arffx in ARFFx!Model.allInstances()) {
+	var filename = modelFile.getParent()+"/"+arffx.name+".csv";
+	arffx.checkTargetAttributes(targetAttributes);
+	arffx.checkForCompleteness();
+	arffx.assignClassAndConfidence(targetAttributes);
+	//note that this is about 30%+ slower
+	arffx.exportAll(filename+".all.csv",s);
+	var filter = "filters/custom-current";
+	arffx.exportAttributes(filter+"-"+arffx.meta.get("DECENT.ArtifactType")+"-last");
+	arffx.exportFiltered(filename,filter,targetAttributes,s);
+}
 
-arff.exportAll(filename+".all.csv",s);
-
-var filter = "filters/custom-current";
-arff.exportAttributes(filter+"-last");
-
-//note that this is about 30%+ slower
-arff.exportFiltered(filename,filter,targetAttributes,s);
 
 
 
