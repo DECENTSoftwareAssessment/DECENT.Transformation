@@ -2,7 +2,13 @@ import "../libraries/arff/common.eol";
 import "../libraries/decent/common.eol";
 import "../libraries/decent/logging.eol";
 
-var Type = DECENT!ArtifactType.allInstances().select(a|a.name = "code").first();
+var selectedType = Native("java.lang.System").getProperty("epsilon.transformation.decent2arffx.type");
+
+var Type = DECENT!ArtifactType.allInstances().select(a|a.name = selectedType).first();
+if (Type.isUndefined()) {
+	//handle wrong arguments here ?
+}
+
 var CodeArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "code").first();
 var ClassArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "Class").first();
 var MethodArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "Method").first();
@@ -17,15 +23,20 @@ var LinesPostAttribute = ("LinesPost").getAttribute();
 
 var LinesPostHitsAttribute = ("LinesPostHits").getAttribute();
 var LinesPreHitsAttribute = ("LinesPreHits").getAttribute();
+
+var Model = DECENT!Model.allInstances().first();
   
 var arff = new ARFFx!Model();
-arff.name = "Test";
+arff.name = Model.name+"-artifacts-"+Type.name;
+
 
 "Running decent2arffx".log(1);
 var start = Native("java.lang.System").currentTimeMillis();
 
-transferValuesToChildren();
+//transferValuesToChildren(); //no longer necessary?
+
 iterateOverArtifacts(Type);
+
 //iterateOverArtifacts(MethodArtifactType);
 //iterateOverAffectedArtifacts(MethodArtifactType);
 
@@ -114,16 +125,6 @@ operation iterateOverAgents (type:DECENT!ArtifactType) {
         }
     }
 
-}
-
-operation DECENT!State isHit() : Boolean {
-	if (self.artifact.isMGType()) {
-		return true;
-	}
-	var pre = self.getValue(LinesPostHitsAttribute);
-	var post = self.getValue(LinesPreHitsAttribute);
-	return ((pre.isDefined() and pre.content.isDefined() and pre.content.size() > 0) 
-	     or (post.isDefined() and post.content.isDefined() and post.content.size() > 0));
 }
 
 
@@ -224,6 +225,12 @@ operation iterateOverArtifacts (type:DECENT!ArtifactType) {
 		    	}
 		    	for (v in ax.deltas) {
 					i.addValue(v.change.asString(), "Delta."+v.onAttribute.name);
+		    	}
+		    	//TODO: these are notably missing in several places!
+		    	if (ax.agentState.isDefined()) {
+			    	for (v in ax.agentState.values.select(x|x.isTypeOf(DECENT!DoubleValue) or x.isTypeOf(DECENT!IntegerValue))) {
+						//i.addValue(v.content.asString(), "Agent."+v.name);
+			    	}
 		    	}
 			}
         	continue;
