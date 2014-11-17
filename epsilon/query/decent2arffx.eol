@@ -137,7 +137,7 @@ operation processAgents (typeName:String) {
 				i.addValue(v.content.asString(), "Activity."+v.name);
 	    	}
 	    	for (v in ax.deltas) {
-				i.addValue(v.change.asString(), "Delta."+v.onAttribute.name);
+				i.addValue(v.change.asString(), "Artifact.Delta."+v.onAttribute.name);
 	    	}
 	    	//TODO: these are notably missing in several places!
 	    	if (ax.agentState.isDefined()) {
@@ -251,11 +251,11 @@ operation processArtifacts(typeName : String) {
 	    	arffx.data.add(i);
 
 			i.addValue('\"'+s.artifact.name.asString()+'\"', "Artifact.Name");
-			i.addValue(s.ID.asString(), "Artifact.StateID");
+			i.addValue(s.ID.asString(), "Artifact.Target.StateID");
 			i.addValue('\"'+s.fromActivity.first().agent.name+'\"', "Agent.Name");
 				    	
 	    	for (v in s.values.select(x|x.isTypeOf(DECENT!DoubleValue) or x.isTypeOf(DECENT!IntegerValue))) {
-				i.addValue(v.content.asString(), "Artifact."+v.name);
+				i.addValue(v.content.asString(), "Artifact.Target."+v.name);
 	    	}
 
 	        //TODO: note that because of this the last state is not shown!
@@ -267,7 +267,7 @@ operation processArtifacts(typeName : String) {
 					i.addValue(v.content.asString(), "Activity."+v.name);
 		    	}
 		    	for (v in ax.deltas) {
-					i.addValue(v.change.asString(), "Delta."+v.onAttribute.name);
+					i.addValue(v.change.asString(), "Artifact.Delta."+v.onAttribute.name);
 		    	}
 		    	//TODO: these are notably missing in several places!
 		    	if (ax.agentState.isDefined()) {
@@ -281,10 +281,10 @@ operation processArtifacts(typeName : String) {
 					p = p.previous.first();
 				}
     			if (p.isDefined()){
-					i.addValue(p.ID.asString(), "Artifact.Last.StateID");
+					i.addValue(p.ID.asString(), "Artifact.Source.StateID");
 			    	
 			    	for (v in p.values.select(x|x.isTypeOf(DECENT!DoubleValue) or x.isTypeOf(DECENT!IntegerValue))) {
-						i.addValue(v.content.asString(), "Artifact.Last."+v.name);
+						i.addValue(v.content.asString(), "Artifact.Source."+v.name);
 			    	}
 				
 				} else {
