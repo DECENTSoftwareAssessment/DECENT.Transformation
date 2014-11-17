@@ -40,15 +40,13 @@ var start = Native("java.lang.System").currentTimeMillis();
 //transferValuesToChildren(); //no longer necessary?
 
 for (type in types) {
-	//var Type = DECENT!ArtifactType.allInstances().select(t|t.name = type).first();
 	
 	processArtifacts(type);
+	//processActivities(type);
+	processAgents(type);
 
 }
 
-
-//iterateOverArtifacts(MethodArtifactType);
-//iterateOverAffectedArtifacts(MethodArtifactType);
 
 var end = Native("java.lang.System").currentTimeMillis();
 var duration = end - start;
@@ -110,31 +108,63 @@ operation validateFAMIXCoverage (type:DECENT!ArtifactType) {
 	}
 }
 
-//use ETL equivalents instead...
+operation processAgents (typeName:String) {
+	var type = DECENT!ArtifactType.allInstances().select(t|t.name = typeName).first();
+	if (type.isUndefined()) {
+		//TODO: check that type is set
+		//handle wrong arguments here ?
+	}
 
-operation iterateOverAgents (type:DECENT!ArtifactType) {
-    var h = false;
-    var separator = ",";
+
     for (a in Agent.allInstances()) {
-        var header = "";
-        for (ax in a.activities.select(a|a.state.artifact.type = type)) {
-            var output = "";
-            for (d in ax.deltas) {
-                //(d.onAttribute+" ").print();
-                header=header+separator+d.onAttribute.name+'(value)'+separator+d.onAttribute.name+'(new value)'+separator+d.onAttribute.name+'(delta)';
-                //(a.name+' '+s.ID+' '+ax.agent.name+' '+ax.date+' '+d.onAttribute.name+' '+d.value.content+' '+d.targetValue.content+' '+d.change).println();
-                output=output+separator+d.value.content+separator+d.targetValue.content+separator+d.change;
-            }
-            //("").println();
-            if (not h) {
-                ("Artifact"+separator+"StateID"+separator+"Agent"+separator+"ActivityDate"+header).printlno();
-                h=true;
-            }
-            (ax.state.artifact.name+separator+ax.state.ID+separator+a.name+separator+ax.date+''+output).printlno();
+		var arffx = new ARFFx!Model();
+		arffx.name = Model.name+"-agents"+a.ID+"-"+type.name;
+		arffx.meta.put("DECENT.ArtifactType", type.name);
+		arffx.meta.put("ARFFx.Type", "agent");
+		arffx.meta.put("DECENT.Agent.Name", a.name);
+		arffx.meta.put("DECENT.Agent.ID", a.ID.asString());
+        for (ax in a.activities.select(a|a.state.isDefined() and a.state.artifact.type = type and a.targetState.isHit())) {
+        	var i = new ARFFx!Instance();
+	    	arffx.data.add(i);
+			var s = ax.state;
+			var t = ax.targetState;
+			i.addValue('\"'+ax.agent.name+'\"', "Agent.Name");
+			i.addValue('\"'+t.artifact.name.asString()+'\"', "Artifact.Name");
+			i.addValue(t.ID.asString(), "Artifact.Target.StateID");
         
+        	//TODO: add date meta-data
+	    	for (v in ax.values.select(x|x.isTypeOf(DECENT!DoubleValue) or x.isTypeOf(DECENT!IntegerValue))) {
+				i.addValue(v.content.asString(), "Activity."+v.name);
+	    	}
+	    	for (v in ax.deltas) {
+				i.addValue(v.change.asString(), "Delta."+v.onAttribute.name);
+	    	}
+	    	//TODO: these are notably missing in several places!
+	    	if (ax.agentState.isDefined()) {
+		    	for (v in ax.agentState.values.select(x|x.isTypeOf(DECENT!DoubleValue) or x.isTypeOf(DECENT!IntegerValue))) {
+					//i.addValue(v.content.asString(), "Agent."+v.name);
+		    	}
+	    	}
+
+	    	for (v in t.values.select(x|x.isTypeOf(DECENT!DoubleValue) or x.isTypeOf(DECENT!IntegerValue))) {
+				i.addValue(v.content.asString(), "Artifact.Target."+v.name);
+	    	}
+	    	
+			var p = ax.state;
+			while (p.isDefined() and not p.isHit()) {
+				//TODO: what if more than one?
+				p = p.previous.first();
+			}
+			if (p.isDefined()){
+				i.addValue(p.ID.asString(), "Artifact.Source.StateID");
+		    	
+		    	for (v in p.values.select(x|x.isTypeOf(DECENT!DoubleValue) or x.isTypeOf(DECENT!IntegerValue))) {
+					i.addValue(v.content.asString(), "Artifact.Source."+v.name);
+		    	}
+	    	} else {
+	    	}
         }
     }
-
 }
 
 
@@ -163,6 +193,42 @@ operation Any dumpValues() : String {
 	return output;
 }
 
+//DOES NOT WORK!
+operation processActivities(typeName : String) {
+	var type = DECENT!ArtifactType.allInstances().select(t|t.name = typeName).first();
+	if (type.isUndefined()) {
+		//TODO: check that type is set
+		//handle wrong arguments here ?
+	}
+
+	var arffx = new ARFFx!Model();
+	arffx.name = Model.name+"-activities-"+type.name;
+	arffx.meta.put("DECENT.ArtifactType", type.name);
+
+	for (a in Artifact.allInstances().select(x|x.type = type).sortBy(x|x.name)) {
+		//we exclude first and last states!
+		//careful with the filtering here...
+//	    for (s in a.states.excluding(a.states.first()).excluding(a.states.last()).select(x|x.isHit() and x.next.first().isHit()).sortBy(x|x.ID)) {
+	    for (s in a.states.excluding(a.states.first()).select(x|x.isHit()).sortBy(x|x.ID)) {
+
+	    	var i = new ARFFx!Instance();
+	    	arffx.data.add(i);
+
+			i.addValue('\"'+s.artifact.name.asString()+'\"', "Artifact.Name");
+			i.addValue(s.ID.asString(), "Artifact.Target.StateID");
+	        for (ax in s.fromActivity) {
+				i.addValue(ax.state.ID.asString(), "Artifact.State.StateID");
+	            for (d in ax.deltas) {
+	            	//source and target values are empty!!!
+					i.addValue(d.sourceValue.asString(), "Artifact.Source."+d.onAttribute.name);
+					i.addValue(d.targetValue.asString(), "Artifact.Target."+d.onAttribute.name);
+					i.addValue(d.change.asString(), "Artifact.Delta."+d.onAttribute.name);
+	            }
+	        }
+		}
+	}
+}
+
 operation processArtifacts(typeName : String) {
 	var type = DECENT!ArtifactType.allInstances().select(t|t.name = typeName).first();
 	if (type.isUndefined()) {
@@ -173,16 +239,20 @@ operation processArtifacts(typeName : String) {
 	var arffx = new ARFFx!Model();
 	arffx.name = Model.name+"-artifacts-"+type.name;
 	arffx.meta.put("DECENT.ArtifactType", type.name);
+	arffx.meta.put("ARFFx.Type", "artifact");
 
 	for (a in Artifact.allInstances().select(x|x.type = type).sortBy(x|x.name)) {
 		//we exclude first and last states!
-	    for (s in a.states.excluding(a.states.first()).excluding(a.states.last()).select(x|x.isHit()).sortBy(x|x.ID)) {
+		//careful with the filtering here...
+//	    for (s in a.states.excluding(a.states.first()).excluding(a.states.last()).select(x|x.isHit() and x.next.first().isHit()).sortBy(x|x.ID)) {
+	    for (s in a.states.excluding(a.states.first()).select(x|x.isHit()).sortBy(x|x.ID)) {
 
 	    	var i = new ARFFx!Instance();
 	    	arffx.data.add(i);
 
 			i.addValue('\"'+s.artifact.name.asString()+'\"', "Artifact.Name");
 			i.addValue(s.ID.asString(), "Artifact.StateID");
+			i.addValue('\"'+s.fromActivity.first().agent.name+'\"', "Agent.Name");
 				    	
 	    	for (v in s.values.select(x|x.isTypeOf(DECENT!DoubleValue) or x.isTypeOf(DECENT!IntegerValue))) {
 				i.addValue(v.content.asString(), "Artifact."+v.name);
@@ -190,7 +260,9 @@ operation processArtifacts(typeName : String) {
 
 	        //TODO: note that because of this the last state is not shown!
 	        // - workaround this or show target state values
+	        //TODO: this wouldn't work with multiple activities!!!
 	        for (ax in s.fromActivity) {
+	        	//TODO: add date meta-data
 		    	for (v in ax.values.select(x|x.isTypeOf(DECENT!DoubleValue) or x.isTypeOf(DECENT!IntegerValue))) {
 					i.addValue(v.content.asString(), "Activity."+v.name);
 		    	}
@@ -203,48 +275,23 @@ operation processArtifacts(typeName : String) {
 						//i.addValue(v.content.asString(), "Agent."+v.name);
 			    	}
 		    	}
-			}
-	        for (ax in s.activity) {
-	        	//TODO: add date meta-data
-		    	for (v in ax.values.select(x|x.isTypeOf(DECENT!DoubleValue) or x.isTypeOf(DECENT!IntegerValue))) {
-					i.addValue(v.content.asString(), "Activity.Next."+v.name);
-		    	}
-		    	for (v in ax.deltas) {
-					i.addValue(v.change.asString(), "Delta.Next."+v.onAttribute.name);
-		    	}
-		    	//TODO: these are notably missing in several places!
-		    	if (ax.agentState.isDefined()) {
-			    	for (v in ax.agentState.values.select(x|x.isTypeOf(DECENT!DoubleValue) or x.isTypeOf(DECENT!IntegerValue))) {
-						//i.addValue(v.content.asString(), "Agent."+v.name);
+				var p = ax.state;
+				while (p.isDefined() and not p.isHit()) {
+					//TODO: what if more than one?
+					p = p.previous.first();
+				}
+    			if (p.isDefined()){
+					i.addValue(p.ID.asString(), "Artifact.Last.StateID");
+			    	
+			    	for (v in p.values.select(x|x.isTypeOf(DECENT!DoubleValue) or x.isTypeOf(DECENT!IntegerValue))) {
+						i.addValue(v.content.asString(), "Artifact.Last."+v.name);
 			    	}
-		    	}
-
-				i.addValue(ax.targetState.ID.asString(), "Artifact.Next.StateID");
-		    	
-		    	for (v in ax.targetState.values.select(x|x.isTypeOf(DECENT!DoubleValue) or x.isTypeOf(DECENT!IntegerValue))) {
-		    		//TODO this should also be available in the delta actually d.sourceValue / d.targetValue
-		    		//but it also covers non-delta values if any? 
-					i.addValue(v.content.asString(), "Artifact.Next."+v.name);
-		    	}
+				
+				} else {
+				
+				}
 
 			}
-        	continue;
-
-	        for (ax in s.activity) {
-	            var output = "";
-	            for (d in ax.deltas) {
-	                //(d.onAttribute+" ").print();
-	                header=header+separator+d.onAttribute.name+'(value)'+separator+d.onAttribute.name+'(new value)'+separator+d.onAttribute.name+'(delta)';
-	                //(a.name+' '+s.ID+' '+ax.agent.name+' '+ax.date+' '+d.onAttribute.name+' '+d.value.content+' '+d.targetValue.content+' '+d.change).println();
-	                output=output+separator+d.sourceValue.content+separator+d.targetValue.content+separator+d.change;
-	            }
-                for (v in ax.state.values) {
-	                //(d.onAttribute+" ").print();
-	                header=header+separator+v.ofAttribute.name+'(value)';
-	                //(a.name+' '+s.ID+' '+ax.agent.name+' '+ax.date+' '+d.onAttribute.name+' '+d.value.content+' '+d.targetValue.content+' '+d.change).println();
-	                output=output+separator+v.content;
-	            }
-	        }
 	    }
 	}
 }
