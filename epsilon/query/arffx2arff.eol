@@ -25,7 +25,7 @@ for (arffx in ARFFx!Model.allInstances()) {
 	//note that this is about 30%+ slower
 	arffx.exportAll(filename+".all.csv",s);
 	var filter = "filters/custom-current";
-	arffx.exportAttributes(filter+"-"+arffx.meta.get("DECENT.ArtifactType")+"-last");
+	arffx.exportAttributes(filter+"-"+arffx.meta.get("ARFFx.Type")+"-"+arffx.meta.get("DECENT.ArtifactType")+"-last");
 	arffx.exportFiltered(filename,filter,targetAttributes,s);
 }
 
@@ -86,7 +86,7 @@ operation ARFFx!Model checkForCompleteness() {
 	for (i in self.data) {
 		line = line+1;
 		if (i.values.size() <> self.attributes.size()) {
-			("Line "+line+" : Value and attribute do not match : " + i.values.size() +" vs "+ self.attributes.size()).log(1);
+			(self.name+" : Line "+line+" : Value and attribute do not match : " + i.values.size() +" vs "+ self.attributes.size()).log(1);
 			(i.getValues(s).substring(1)).log(1);
 		}
 	}
