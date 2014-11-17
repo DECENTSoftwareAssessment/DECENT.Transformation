@@ -5,21 +5,31 @@ import "../libraries/decent/logging.eol";
 "Running arffx2csv".log(1);
 var start = Native("java.lang.System").currentTimeMillis();
 
-var filename = ARFFx.getModelFile().substring(1).replace("arffx","csv");
-var s = ",";
-
 var arff = ARFFx!Model.allInstances().first();
+var filename = ARFFx.getModelFile().substring(1).replace("arffx","csv");
+var modelFile = new Native("java.io.File") (ARFFx.getModelFile());
+filename = modelFile.getParent()+"/"+arff.name+".csv";
 
-var CONFIDENCE = "CONFIDENCE".getARFFAttribute();
-var LABEL = "LABEL".getARFFAttribute();
+var s = ",";
+var targetAttributes = new Map;
+targetAttributes.put("Artifact.BugFix.AverageWeight.Local",0.1);
+targetAttributes.put("Artifact.Refactoring.AverageWeight.Local",0.1);
+arff.checkTargetAttributes(targetAttributes);
+
+//var CONFIDENCE = "CONFIDENCE".getARFFAttribute();
+//var LABEL = "LABEL".getARFFAttribute();
+
+arff.assignClassAndConfidence(targetAttributes);
+
+arff.checkForCompleteness();
 
 arff.exportAll(filename+".all.csv",s);
 
-var filter = "filters/default";
+var filter = "filters/custom-current";
 arff.exportAttributes(filter+"-last");
 
 //note that this is about 30%+ slower
-arff.exportFiltered(filename,filter,s);
+arff.exportFiltered(filename,filter,targetAttributes,s);
 
 
 
@@ -30,6 +40,13 @@ var duration = end - start;
 
 //validateFAMIXCoverage(CodeArtifactType);
 
+
+operation ARFFx!Model checkTargetAttributes(targetAttributes : Map) {
+	var notFound = targetAttributes.keySet().select(x|not self.attributes.exists(a|a.name = x));
+	for (a in notFound) {
+		targetAttributes.remove(a);
+	}
+}
 
 operation ARFFx!Model exportAttributes(filename : String) {
 	var file = new Native("java.io.File") (filename);
@@ -48,7 +65,6 @@ operation ARFFx!Model exportAll(filename : String, s : String) {
 	self.attributes.collect(x|x.name).concat(s).printlno(writer);
 
 	for (i in self.data) {
-		i.assignClassAndConfidence();
 		i.getValues(s).substring(1).printlno(writer);
 		//TODO: order seems to be ensured anyways
 		//i.getSafeOrderValues(s, attributes).printlno();
@@ -57,10 +73,23 @@ operation ARFFx!Model exportAll(filename : String, s : String) {
 	writer.close();
 }
 
-//deprecated: slow 
-operation ARFFx!Model assignClassAndConfidence() {
+//slow? 
+operation ARFFx!Model assignClassAndConfidence(targetAttributes : Map) {
+	for (baseAttribute in targetAttributes.keySet()) {
+		for (i in self.data) {
+			i.assignClassAndConfidence(baseAttribute, targetAttributes.get(baseAttribute));
+		}
+	}
+}
+
+operation ARFFx!Model checkForCompleteness() {
+	var line = 1;
 	for (i in self.data) {
-		i.assignClassAndConfidence();
+		line = line+1;
+		if (i.values.size() <> self.attributes.size()) {
+			("Line "+line+" : Value and attribute do not match : " + i.values.size() +" vs "+ self.attributes.size()).log(1);
+			(i.getValues(s).substring(1)).log(1);
+		}
 	}
 }
 
@@ -83,7 +112,7 @@ operation ARFFx!Model filterAttributes(filter : String, s : String) {
 }
 
 
-operation ARFFx!Model exportFiltered(filename : String, filter : String, s : String) {
+operation ARFFx!Model exportFiltered(filename : String, filter : String, targetAttributes : Map, s : String) {
 	var file = new Native("java.io.File") (filename);
 	var writer = new Native("java.io.FileWriter") (file);
 	var attributes = self.attributes;
@@ -91,7 +120,10 @@ operation ARFFx!Model exportFiltered(filename : String, filter : String, s : Str
 	var line = "";
 	if (filter.isDefined()) {
 		var selected = filter.getSelectedAttributes();
-		
+		for (k in targetAttributes.keySet()) {
+			selected.add("CONFIDENCE."+k);
+			selected.add("LABEL."+k);		
+		}		
 		//Note: This takes a subset of the available attributes that are 
 		//also within the filtered set, rather than simply taking the 
 		//filtered set, which may include unavailable attributes as well 
@@ -101,7 +133,6 @@ operation ARFFx!Model exportFiltered(filename : String, filter : String, s : Str
 	attributes.collect(x|x.name).concat(s).printlno(writer);
 	
 	for (i in self.data) {
-		i.assignClassAndConfidence();
 		//Note: See above on why attributes rather than selected is used 
 		i.getFilteredValues(s,attributes).printlno(writer);
 		//TODO: order seems to be ensured anyways
@@ -111,19 +142,23 @@ operation ARFFx!Model exportFiltered(filename : String, filter : String, s : Str
 	writer.close();
 }
 
-operation ARFFx!Instance assignClassAndConfidence() {
-	var base = self.getValue("Artifact.BugFix.AverageWeight.Local".getARFFAttribute());
+operation ARFFx!Instance assignClassAndConfidence(baseAttribute : String, threshold : Real) : OrderedSet {
+	var confidenceAttribute = "CONFIDENCE."+baseAttribute;
+	var labelAttribute = "LABEL."+baseAttribute;
+	
+	//TODO: add attributes to filter
+	var base = self.getValue(baseAttribute.getARFFAttribute());
 	var label = "false";
 	var confidence = "high";
-	var threshold = 0.1.asDouble();
 	if (base.asDouble() > threshold) {
 		label = "true";
-		if (base.asDouble() < 0.1.asDouble()) {
-			confidence = "low";
-		}
 	}
-	self.addValue(confidence, CONFIDENCE.name);
-	self.addValue(label, LABEL.name);
+	//TODO: also export as parameters
+	if (base.asDouble() < 1.1*threshold and base.asDouble() > 0.9*threshold) {
+		confidence = "low";
+	}
+	self.addValue(confidence, confidenceAttribute);
+	self.addValue(label, labelAttribute);
 }
 
 operation ARFFx!Instance getFilteredValues(s : String, filter : Collection) : String {
@@ -131,16 +166,16 @@ operation ARFFx!Instance getFilteredValues(s : String, filter : Collection) : St
 	for (v in self.values.select(x|filter.contains(x.ofAttribute))) {
 		line = line  + s + v.content;
 	}
-	return line.replace("NaN","0.0").substring(1);
+	return line.replace("NaN","0.0").substring(1); //Substring? why?
 }
 
 operation ARFFx!Instance getValues(s : String) : String {
 	var line = "";
 	for (v in self.values) {
-		//line = line  + s + v.ofAttribute.name+"="+v.content;
 		line = line  + s + v.content;
+		//line = line  + s + v.ofAttribute.name+"="+v.content;
 	}
-	return line.replace("NaN","0.0").substring(1);
+	return line.replace("NaN","0.0").substring(0); //Substring? why?
 }
 
 //deprecated
