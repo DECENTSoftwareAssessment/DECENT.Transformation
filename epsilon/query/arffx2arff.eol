@@ -9,8 +9,8 @@ var start = Native("java.lang.System").currentTimeMillis();
 var s = ",";
 var modelFile = new Native("java.io.File") (ARFFx.getModelFile());
 var targetAttributes = new Map;
-targetAttributes.put("Artifact.BugFix.AverageWeight.Local",0.1);
-targetAttributes.put("Artifact.Refactoring.AverageWeight.Local",0.1);
+targetAttributes.put("Artifact.Target.BugFix.AverageWeight.Local",0.1);
+targetAttributes.put("Artifact.Target.Refactoring.AverageWeight.Local",0.1);
 
 
 //var CONFIDENCE = "CONFIDENCE".getARFFAttribute();
