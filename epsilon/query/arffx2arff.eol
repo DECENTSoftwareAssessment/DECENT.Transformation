@@ -93,7 +93,7 @@ operation ARFFx!Model checkForCompleteness() {
 	}
 }
 
-//deprecated: very very very slow!
+//deprecated: very very very slow! also NO LONGER CORRECT!
 operation ARFFx!Model filterAttributes(filter : String, s : String) {
 	if (filter.isDefined()) {
 		var selected = filter.getSelectedAttributes();
@@ -147,7 +147,7 @@ operation ARFFx!Instance assignClassAndConfidence(baseAttribute : String, thresh
 	var labelAttribute = "LABEL."+baseAttribute;
 	
 	//TODO: add attributes to filter
-	var base = self.getValue(baseAttribute.getARFFAttribute());
+	var base = self.getValue(baseAttribute.getARFFAttribute(self.eContainer()));
 	var label = "false";
 	var confidence = "high";
 	if (base.asDouble() > threshold) {
@@ -185,8 +185,4 @@ operation ARFFx!Instance getSafeOrderValues(s : String, attributes : Sequence) :
 		line = line + i.getValue(a) + s;
 	}
 	return line;
-}
-
-operation ARFFx!Instance getValue(attribute : ARFFx!Attribute) : String {
-	return self.values.select(v|v.ofAttribute = attribute).first().content;
 }
