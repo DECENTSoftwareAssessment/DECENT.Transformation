@@ -40,7 +40,7 @@ var start = Native("java.lang.System").currentTimeMillis();
 //transferValuesToChildren(); //no longer necessary?
 
 for (type in types) {
-	
+	("Processing type "+type).log(2);
 	processArtifacts(type);
 	//processActivities(type);
 	processAgents(type);
@@ -113,12 +113,15 @@ operation processAgents (typeName:String) {
 	if (type.isUndefined()) {
 		//TODO: check that type is set
 		//handle wrong arguments here ?
+		return;
 	}
 
+	("Processing agents ...").log(2);
 
     for (a in Agent.allInstances()) {
+		("  Agent " +a.name).log(3);
 		var arffx = new ARFFx!Model();
-		arffx.name = Model.name+"-agents"+a.ID+"-"+type.name;
+		arffx.name = Model.name+"-agents-"+a.name+"-"+type.name;
 		arffx.meta.put("DECENT.ArtifactType", type.name);
 		arffx.meta.put("ARFFx.Type", "agent");
 		arffx.meta.put("DECENT.Agent.Name", a.name);
@@ -234,14 +237,16 @@ operation processArtifacts(typeName : String) {
 	if (type.isUndefined()) {
 		//TODO: check that type is set
 		//handle wrong arguments here ?
+		return;
 	}
-
+	("Processing artifacts ...").log(2);
 	var arffx = new ARFFx!Model();
 	arffx.name = Model.name+"-artifacts-"+type.name;
 	arffx.meta.put("DECENT.ArtifactType", type.name);
 	arffx.meta.put("ARFFx.Type", "artifact");
 
 	for (a in Artifact.allInstances().select(x|x.type = type).sortBy(x|x.name)) {
+		("  Artifact " +a.name).log(3);
 		//we exclude first and last states!
 		//careful with the filtering here...
 //	    for (s in a.states.excluding(a.states.first()).excluding(a.states.last()).select(x|x.isHit() and x.next.first().isHit()).sortBy(x|x.ID)) {
