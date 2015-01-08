@@ -11,11 +11,16 @@ package epsilon.launcher;
  ******************************************************************************/
 
 
+import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.net.URISyntaxException;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -25,7 +30,10 @@ import java.util.List;
 import java.util.Properties;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
+import org.apache.commons.io.IOUtils;
 import org.eclipse.emf.common.util.URI;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EPackage;
@@ -64,14 +72,73 @@ public class MassEpsilonLauncher {
 	
 	private Properties properties = new Properties();
 	private DECENTEpsilonModelHandler modelHandler = new DECENTEpsilonModelHandler();
+	protected boolean finished = false;
 	
 	public static void main(String[] args) throws Exception {
 		MassEpsilonLauncher launcher = new MassEpsilonLauncher();
+		launcher.listen();
 		launcher.loadProperties(args);
 		launcher.registerMetaModels();
 		launcher.executeSteps();
+        launcher.finished = true;
+        launcher.close();
+
 	}
 	
+	//TODO: can be generalised for other applications as well 
+	public void listen() {
+		Runnable serverTask = new Runnable() {
+			@Override
+			public void run() {
+				ServerSocket serverSocket;
+				try {
+					serverSocket = new ServerSocket(9090);
+					try {
+						while (!finished)
+						{
+							Socket clientSocket = serverSocket.accept();
+							String input = IOUtils.toString(clientSocket
+									.getInputStream());
+							//TODO: differentiate between different inputs
+							if (input.contains("=")) {
+								String[] setting = input.split("=");
+								System.setProperty(setting[0], setting[1]);
+							}
+						}
+					} catch (IOException e) {
+						System.err.println("Unable to process client request");
+						e.printStackTrace();
+					} finally {
+						serverSocket.close();
+					}
+				} catch (IOException e1) {
+					e1.printStackTrace();
+				}
+			}
+		};
+		Thread listenerThread = new Thread(serverTask);
+		listenerThread.start();
+	}
+	
+	public void close() {
+	
+		Socket s;
+		try {
+			s = new Socket("localhost", 9090);
+			try {
+				PrintWriter out = new PrintWriter(s.getOutputStream(), true);
+				out.print("close");
+				out.flush();
+			} finally {
+				s.close();
+			}
+		} catch (UnknownHostException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			System.out.println("ERROR: "+e.getMessage());
+		}
+	}
+
 	public IEolExecutableModule createModule() {
 		return new EtlModule();
 	}
@@ -86,8 +153,12 @@ public class MassEpsilonLauncher {
 		properties.load(new FileInputStream(propertiesFilename));
 		modelHandler.setUseDECENTBinary(Boolean.parseBoolean(properties.getProperty("useDECENTBinary")));
 		modelHandler.setUseMGBinary(Boolean.parseBoolean(properties.getProperty("useMGBinary")));
-		if (arguments.length == 2) {
+		if (arguments.length == 2 || arguments.length == 3) {
 			properties.setProperty("steps", arguments[1]);
+		}
+		if (arguments.length == 3) {
+			//TODO: check supported types
+			properties.setProperty("decent2arffx.type", arguments[2]);
 		}
 
 	}
@@ -103,6 +174,7 @@ public class MassEpsilonLauncher {
 	public void executeTransformation(String step, String location) {
 		//TODO: extract and generalize steps as configuration files or models
 		//with description, source, required models, required steps, accepted arguments, dependencies, etc.
+		System.setProperty("epsilon.logLevel", properties.getProperty("logLevel", "1"));
 		try {
 			switch (step) {
 			case "MG2NORMALIZEDHUNKS":
@@ -128,6 +200,9 @@ public class MassEpsilonLauncher {
 				break;
 			case "CFA2DECENT":
 				executeCFA2DECENT(location);
+				break;
+			case "CFATEMPORALS2DECENT":
+				executeCFATEMPORALS2DECENT(location);
 				break;
 			case "DAG2DECENT":
 				executeDAG2DECENT(location);
@@ -159,6 +234,7 @@ public class MassEpsilonLauncher {
 				executeHITS2DECENT(location);
 				break;
 			case "DECENT2ARFFx":
+				System.setProperty("epsilon.transformation.decent2arffx.type", properties.getProperty("decent2arffx.type", "code"));
 				executeDECENT2ARFFx(location);
 				break;
 			case "ARFFx2ARFF":
@@ -290,6 +366,22 @@ public class MassEpsilonLauncher {
 	private void executeCFA2DECENT(String location) throws Exception, URISyntaxException,
 			EolModelLoadingException, EolRuntimeException {
 		String source = "epsilon/transform/cfa2decent3.etl";
+		IEolExecutableModule module = loadModule(source);
+		IModel cfaModel = modelHandler.getCFAModel(location, true, false);
+		IModel decentModel = modelHandler.getDECENTModel(location, true, true);
+		//TODO: consider removing reliance on MG especially if it is only needed in one line
+		module.getContext().getModelRepository().addModel(cfaModel);
+		module.getContext().getModelRepository().addModel(decentModel);
+		module.execute();
+		cfaModel.dispose();
+		//can be stored and retained alternatively
+		decentModel.dispose();
+		module.reset();
+	}
+
+	private void executeCFATEMPORALS2DECENT(String location) throws Exception, URISyntaxException,
+			EolModelLoadingException, EolRuntimeException {
+		String source = "epsilon/transform/cfa_temporals2decent3.etl";
 		IEolExecutableModule module = loadModule(source);
 		IModel decentModel = modelHandler.getDECENTModel(location, true, true);
 		//TODO: consider removing reliance on MG especially if it is only needed in one line
