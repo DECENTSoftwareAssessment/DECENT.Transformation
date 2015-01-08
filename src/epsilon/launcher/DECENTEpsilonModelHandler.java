@@ -195,6 +195,7 @@ public class DECENTEpsilonModelHandler {
 		EmfModel emfModel = new EmfModel();
 		StringProperties properties = new StringProperties();
 		properties.put(EmfModel.PROPERTY_NAME, name);
+		properties.put(EmfModel.PROPERTY_ALIASES, name);
 		properties.put(EmfModel.PROPERTY_FILE_BASED_METAMODEL_URI, 
 				"file:/" + getFile(metamodel).getAbsolutePath());
 		properties.put(EmfModel.PROPERTY_MODEL_URI, 
