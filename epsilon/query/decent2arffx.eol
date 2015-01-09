@@ -245,57 +245,78 @@ operation processArtifacts(typeName : String) {
 	arffx.meta.put("DECENT.ArtifactType", type.name);
 	arffx.meta.put("ARFFx.Type", "artifact");
 
+	//logic summary:
+	//- exclude first state
+	//- select hit states only 
+	//  - where hit = MGType or 
+	//                LinesPreHits.content > 0 or 
+	//                LinesPostHits.content > 0
+	//- source = p 
+	//  - where p = last hit state 
+	//  - if source is defined or skipSource = true 
+	//    - target = s 
+	//      => Target.StateID = s.ID, same for all other Double and Integer values
+	//      => last state excluded as well
+	//    - for each activity
+	//      - add all Double and Integer values
+	//      - add all deltas
+	//      - TODO: add meta data?
+	//      - TODO: add agent state values?
+	//    - if skipSource = false
+	//      => Source.StateID = s.ID, same for all other Double and Integer values
+
 	for (a in Artifact.allInstances().select(x|x.type = type).sortBy(x|x.name)) {
 		("  Artifact " +a.name).log(3);
 		//we exclude first and last states!
 		//careful with the filtering here...
 //	    for (s in a.states.excluding(a.states.first()).excluding(a.states.last()).select(x|x.isHit() and x.next.first().isHit()).sortBy(x|x.ID)) {
 	    for (s in a.states.excluding(a.states.first()).select(x|x.isHit()).sortBy(x|x.ID)) {
+			var p = s.previous;
+			while (p.isDefined() and not p.isHit()) {
+				//TODO: what if more than one?
+				p = p.previous.first();
+			}
+			var skipSource = false;
+			if (p.isDefined() or skipSource){
 
-	    	var i = new ARFFx!Instance();
-	    	arffx.data.add(i);
-
-			i.addValue('\"'+s.artifact.name.asString()+'\"', "Artifact.Name");
-			i.addValue(s.ID.asString(), "Artifact.Target.StateID");
-			i.addValue('\"'+s.fromActivity.first().agent.name+'\"', "Agent.Name");
-				    	
-	    	for (v in s.values.select(x|x.isTypeOf(DECENT!DoubleValue) or x.isTypeOf(DECENT!IntegerValue))) {
-				i.addValue(v.content.asString(), "Artifact.Target."+v.name);
-	    	}
-
-	        //TODO: note that because of this the last state is not shown!
-	        // - workaround this or show target state values
-	        //TODO: this wouldn't work with multiple activities!!!
-	        for (ax in s.fromActivity) {
-	        	//TODO: add date meta-data
-		    	for (v in ax.values.select(x|x.isTypeOf(DECENT!DoubleValue) or x.isTypeOf(DECENT!IntegerValue))) {
-					i.addValue(v.content.asString(), "Activity."+v.name);
+		    	var i = new ARFFx!Instance();
+		    	arffx.data.add(i);
+	
+				i.addValue('\"'+s.artifact.name.asString()+'\"', "Artifact.Name");
+				i.addValue(s.ID.asString(), "Artifact.Target.StateID");
+				i.addValue('\"'+s.fromActivity.first().agent.name+'\"', "Agent.Name");
+					    	
+		    	for (v in s.values.select(x|x.isTypeOf(DECENT!DoubleValue) or x.isTypeOf(DECENT!IntegerValue))) {
+					i.addValue(v.content.asString(), "Artifact.Target."+v.name);
 		    	}
-		    	for (v in ax.deltas) {
-					i.addValue(v.change.asString(), "Artifact.Delta."+v.onAttribute.name);
-		    	}
-		    	//TODO: these are notably missing in several places!
-		    	if (ax.agentState.isDefined()) {
-			    	for (v in ax.agentState.values.select(x|x.isTypeOf(DECENT!DoubleValue) or x.isTypeOf(DECENT!IntegerValue))) {
-						//i.addValue(v.content.asString(), "Agent."+v.name);
+	
+		        //TODO: note that because of this the last state is not shown!
+		        // - workaround this or show target state values
+		        //TODO: this wouldn't work with multiple activities!!!
+		        for (ax in s.fromActivity) {
+		        	//TODO: add date meta-data
+			    	for (v in ax.values.select(x|x.isTypeOf(DECENT!DoubleValue) or x.isTypeOf(DECENT!IntegerValue))) {
+						i.addValue(v.content.asString(), "Activity."+v.name);
 			    	}
-		    	}
-				var p = ax.state;
-				while (p.isDefined() and not p.isHit()) {
-					//TODO: what if more than one?
-					p = p.previous.first();
+			    	for (v in ax.deltas) {
+						i.addValue(v.change.asString(), "Artifact.Delta."+v.onAttribute.name);
+			    	}
+			    	//TODO: these are notably missing in several places!
+			    	if (ax.agentState.isDefined()) {
+				    	for (v in ax.agentState.values.select(x|x.isTypeOf(DECENT!DoubleValue) or x.isTypeOf(DECENT!IntegerValue))) {
+							//i.addValue(v.content.asString(), "Agent."+v.name);
+				    	}
+			    	}
 				}
-    			if (p.isDefined()){
+				if (not skipSource) {
 					i.addValue(p.ID.asString(), "Artifact.Source.StateID");
 			    	
 			    	for (v in p.values.select(x|x.isTypeOf(DECENT!DoubleValue) or x.isTypeOf(DECENT!IntegerValue))) {
 						i.addValue(v.content.asString(), "Artifact.Source."+v.name);
 			    	}
-				
-				} else {
-				
 				}
-
+			} else {
+			
 			}
 	    }
 	}
