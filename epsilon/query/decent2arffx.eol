@@ -126,9 +126,32 @@ operation processAgents (typeName:String) {
 		arffx.meta.put("ARFFx.Type", "agent");
 		arffx.meta.put("DECENT.Agent.Name", a.name);
 		arffx.meta.put("DECENT.Agent.ID", a.ID.asString());
+
+		//logic summary:
+		//- exclude first activity (state is undefined)
+		//- select hit states on artifacts of type only 
+		//  - where hit = MGType or 
+		//                LinesPreHits.content > 0 or 
+		//                LinesPostHits.content > 0
+		//- source = a.state
+		//  - TODO: select last hit state instaead
+		//  - TODO: adapt the following consequently 
+		//  - if source is defined or skipSource = true 
+		//    - target = s 
+		//      => Target.StateID = s.ID, same for all other Double and Integer values
+		//      => last state excluded as well
+		//    - for each activity
+		//      - add all Double and Integer values
+		//      - add all deltas
+		//      - TODO: add meta data?
+		//      - TODO: add agent state values?
+		//    - if skipSource = false
+		//      => Source.StateID = s.ID, same for all other Double and Integer values
+
         for (ax in a.activities.select(a|a.state.isDefined() and a.state.artifact.type = type and a.targetState.isHit())) {
         	var i = new ARFFx!Instance();
 	    	arffx.data.add(i);
+	    	//TODO: either last hit source needs to be selected or sparseness needs to be removed  
 			var s = ax.state;
 			var t = ax.targetState;
 			i.addValue('\"'+ax.agent.name+'\"', "Agent.Name");
@@ -271,7 +294,7 @@ operation processArtifacts(typeName : String) {
 		//careful with the filtering here...
 //	    for (s in a.states.excluding(a.states.first()).excluding(a.states.last()).select(x|x.isHit() and x.next.first().isHit()).sortBy(x|x.ID)) {
 	    for (s in a.states.excluding(a.states.first()).select(x|x.isHit()).sortBy(x|x.ID)) {
-			var p = s.previous;
+			var p = s.previous.first();
 			while (p.isDefined() and not p.isHit()) {
 				//TODO: what if more than one?
 				p = p.previous.first();
