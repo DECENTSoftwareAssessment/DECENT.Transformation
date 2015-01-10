@@ -16,11 +16,14 @@ var modelFile = new Native("java.io.File") (ARFFx.getModelFile());
 //var CONFIDENCE = "CONFIDENCE".getARFFAttribute();
 //var LABEL = "LABEL".getARFFAttribute();
 
+var nestedAnonymousClassFilter = "\"[\\w]+\\$[\\d]+.*\"";
+//"Issue$1$1".matches("[\\w]+\\$[\\d]+.*").println();
+
 var threshold = 100;
 var bag = new OrderedSet();
 
 for (arffx in ARFFx!Model.allInstances()) {
-	if (arffx.data.size() > threshold) {
+	if (arffx.data.size() > threshold or arffx.meta.get("ARFFx.Type") = "artifact") {
 		//temporary workaround
 		arffx.name=arffx.name.replace("-1",arffx.meta.get("DECENT.Agent.Name"));
 		
@@ -29,7 +32,7 @@ for (arffx in ARFFx!Model.allInstances()) {
 		arffx.checkForCompleteness();
 		arffx.assignClassAndConfidence(targetAttributes);
 		//note that this is about 30%+ slower
-		arffx.exportAll(filename+".all.csv",s);
+		//arffx.exportAll(filename+".all.csv",s);
 		var filter = "filters/custom-current";
 		arffx.exportAttributes(filter+"-"+arffx.meta.get("ARFFx.Type")+"-"+arffx.meta.get("DECENT.ArtifactType")+"-last");
 		arffx.exportFiltered(filename,filter,targetAttributes,s);
@@ -41,14 +44,17 @@ for (arffx in ARFFx!Model.allInstances()) {
 //Cheap workaround... quite slow too?
 var types = bag.collect(x|x.meta.get("DECENT.ArtifactType"));
 for (type in types) {
+	//cheap trick
+	var modelName = bag.first().name.replace("-.+","");
 	var data = new OrderedSet();
-	var filename = modelFile.getParent()+"/"+Model.name+"-agents-small-contribuotrs-"+type+".csv";
+	var filename = modelFile.getParent()+"/"+modelName+"-agents-small-contribuotrs-"+type+".csv";
 	var file = new Native("java.io.File") (filename);
 	var writer = new Native("java.io.FileWriter") (file);
 	var filter = "filters/custom-current";
 	var h = false;
 	for (a in bag.select(x|x.meta.get("ARFFx.Type") = "agent" and x.meta.get("DECENT.ArtifactType") = type)) {
 		a.checkTargetAttributes(targetAttributes);
+		a.checkForCompleteness();
 		a.assignClassAndConfidence(targetAttributes);
 		var attributes = a.attributes;
 		if (filter.isDefined()) {
@@ -66,8 +72,10 @@ for (type in types) {
 			attributes.collect(x|x.name).concat(s).printlno(writer);
 			h = true;
 		} 
-		
-		for (i in a.data) {
+
+		var NameAttribute = "Artifact.Name".getARFFAttribute(a);		
+		for (i in a.data.select(x|not x.getValue(NameAttribute).matches(nestedAnonymousClassFilter))) {
+		//for (i in a.data) {
 			//Note: See above on why attributes rather than selected is used 
 			i.getFilteredValues(s,attributes).printlno(writer);
 			//TODO: order seems to be ensured anyways
@@ -110,7 +118,9 @@ operation ARFFx!Model exportAll(filename : String, s : String) {
 	
 	self.attributes.collect(x|x.name).concat(s).printlno(writer);
 
-	for (i in self.data) {
+	var NameAttribute = "Artifact.Name".getARFFAttribute(self);		
+	for (i in self.data.select(x|not x.getValue(NameAttribute).matches(nestedAnonymousClassFilter))) {
+//	for (i in self.data) {
 		i.getValues(s).substring(1).printlno(writer);
 		//TODO: order seems to be ensured anyways
 		//i.getSafeOrderValues(s, attributes).printlno();
@@ -130,11 +140,22 @@ operation ARFFx!Model assignClassAndConfidence(targetAttributes : Map) {
 
 operation ARFFx!Model checkForCompleteness() {
 	var line = 1;
-	for (i in self.data) {
+	var NameAttribute = "Artifact.Name".getARFFAttribute(self);		
+	for (i in self.data.select(x|not x.getValue(NameAttribute).matches(nestedAnonymousClassFilter))) {
+	//for (i in self.data) {
 		line = line+1;
 		if (i.values.size() <> self.attributes.size()) {
-			(self.name+" : Line "+line+" : Value and attribute do not match : " + i.values.size() +" vs "+ self.attributes.size()).log(1);
+			(self.name+" : Line "+line+" : Value and attribute counts do not match : " + i.values.size() +" vs "+ self.attributes.size()).log(1);
 			(i.getValues(s).substring(1)).log(1);
+			i.printMissingAttributes();
+		}
+	}
+}
+
+operation ARFFx!Instance printMissingAttributes() {
+	for (a in self.eContainer.attributes) {
+		if (not self.values.exists(v|v.ofAttribute = a)) {
+			("  Missing attribute: "+a.name).log(1);
 		}
 	}
 }
@@ -177,7 +198,9 @@ operation ARFFx!Model exportFiltered(filename : String, filter : String, targetA
 
 	attributes.collect(x|x.name).concat(s).printlno(writer);
 	
-	for (i in self.data) {
+	var NameAttribute = "Artifact.Name".getARFFAttribute(self);		
+	for (i in self.data.select(x|not x.getValue(NameAttribute).matches(nestedAnonymousClassFilter))) {
+	//for (i in self.data) {
 		//Note: See above on why attributes rather than selected is used 
 		i.getFilteredValues(s,attributes).printlno(writer);
 		//TODO: order seems to be ensured anyways
