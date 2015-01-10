@@ -16,21 +16,22 @@ var modelFile = new Native("java.io.File") (ARFFx.getModelFile());
 //var CONFIDENCE = "CONFIDENCE".getARFFAttribute();
 //var LABEL = "LABEL".getARFFAttribute();
 
+//TODO: move to common
+//TODO: remove once established at earlier steps
 var nestedAnonymousClassFilter = "\"[\\w]+\\$[\\d]+.*\"";
-//"Issue$1$1".matches("[\\w]+\\$[\\d]+.*").println();
 
 var threshold = 100;
 var bag = new OrderedSet();
 
 for (arffx in ARFFx!Model.allInstances()) {
+	arffx.checkTargetAttributes(targetAttributes);
+	arffx.checkForCompleteness();
+	arffx.assignClassAndConfidence(targetAttributes);
 	if (arffx.data.size() > threshold or arffx.meta.get("ARFFx.Type") = "artifact") {
 		//temporary workaround
 		arffx.name=arffx.name.replace("-1",arffx.meta.get("DECENT.Agent.Name"));
 		
 		var filename = modelFile.getParent()+"/"+arffx.name+".csv";
-		arffx.checkTargetAttributes(targetAttributes);
-		arffx.checkForCompleteness();
-		arffx.assignClassAndConfidence(targetAttributes);
 		//note that this is about 30%+ slower
 		//arffx.exportAll(filename+".all.csv",s);
 		var filter = "filters/custom-current";
@@ -53,9 +54,6 @@ for (type in types) {
 	var filter = "filters/custom-current";
 	var h = false;
 	for (a in bag.select(x|x.meta.get("ARFFx.Type") = "agent" and x.meta.get("DECENT.ArtifactType") = type)) {
-		a.checkTargetAttributes(targetAttributes);
-		a.checkForCompleteness();
-		a.assignClassAndConfidence(targetAttributes);
 		var attributes = a.attributes;
 		if (filter.isDefined()) {
 			var selected = filter.getSelectedAttributes();
