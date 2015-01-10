@@ -3,7 +3,7 @@ import "../libraries/decent/common.eol";
 import "../libraries/decent/logging.eol";
 
 var selectedType = Native("java.lang.System").getProperty("epsilon.transformation.decent2arffx.type");
-var skipSource = Native("java.lang.System").getProperty("epsilon.transformation.decent2arffx.skipSource");
+var skipSource = Native("java.lang.System").getProperty("epsilon.transformation.decent2arffx.skipSource").asBoolean();
 
 var Type = DECENT!ArtifactType.allInstances().select(a|a.name = selectedType).first();
 if (Type.isUndefined()) {
