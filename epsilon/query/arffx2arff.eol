@@ -43,7 +43,7 @@ for (arffx in ARFFx!Model.allInstances()) {
 }
 
 //Cheap workaround... quite slow too?
-var types = bag.collect(x|x.meta.get("DECENT.ArtifactType"));
+var types = bag.collect(x|x.meta.get("DECENT.ArtifactType")).asOrderedSet();
 for (type in types) {
 	//cheap trick
 	var modelName = bag.first().name.replace("-.+","");
