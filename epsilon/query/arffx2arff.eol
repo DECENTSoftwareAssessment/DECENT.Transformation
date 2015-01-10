@@ -23,7 +23,7 @@ var nestedAnonymousClassFilter = "\"[\\w]+\\$[\\d]+.*\"";
 var threshold = 100;
 var bag = new OrderedSet();
 
-for (arffx in ARFFx!Model.allInstances()) {
+for (arffx in ARFFx!Model.allInstances().select(x|x.data.size() > 0)) {
 	arffx.checkTargetAttributes(targetAttributes);
 	arffx.checkForCompleteness();
 	arffx.assignClassAndConfidence(targetAttributes);
