@@ -8,6 +8,7 @@ var start = Native("java.lang.System").currentTimeMillis();
 
 var s = ",";
 var targetAttributes = new Map;
+//TODO: export options
 targetAttributes.put("Artifact.Target.BugFix.AverageWeight.Local",0.1);
 targetAttributes.put("Artifact.Target.Refactoring.AverageWeight.Local",0.1);
 
@@ -48,7 +49,7 @@ for (type in types) {
 	//cheap trick
 	var modelName = bag.first().name.replace("-.+","");
 	var data = new OrderedSet();
-	var filename = modelFile.getParent()+"/"+modelName+"-agents-small-contribuotrs-"+type+".csv";
+	var filename = modelFile.getParent()+"/"+modelName+"-agents-small-contributors-"+type+".csv";
 	var file = new Native("java.io.File") (filename);
 	var writer = new Native("java.io.FileWriter") (file);
 	var filter = "filters/custom-current";
