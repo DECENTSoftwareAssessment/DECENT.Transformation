@@ -3,6 +3,7 @@ import "../libraries/decent/common.eol";
 import "../libraries/decent/logging.eol";
 
 var selectedType = Native("java.lang.System").getProperty("epsilon.transformation.decent2arffx.type");
+var skipSource = Native("java.lang.System").getProperty("epsilon.transformation.decent2arffx.skipSource");
 
 var Type = DECENT!ArtifactType.allInstances().select(a|a.name = selectedType).first();
 if (Type.isUndefined()) {
@@ -16,7 +17,7 @@ types.add("Method");
 types.add("Function");
 types.add("Module");
 
-//TODO: move to common
+//TODO: move to common, use for tagging states?
 var nestedAnonymousClassFilter = "\"[\\w]+\\$[\\d]+.*\"";
 
 //legacy
@@ -112,8 +113,6 @@ operation validateFAMIXCoverage (type:DECENT!ArtifactType) {
 }
 
 operation DECENT!State processTargetState (arffx : ARFFx!Model) {
-	//TODO: export as configuration option
-	var skipSource = false;
 	var p = self.previous.first();
 	while (p.isDefined() and not p.isHit()) {
 		//TODO: what if more than one?

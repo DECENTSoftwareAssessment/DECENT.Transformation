@@ -234,6 +234,7 @@ public class MassEpsilonLauncher {
 				executeHITS2DECENT(location);
 				break;
 			case "DECENT2ARFFx":
+				System.setProperty("epsilon.transformation.decent2arffx.skipSource", properties.getProperty("decent2arffx.skipSource", "false"));
 				System.setProperty("epsilon.transformation.decent2arffx.type", properties.getProperty("decent2arffx.type", "code"));
 				executeDECENT2ARFFx(location);
 				break;
