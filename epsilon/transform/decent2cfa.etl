@@ -106,7 +106,7 @@ operation Integer getGlobalState() : CFA!GlobalState {
 operation DECENT!State isDECENTStateMapped() : Boolean {
 	return CFA!LogicalState.allInstances().exists(s|s.state = self);
 }
-
+//TODO deprecated?
 operation addFAMIXLogicalStates() {
 	for (g in CFA!GlobalState.allInstances()) {
 		var famixStates = g.ID.getHitFAMIXStatesForID();
@@ -141,7 +141,7 @@ operation addFAMIXLogicalStates() {
 				}
 			}	
 			
-			//TODO: alternativea approach by navigating existing artifact causes
+			//TODO: alternative approach by navigating existing artifact causes
 			
 			var p = fs.previous.first();
 			if (false and p.isDefined()) { //redundant
