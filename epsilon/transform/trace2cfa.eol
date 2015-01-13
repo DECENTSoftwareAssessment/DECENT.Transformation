@@ -16,14 +16,10 @@ import "../libraries/decent/logging.eol";
   	factors.put("CommentsPerIssue","Average comments per related issues count");
   	factors.put("UsersPerIssue","Average users per related issues count");
   	
-  	for (a in factors.keySet()) {
-  		if (CFA!Factor.allInstances().select(x|x.name = a).size() = 0) {
-			var factor = new CFA!Factor;
-			factor.name = a;
-			factor.description = factors.get(a);
-		}
-  	}
-
+	var cfn = CFA!CFN.allInstances().first();
+  	
+  	cfn.addFactors(factors);
+  	
   	var IssueCountFactor = CFA!Factor.allInstances().select(a|a.name = "IssueCount").first();
   	var CommentsPerIssueFactor = CFA!Factor.allInstances().select(a|a.name = "CommentsPerIssue").first();
   	var UsersPerIssueFactor = CFA!Factor.allInstances().select(a|a.name = "UsersPerIssue").first();
