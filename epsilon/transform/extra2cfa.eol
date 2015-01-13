@@ -14,49 +14,50 @@ import "../libraries/decent/logging.eol";
   	var AverageWeightAttribute = "AverageWeight".getCFAAttribute();
 
   	var factors = new Map;
-  	factors.put("Refactoring","Based on commit messages");
-  	//factors.put("Fix","Based on commit messages");
+  	factors.put("Refactoring","Based on commit messages, regex:.+(factored|factoring).*");
+  	factors.put("Fix","Based on commit messages, regex:.*(fix|bug|bug:).*");
+  	factors.put("IssueReference","Based on commit messages, regex:.*(bug\\s*:\\s*\\d+).*");
   	
   	cfn.addFactors(factors);
 
   	for (a in factors.keySet()) {
+  		("  Processing extra factor "+a+"...").log(2);
 	  	var factor = CFA!Factor.allInstances().select(x|x.name = a).first();
-	
-		addFactors(factor);
+		var regex = factors.get(a).split("regex:")[1];
+		addFactors(factor, regex);
 		resetTotalWeights(factor);
 		calculateTotalFactorWeights(factor);
 		calculateAverageFactorWeights();
 	}
 
-
     var end = Native("java.lang.System").currentTimeMillis();
     var duration = end - start;
     ("Duration: "+duration.toMinutes().round(5)).log(1);
 
-operation addFactors(factor : CFA!Factor) {
+operation addFactors(factor : CFA!Factor, regex : String) {
 	for (s in CFA!CFAState.allInstances) {
-		s.addFactor(factor, s.getMessageBasedWeight());
+		s.addFactor(factor, s.getMessageBasedWeight(regex));
 	}
 }
 
-operation String getMessageBasedWeight() : Real {
+operation String getMessageBasedWeight(regex : String) : Real {
 	var weight = 0.asDouble();
-	if ((self.toLowerCase().contains("factored ")) 
-		or (self.toLowerCase().contains("factoring "))) {
+	regex = "(?s)"+regex;
+	("  "+self.toLowerCase().matches(regex) + " -> " + self).print();
+	if (self.toLowerCase().matches(regex)) { 
 		weight = 1.asDouble();
 	}
 	return weight;
 }
 
-
-operation CFA!GlobalState getMessageBasedWeight() : Real {
-	return self.revision.message.getMessageBasedWeight();
+operation CFA!GlobalState getMessageBasedWeight(regex : String) : Real {
+	return self.revision.message.getMessageBasedWeight(regex);
 }
-operation CFA!ArtifactState getMessageBasedWeight() : Real {
-	return self.action.revision.message.getMessageBasedWeight();
+operation CFA!ArtifactState getMessageBasedWeight(regex : String) : Real {
+	return self.action.revision.message.getMessageBasedWeight(regex);
 }
-operation CFA!LogicalState getMessageBasedWeight() : Real {
-	return self.globalState.getMessageBasedWeight();
+operation CFA!LogicalState getMessageBasedWeight(regex : String) : Real {
+	return self.globalState.getMessageBasedWeight(regex);
 }
 
 
