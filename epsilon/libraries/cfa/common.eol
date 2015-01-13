@@ -8,6 +8,17 @@ operation String getCFAFactor() : CFA!Factor {
     return CFA!Factor.allInstances().select(a|a.name = self).first();
 }
 
+operation CFA!CFN addFactors(factors : Map) {
+  	for (a in factors.keySet()) {
+  		if (self.factors.select(x|x.name = a).size() = 0) {
+			var factor = new CFA!Factor;
+			factor.name = a;
+			factor.description = factors.get(a);
+			self.factors.add(factor);
+		}
+  	}
+}
+
 operation calculateTotalFactorWeights(selectedFactor : CFA!Factor) {
     for (s in CFA!CFAState.allInstances()) {
     	var fixes = s.fixes.size().asDouble();
