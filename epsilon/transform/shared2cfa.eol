@@ -2,7 +2,7 @@ import "../libraries/cfa/common.eol";
 import "../libraries/decent/common.eol";
 import "../libraries/decent/logging.eol";
 
-
+	//run before cfa2decent
   	"Running shared2cfa".log(1);
 
   	var start = Native("java.lang.System").currentTimeMillis();
