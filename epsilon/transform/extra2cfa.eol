@@ -2,7 +2,7 @@ import "../libraries/cfa/common.eol";
 import "../libraries/decent/common.eol";
 import "../libraries/decent/logging.eol";
 
-
+	//RUN AFTER decent2cfa!!!
   	"Running extra2cfa".log(1);
 
   	var start = Native("java.lang.System").currentTimeMillis();
@@ -15,35 +15,31 @@ import "../libraries/decent/logging.eol";
 
   	var factors = new Map;
   	factors.put("Refactoring","Based on commit messages");
+  	//factors.put("Fix","Based on commit messages");
   	
-  	//TODO: factor out
+  	cfn.addFactors(factors);
+
   	for (a in factors.keySet()) {
-  		if (CFA!Factor.allInstances().select(x|x.name = a).size() = 0) {
-			var factor = new CFA!Factor;
-			factor.name = a;
-			factor.description = factors.get(a);
-			cfn.factors.add(factor);
-		}
-  	}
+	  	var factor = CFA!Factor.allInstances().select(x|x.name = a).first();
+	
+		addFactors(factor);
+		resetTotalWeights(factor);
+		calculateTotalFactorWeights(factor);
+		calculateAverageFactorWeights();
+	}
 
-  	var RefactoringMessageFactor = CFA!Factor.allInstances().select(a|a.name = "Refactoring").first();
-
-	addFactors();
-	resetTotalWeights(RefactoringMessageFactor);
-	calculateTotalFactorWeights(RefactoringMessageFactor);
-	calculateAverageFactorWeights();
 
     var end = Native("java.lang.System").currentTimeMillis();
     var duration = end - start;
     ("Duration: "+duration.toMinutes().round(5)).log(1);
 
-operation addFactors() {
+operation addFactors(factor : CFA!Factor) {
 	for (s in CFA!CFAState.allInstances) {
-		s.addFactor(RefactoringMessageFactor, s.getRefactoringWeight());
+		s.addFactor(factor, s.getMessageBasedWeight());
 	}
 }
 
-operation String getRefactoringWeight() : Real {
+operation String getMessageBasedWeight() : Real {
 	var weight = 0.asDouble();
 	if ((self.toLowerCase().contains("factored ")) 
 		or (self.toLowerCase().contains("factoring "))) {
@@ -53,14 +49,14 @@ operation String getRefactoringWeight() : Real {
 }
 
 
-operation CFA!GlobalState getRefactoringWeight() : Real {
-	return self.revision.message.getRefactoringWeight();
+operation CFA!GlobalState getMessageBasedWeight() : Real {
+	return self.revision.message.getMessageBasedWeight();
 }
-operation CFA!ArtifactState getRefactoringWeight() : Real {
-	return self.action.revision.message.getRefactoringWeight();
+operation CFA!ArtifactState getMessageBasedWeight() : Real {
+	return self.action.revision.message.getMessageBasedWeight();
 }
-operation CFA!LogicalState getRefactoringWeight() : Real {
-	return self.globalState.getRefactoringWeight();
+operation CFA!LogicalState getMessageBasedWeight() : Real {
+	return self.globalState.getMessageBasedWeight();
 }
 
 
