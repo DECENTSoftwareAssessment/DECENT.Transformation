@@ -43,7 +43,6 @@ operation addFactors(factor : CFA!Factor, regex : String) {
 operation String getMessageBasedWeight(regex : String) : Real {
 	var weight = 0.asDouble();
 	regex = "(?s)"+regex;
-	("  "+self.toLowerCase().matches(regex) + " -> " + self).print();
 	if (self.toLowerCase().matches(regex)) { 
 		weight = 1.asDouble();
 	}
