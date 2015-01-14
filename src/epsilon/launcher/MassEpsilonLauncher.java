@@ -153,12 +153,16 @@ public class MassEpsilonLauncher {
 		properties.load(new FileInputStream(propertiesFilename));
 		modelHandler.setUseDECENTBinary(Boolean.parseBoolean(properties.getProperty("useDECENTBinary")));
 		modelHandler.setUseMGBinary(Boolean.parseBoolean(properties.getProperty("useMGBinary")));
-		if (arguments.length == 2 || arguments.length == 3) {
+		if (arguments.length > 1) {
 			properties.setProperty("steps", arguments[1]);
 		}
-		if (arguments.length == 3) {
+		if (arguments.length > 2) {
 			//TODO: check supported types
 			properties.setProperty("decent2arffx.type", arguments[2]);
+		}
+		if (arguments.length > 3) {
+			//TODO: check supported types
+			properties.setProperty("project", arguments[3]);
 		}
 
 	}
