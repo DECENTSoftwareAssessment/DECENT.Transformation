@@ -283,6 +283,11 @@ operation Real normalize(min : Real, max : Real) : Real {
 	return ((self - min) / (max - min))*(1-0) + 0;
 }
 
+operation Real normalize(min : Real, max : Real,new_min : Real, new_max : Real) : Real {
+	return ((self - min) / (max - min))*(new_max - new_min) + new_min;
+}
+
+
 @cached
 operation DECENT!Artifact isMGType() : Boolean {
 	return self.type.name = "code" or 
@@ -328,6 +333,21 @@ operation Collection getMean() : Real {
 operation Real getSqrt() : Real {
 	return Native("java.lang.Math").sqrt(self);
 }
+
+operation Collection getMin() : Real {
+	return Native("java.util.Collections").min(self);
+}
+
+operation Collection getMax() : Real {
+	return Native("java.util.Collections").max(self);
+}
+
+operation Collection normalizeMinMax(new_min : Real, new_max : Real) {
+	var min = self.getMin();
+	var max = self.getMax();
+	return self.collect(i|i.normalize(min, max, new_min, new_max));
+}
+
 
 operation Collection getStandardDeviation() : Real {
 	return self.getVariance().getSqrt();
