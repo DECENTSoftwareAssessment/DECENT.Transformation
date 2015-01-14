@@ -309,7 +309,6 @@ operation DECENT!Artifact isCodeType() : Boolean {
 	return self.type.name = "code";
 }
 
-
 operation Collection getMean() : Real {
 	if (self.size <= 1) {
 	    //mean for a set of 1 elememts shall be 0
@@ -323,6 +322,15 @@ operation Collection getMean() : Real {
     }
     var mean = sum1/n;
 	return mean;
+}
+
+@cached
+operation Real getSqrt() : Real {
+	return Native("java.lang.Math").sqrt(self);
+}
+
+operation Collection getStandardDeviation() : Real {
+	return self.getVariance().getSqrt();
 }
 
 operation Collection getVariance() : Real {
