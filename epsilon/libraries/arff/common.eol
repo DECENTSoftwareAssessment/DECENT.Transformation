@@ -5,6 +5,18 @@ operation ARFFx!Instance addValue(content : String, attribute : String) {
 	self.values.add(value);	    	
 }
 
+
+operation ARFFx!Instance updateValue(content : String, attribute : String) {
+	var value = self.values.select(v|v.ofAttribute.name = attribute).first();
+	if (value.isUndefined()) {
+		value = new ARFFx!Value();
+		value.ofAttribute = attribute.getARFFAttribute(self.eContainer());
+		self.values.add(value);	    	
+	}
+	value.content = content;
+}
+
+
 @cached
 operation String getARFFAttribute(arffx : ARFFx!Model) : ARFFx!Attribute {
 	var attribute = arffx.attributes.select(a|a.name = self).first();
