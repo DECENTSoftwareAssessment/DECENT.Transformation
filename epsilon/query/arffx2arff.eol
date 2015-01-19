@@ -30,6 +30,7 @@ var nestedAnonymousClassFilter = "\"[\\w]+\\$[\\d]+.*\"";
 var threshold = 100;
 var bag = new OrderedSet();
 
+//ARTIFACTS
 for (arffx in ARFFx!Model.allInstances().select(x|x.data.size() > 0)) {
 	arffx.checkTargetAttributes(targetAttributes);
 	arffx.checkForCompleteness();
@@ -54,13 +55,14 @@ for (arffx in ARFFx!Model.allInstances().select(x|x.data.size() > 0)) {
 	}
 }
 
+//SMALL contributors
 //Cheap workaround... quite slow too?
 var types = bag.collect(x|x.meta.get("DECENT.ArtifactType")).asOrderedSet();
 for (type in types) {
 	//cheap trick
-	var modelName = bag.first().name.replace("-.+","");
+	var modelName = bag.first().name.replace("-agents-.+","");
 	var data = new OrderedSet();
-	var filename = modelFile.getParent()+"/"+modelName+"-agents-small-contributors-"+type+".csv";
+	var filename = modelFile.getParent()+"/"+modelName+"-agents-small contributors-"+type+".csv";
 	var file = new Native("java.io.File") (filename);
 	var writer = new Native("java.io.FileWriter") (file);
 	var filter = "filters/custom-current";
@@ -95,6 +97,49 @@ for (type in types) {
 	}
 	writer.close();
 }
+
+//ALL contributors (mostly duplicated from above) 
+//also rather slow!!!
+for (type in types) {
+	//cheap trick
+	var modelName = bag.first().name.replace("-agents-.+","");
+	var data = new OrderedSet();
+	var filename = modelFile.getParent()+"/"+modelName+"-agents-all contributors-"+type+".csv";
+	var file = new Native("java.io.File") (filename);
+	var writer = new Native("java.io.FileWriter") (file);
+	var filter = "filters/custom-current";
+	var h = false;
+	//TODO: recalculate confidence thresholds and labels!!!
+	for (a in ARFFx!Model.allInstances().select(x|x.data.size() > 0 and x.meta.get("ARFFx.Type") = "agent" and x.meta.get("DECENT.ArtifactType") = type)) {
+		var attributes = a.attributes;
+		if (filter.isDefined()) {
+			var selected = filter.getSelectedAttributes();
+			for (k in targetAttributes.keySet()) {
+				selected.add("CONFIDENCE."+k);
+				selected.add("LABEL."+k);		
+			}		
+			//Note: This takes a subset of the available attributes that are 
+			//also within the filtered set, rather than simply taking the 
+			//filtered set, which may include unavailable attributes as well 
+			attributes = attributes.select(x|selected.contains(x.name));
+		}
+		if (not h) {
+			attributes.collect(x|x.name).concat(s).printlno(writer);
+			h = true;
+		} 
+
+		var NameAttribute = "Artifact.Name".getARFFAttribute(a);		
+		for (i in a.data.select(x|not x.getValue(NameAttribute).matches(nestedAnonymousClassFilter))) {
+		//for (i in a.data) {
+			//Note: See above on why attributes rather than selected is used 
+			i.getFilteredValues(s,attributes).printlno(writer);
+			//TODO: order seems to be ensured anyways
+			//i.getSafeOrderValues(s, attributes).printlno();
+		}
+	}
+	writer.close();
+}
+
 
 
 
