@@ -28,18 +28,17 @@ var modelFile = new Native("java.io.File") (ARFFx.getModelFile());
 var nestedAnonymousClassFilter = "\"[\\w]+\\$[\\d]+.*\"";
 
 var threshold = 100;
-var bag = new OrderedSet();
 
 //ARTIFACTS
 for (arffx in ARFFx!Model.allInstances().select(x|x.data.size() > 0)) {
 	arffx.checkTargetAttributes(targetAttributes);
 	arffx.checkForCompleteness();
 	//arffx.name.println();
-	//TODO: these will need to be recalculated for the bags..? :-/
+	//these will be recalculated for the bags..
 	arffx.setConfidenceThresholds(targetAttributes);
+	arffx.assignClassAndConfidence(targetAttributes);
 	//"  outside".println();
 	//("    "+targetAttributes).println(); 
-	arffx.assignClassAndConfidence(targetAttributes);
 	if (arffx.data.size() > threshold or arffx.meta.get("ARFFx.Type") = "artifact") {
 		//temporary workaround
 		arffx.name=arffx.name.replace("-1",arffx.meta.get("DECENT.Agent.Name"));
@@ -50,106 +49,74 @@ for (arffx in ARFFx!Model.allInstances().select(x|x.data.size() > 0)) {
 		var filter = "filters/custom-current";
 		arffx.exportAttributes(filter+"-"+arffx.meta.get("ARFFx.Type")+"-"+arffx.meta.get("DECENT.ArtifactType")+"-last");
 		arffx.exportFiltered(filename,filter,targetAttributes,s);
-	} else {
-		bag.add(arffx);
 	}
 }
 
-//SMALL contributors
-//Cheap workaround... quite slow too?
-var types = bag.collect(x|x.meta.get("DECENT.ArtifactType")).asOrderedSet();
-for (type in types) {
-	//cheap trick
-	var modelName = bag.first().name.replace("-agents-.+","");
-	var data = new OrderedSet();
-	var filename = modelFile.getParent()+"/"+modelName+"-agents-small contributors-"+type+".csv";
-	var file = new Native("java.io.File") (filename);
-	var writer = new Native("java.io.FileWriter") (file);
-	var filter = "filters/custom-current";
-	var h = false;
-	//TODO: recalculate confidence thresholds and labels!!!
-	for (a in bag.select(x|x.meta.get("ARFFx.Type") = "agent" and x.meta.get("DECENT.ArtifactType") = type)) {
-		var attributes = a.attributes;
-		if (filter.isDefined()) {
-			var selected = filter.getSelectedAttributes();
-			for (k in targetAttributes.keySet()) {
-				selected.add("CONFIDENCE."+k);
-				selected.add("LABEL."+k);		
-			}		
-			//Note: This takes a subset of the available attributes that are 
-			//also within the filtered set, rather than simply taking the 
-			//filtered set, which may include unavailable attributes as well 
-			attributes = attributes.select(x|selected.contains(x.name));
-		}
-		if (not h) {
-			attributes.collect(x|x.name).concat(s).printlno(writer);
-			h = true;
-		} 
+var bag = new OrderedSet();
+var types = new OrderedSet(); 
 
-		var NameAttribute = "Artifact.Name".getARFFAttribute(a);		
-		for (i in a.data.select(x|not x.getValue(NameAttribute).matches(nestedAnonymousClassFilter))) {
-		//for (i in a.data) {
-			//Note: See above on why attributes rather than selected is used 
-			i.getFilteredValues(s,attributes).printlno(writer);
-			//TODO: order seems to be ensured anyways
-			//i.getSafeOrderValues(s, attributes).printlno();
-		}
-	}
-	writer.close();
-}
+bag = ARFFx!Model.allInstances().select(x|x.data.size() > 0 and x.data.size() < threshold and x.meta.get("ARFFx.Type") = "agent").asOrderedSet();
+types = bag.collect(x|x.meta.get("DECENT.ArtifactType")).asOrderedSet();
+exportBag(types, bag, "small contributors");
 
-//ALL contributors (mostly duplicated from above) 
-//also rather slow!!!
-for (type in types) {
-	//cheap trick
-	var modelName = bag.first().name.replace("-agents-.+","");
-	var data = new OrderedSet();
-	var filename = modelFile.getParent()+"/"+modelName+"-agents-all contributors-"+type+".csv";
-	var file = new Native("java.io.File") (filename);
-	var writer = new Native("java.io.FileWriter") (file);
-	var filter = "filters/custom-current";
-	var h = false;
-	//TODO: recalculate confidence thresholds and labels!!!
-	for (a in ARFFx!Model.allInstances().select(x|x.data.size() > 0 and x.meta.get("ARFFx.Type") = "agent" and x.meta.get("DECENT.ArtifactType") = type)) {
-		var attributes = a.attributes;
-		if (filter.isDefined()) {
-			var selected = filter.getSelectedAttributes();
-			for (k in targetAttributes.keySet()) {
-				selected.add("CONFIDENCE."+k);
-				selected.add("LABEL."+k);		
-			}		
-			//Note: This takes a subset of the available attributes that are 
-			//also within the filtered set, rather than simply taking the 
-			//filtered set, which may include unavailable attributes as well 
-			attributes = attributes.select(x|selected.contains(x.name));
-		}
-		if (not h) {
-			attributes.collect(x|x.name).concat(s).printlno(writer);
-			h = true;
-		} 
-
-		var NameAttribute = "Artifact.Name".getARFFAttribute(a);		
-		for (i in a.data.select(x|not x.getValue(NameAttribute).matches(nestedAnonymousClassFilter))) {
-		//for (i in a.data) {
-			//Note: See above on why attributes rather than selected is used 
-			i.getFilteredValues(s,attributes).printlno(writer);
-			//TODO: order seems to be ensured anyways
-			//i.getSafeOrderValues(s, attributes).printlno();
-		}
-	}
-	writer.close();
-}
-
-
-
+bag = ARFFx!Model.allInstances().select(x|x.data.size() > 0 and x.meta.get("ARFFx.Type") = "agent").asOrderedSet();
+types = bag.collect(x|x.meta.get("DECENT.ArtifactType")).asOrderedSet();
+exportBag(types, bag, "all contributors");
 
 var end = Native("java.lang.System").currentTimeMillis();
 var duration = end - start;
 ("Duration: "+duration.toMinutes().round(5)).log(1);
 
-
 //validateFAMIXCoverage(CodeArtifactType);
 
+//for ALL and SMALL contributors
+//Cheap workaround... quite slow too?
+operation exportBag(types : OrderedSet, bag : OrderedSet, bagName : String) {
+	for (type in types) {
+		//cheap trick
+		var modelName = bag.first().name.replace("-agents-.+","");
+		var data = new OrderedSet();
+		var filename = modelFile.getParent()+"/"+modelName+"-agents-"+bagName+"-"+type+".csv";
+		var file = new Native("java.io.File") (filename);
+		var writer = new Native("java.io.FileWriter") (file);
+		var filter = "filters/custom-current";
+		var h = false;
+
+		var bagOfType = bag.select(x|x.meta.get("ARFFx.Type") = "agent" and x.meta.get("DECENT.ArtifactType") = type);
+		//recalculate confidence thresholds and labels
+		bagOfType.setConfidenceThresholds(targetAttributes);
+		
+		for (a in bagOfType) {
+			a.assignClassAndConfidence(targetAttributes);
+			var attributes = a.attributes;
+			if (filter.isDefined()) {
+				var selected = filter.getSelectedAttributes();
+				for (k in targetAttributes.keySet()) {
+					selected.add("CONFIDENCE."+k);
+					selected.add("LABEL."+k);		
+				}		
+				//Note: This takes a subset of the available attributes that are 
+				//also within the filtered set, rather than simply taking the 
+				//filtered set, which may include unavailable attributes as well 
+				attributes = attributes.select(x|selected.contains(x.name));
+			}
+			if (not h) {
+				attributes.collect(x|x.name).concat(s).printlno(writer);
+				h = true;
+			} 
+	
+			var NameAttribute = "Artifact.Name".getARFFAttribute(a);		
+			for (i in a.data.select(x|not x.getValue(NameAttribute).matches(nestedAnonymousClassFilter))) {
+			//for (i in a.data) {
+				//Note: See above on why attributes rather than selected is used 
+				i.getFilteredValues(s,attributes).printlno(writer);
+				//TODO: order seems to be ensured anyways
+				//i.getSafeOrderValues(s, attributes).printlno();
+			}
+		}
+		writer.close();
+	}
+}
 
 operation ARFFx!Model checkTargetAttributes(targetAttributes : Map) {
 	var notFound = targetAttributes.keySet().select(x|not self.attributes.exists(a|a.name = x));
@@ -193,6 +160,7 @@ operation ARFFx!Model assignClassAndConfidence(targetAttributes : Map) {
 		}
 	}
 }
+
 operation ARFFx!Model setConfidenceThresholds(targetAttributes : Map) {
 	//self.name.println();	
 	//TODO: store as meta data
@@ -211,6 +179,24 @@ operation ARFFx!Model setConfidenceThresholds(targetAttributes : Map) {
 	//"  updated".println();
 	//("    "+targetAttributes).println();
 }
+
+operation Collection setConfidenceThresholds(targetAttributes : Map) {
+	//TODO: store as meta data
+	//TODO: store mean divisor as meta-data	
+	for (a in targetAttributes.keySet) {
+		var v = new Sequence();
+		for (arffx in self) {
+			v.addAll(arffx.data.collect(x|x.getValue(a.getARFFAttribute(arffx)).asDouble()));
+		}
+		//v = v.normalizeMinMax(0.asDouble(), 1.asDouble());
+		//("  "+v.getMin()+" : "+v.getMax()+" : "+v.getMean()+" : "+v.getVariance()+" : "+v.getStandardDeviation()).println();
+		var t = (v.getMean()/2).round(4);
+		targetAttributes.put(a,t);
+		//("  Non-zero:\t\t"+v.select(x|x <> 0).size()).println();
+		//("  Above threshold:\t"+v.select(x|x > t).size()).println();
+	}
+}
+
 
 operation ARFFx!Model checkForCompleteness() {
 	var line = 1;
@@ -299,8 +285,8 @@ operation ARFFx!Instance assignClassAndConfidence(baseAttribute : String, thresh
 	if (base.asDouble() < 1.1*threshold and base.asDouble() > 0.9*threshold) {
 		confidence = "low";
 	}
-	self.addValue(confidence, confidenceAttribute);
-	self.addValue(label, labelAttribute);
+	self.updateValue(confidence, confidenceAttribute);
+	self.updateValue(label, labelAttribute);
 }
 
 operation ARFFx!Instance getFilteredValues(s : String, filter : Collection) : String {
