@@ -75,7 +75,6 @@ rule Models
 rule Revisions
     transform r : MG!Revision 
     to s : CFA!GlobalState {
-    //TODO: remove limits
     ("Transforming "+ r.commit_id +" Fix: " +r.is_bug_fix).log(3);
     s.cfn = r.repository.equivalent();
     s.revision = r;
@@ -86,8 +85,6 @@ rule Revisions
     s.addFactor(BugFixFactor, r.is_bug_fix.asDouble());
 	
     s.hunks = r.hunks.size();
-    s.bugFix = r.is_bug_fix.asDouble();
-    s.weightFactor = r.is_bug_fix.asDouble();
     
     for (h in r.hunks) {
         for (hb in h.hunkBlame) {
@@ -120,11 +117,8 @@ rule Actions
     s.addFactor(DefaultFactor, 1.asDouble());
     s.addFactor(BugFixFactor, a.revision.is_bug_fix.asDouble());
     
-    //legacy
     var hunks = a.revision.hunks.select(h|h.file = a.file);
     s.hunks = hunks.size();
-    s.bugFix = a.revision.is_bug_fix.asDouble();
-    s.weightFactor = a.revision.is_bug_fix.asDouble();
 
     s.globalState = a.revision.equivalent();
 
