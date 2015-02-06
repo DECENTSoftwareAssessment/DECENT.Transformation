@@ -13,68 +13,122 @@ import "../libraries/decent/logging.eol";
   	var TotalWeightAttribute = "TotalWeight".getCFAAttribute();
   	var AverageWeightAttribute = "AverageWeight".getCFAAttribute();
 
-	var suffix = ".EqualSplit";
-
-	var cfaFactors = cfn.factors.select(x|not x.name.endsWith(suffix));
-	for (f in cfaFactors) {
-	  	f.~sharedName = f.name+suffix;
-
-  		if (CFA!Factor.allInstances().select(x|x.name = f.~sharedName).size() = 0) {
-			var factor = new CFA!Factor;
-			factor.name = f.~sharedName;
-			factor.description = f.description + " (equal split)";
-			cfn.factors.add(factor);
-		}
-  	}
-
-	addFactors();
-  	
-	for (f in cfaFactors) {
-  		var sf = f.~sharedName.getCFAFactor();
-  		resetTotalWeights(sf);
-		calculateTotalFactorWeights(sf);
-		calculateAverageFactorWeights();
+	var strategies = new Map();
+	strategies.put(".Shared","Equal split");
+	strategies.put(".Shared.Code","Equal split (code type only)");
+	
+	var baseFactors = cfn.factors.select(f|strategies.keySet().forAll(s|not f.name.endsWith(s)));
+	for (f in baseFactors) {
+		("  base factor:"+ f.name).println();
 	}
+	for (s in strategies.keySet()) {
+		for (f in baseFactors) {
+		  	var sharedName = f.name+s;
+	
+	  		if (CFA!Factor.allInstances().select(x|x.name = sharedName).size() = 0) {
+				var factor = new CFA!Factor;
+				factor.~base = f; //TODO: add to meta-model, also add strategy as a property
+				factor.name = sharedName;
+				factor.description = f.description + " ("+strategies.get(s)+")";
+				cfn.factors.add(factor);
+			} else {
+				CFA!Factor.allInstances().select(x|x.name = sharedName).first().~base = f;
+			}
+	  	}
+
+	}
+
+	var shareFactors = cfn.factors.select(f|not strategies.keySet().forAll(s|not f.name.endsWith(s)));
+	for (f in shareFactors) {
+		("  share factor:"+ f.name).println();
+	}
+
+	for (s in strategies.keySet()) {
+		addFactors(s);
+	}
+
+	for (f in shareFactors) {
+  		resetTotalWeights(f);
+		calculateTotalFactorWeights(f);
+	}
+	calculateAverageFactorWeights();
 	
     var end = Native("java.lang.System").currentTimeMillis();
     var duration = end - start;
     ("Duration: "+duration.toMinutes().round(5)).log(1);
 
-operation addFactors() {
-	for (s in CFA!GlobalState.allInstances) {
-  		var splitCount = 1.asDouble();
-  		s.addSharedFactors(splitCount);
+operation addFactors(strategy:String) {
+	if (strategy = ".Shared") {
+		addSharedFactors(strategy);
 	}
-	for (s in CFA!ArtifactState.allInstances) {
-  		var splitCount = s.globalState.getArtifactSplitCount();
-  		s.addSharedFactors(splitCount);
+	else if (strategy = ".Shared.Code") {
+		addSharedCodeFactors(strategy);
 	}
-	for (s in CFA!LogicalState.allInstances) {
-  		var splitCount = s.globalState.getLogicalSplitCount(s.artifact.type);
-  		s.addSharedFactors(splitCount);
+	else {
+    	("ERROR: Unknown Strategy:" + strategy).log(1);
 	}
 }
 
-operation CFA!CFAState addSharedFactors(splitCount : Real) {
-	for (f in cfaFactors) {
-  		var sf = f.~sharedName.getCFAFactor();
-  		var baseWeightFactor = self.getBaseWeightFactor(f.~sharedName); //TODO: change to factor? 
-		self.addFactor(sf, baseWeightFactor/splitCount);
+operation addSharedCodeFactors(strategy : String) {
+
+	for (s in CFA!GlobalState.allInstances) {
+  		var splitCount = 1.asDouble();
+  		s.addSharedFactors(splitCount, strategy);
+	}
+	for (s in CFA!ArtifactState.allInstances) {
+  		var splitCount = s.globalState.getArtifactSplitCount("code");
+  		s.addSharedFactors(splitCount, strategy);
+	}
+	for (s in CFA!LogicalState.allInstances) {
+  		var splitCount = s.globalState.getLogicalSplitCount(s.artifact.type);
+  		s.addSharedFactors(splitCount, strategy);
+	}
+}
+
+
+operation addSharedFactors(strategy : String) {
+	for (s in CFA!GlobalState.allInstances) {
+  		var splitCount = 1.asDouble();
+  		s.addSharedFactors(splitCount, strategy);
+	}
+	for (s in CFA!ArtifactState.allInstances) {
+  		var splitCount = s.globalState.getArtifactSplitCount();
+  		s.addSharedFactors(splitCount, strategy);
+	}
+	for (s in CFA!LogicalState.allInstances) {
+  		var splitCount = s.globalState.getLogicalSplitCount(s.artifact.type);
+  		s.addSharedFactors(splitCount, strategy);
+	}
+}
+
+operation CFA!CFAState addSharedFactors(splitCount : Real, strategy : String) {
+	for (f in CFA!CFN.allInstances().first().getStrategyFactors(strategy)) {
+  		var baseWeightFactor = self.getBaseWeightFactor(f);
+  		var weightFactor = 0.asDouble(); 
+  		if (splitCount <> 0) {
+  			weightFactor = baseWeightFactor/splitCount;
+  			//TODO: handle else differently? assign 1?
+  		}
+		self.addFactor(f, weightFactor);
 	}
 }
 
 @cached
-operation CFA!GlobalState getBaseWeightFactor(sharedFactorName : String) : Real {
-  	var f = sharedFactorName.getBaseFactor();
-	return self.factors.get(f).get(WeightFactorAttribute);
+operation CFA!CFN getStrategyFactors(strategy : String) : Collection {
+	return self.factors.select(f|f.name.endsWith(strategy));
 }
 
-operation CFA!ArtifactState getBaseWeightFactor(sharedFactorName : String) : Real {
-	return self.globalState.getBaseWeightFactor(sharedFactorName);
+@cached
+operation CFA!GlobalState getBaseWeightFactor(sharedFactor : CFA!Factor) : Real {
+	return self.factors.get(sharedFactor.~base).get(WeightFactorAttribute);
 }
-
-operation CFA!LogicalState getBaseWeightFactor(sharedFactorName : String) : Real {
-	return self.globalState.getBaseWeightFactor(sharedFactorName);
+@cached
+operation CFA!ArtifactState getBaseWeightFactor(sharedFactor : CFA!Factor) : Real {
+	return self.globalState.getBaseWeightFactor(sharedFactor);
+}
+@cached
+operation CFA!LogicalState getBaseWeightFactor(sharedFactor : CFA!Factor) : Real {
+	return self.globalState.getBaseWeightFactor(sharedFactor);
 }
 
 
@@ -83,14 +137,15 @@ operation CFA!GlobalState getArtifactSplitCount() : Real {
 	return self.artifactStates.size().asDouble();
 }
 
+@cached
+operation CFA!GlobalState getArtifactSplitCount(type : String) : Real {
+	return self.artifactStates.select(a|a.file.file_type = type).size().asDouble();
+}
+
+
 //TODO: do we also need a split for artifact/logical.count?
 @cached
 operation CFA!GlobalState getLogicalSplitCount(type : DECENT!ArtifactType) : Real {
 	return self.logicalStates.select(x|x.artifact.type = type).size().asDouble();
-}
-
-@cached
-operation String getBaseFactor() : CFA!Factor {
-	return cfaFactors.select(x|x.~sharedName = self).first();
 }
 	
