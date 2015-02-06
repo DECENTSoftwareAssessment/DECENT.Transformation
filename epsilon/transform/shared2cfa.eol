@@ -18,9 +18,9 @@ import "../libraries/decent/logging.eol";
 	strategies.put(".Shared.Code","Equal split (code type only)");
 	
 	var baseFactors = cfn.factors.select(f|strategies.keySet().forAll(s|not f.name.endsWith(s)));
-	for (f in baseFactors) {
-		("  base factor:"+ f.name).println();
-	}
+	//for (f in baseFactors) {
+	//	("  base factor:"+ f.name).println();
+	//}
 	for (s in strategies.keySet()) {
 		for (f in baseFactors) {
 		  	var sharedName = f.name+s;
@@ -39,9 +39,9 @@ import "../libraries/decent/logging.eol";
 	}
 
 	var shareFactors = cfn.factors.select(f|not strategies.keySet().forAll(s|not f.name.endsWith(s)));
-	for (f in shareFactors) {
-		("  share factor:"+ f.name).println();
-	}
+	//for (f in shareFactors) {
+	//	("  share factor:"+ f.name).println();
+	//}
 
 	for (s in strategies.keySet()) {
 		addFactors(s);
