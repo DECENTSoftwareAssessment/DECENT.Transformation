@@ -41,6 +41,11 @@ operation Any getValue(attribute : DECENT!Attribute) : DECENT!Value {
     return self.values.select(v|v.ofAttribute = attribute).first();
 }
 
+operation Any getValue(attribute : String) : DECENT!Value {
+    return self.values.select(v|v.ofAttribute.name = attribute).first();
+}
+
+
 @cached
 operation String getAttribute() : DECENT!Attribute {
     return DECENT!Attribute.allInstances().select(a|a.name = self).first();
