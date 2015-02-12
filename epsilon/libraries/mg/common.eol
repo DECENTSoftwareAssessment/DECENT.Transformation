@@ -29,3 +29,12 @@ operation MG!Revision getBranch() : MG!Branch {
 	}
 	return self.actions.first().branch;
 }
+
+@cached
+operation MG!Revision getPatchLinesSum() : Real {
+	return self.patchLines.collect(x|x.added + x.removed).sum();
+}
+
+operation MG!Revision getPatchLinesSum(file : MG!File) : Real {
+	return self.patchLines.select(x|x.file = file).collect(x|x.added + x.removed).sum();
+}
