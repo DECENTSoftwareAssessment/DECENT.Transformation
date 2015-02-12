@@ -13,9 +13,13 @@ import "../libraries/decent/logging.eol";
   	var TotalWeightAttribute = "TotalWeight".getCFAAttribute();
   	var AverageWeightAttribute = "AverageWeight".getCFAAttribute();
 
-	var strategies = new Map();
+	var strategies = new Native("java.util.LinkedHashMap");
 	strategies.put(".Shared","Equal split");
 	strategies.put(".Shared.Code","Equal split (code type only)");
+	strategies.put(".Churn","Based on the amount of change");
+	strategies.put(".Churn.Code","Based on the amount of change (code type only)");
+	strategies.put(".Size","Based on the size of the artifacts");
+	strategies.put(".Size.Code","Based on the size of the artifacts (code type only)");
 	
 	var baseFactors = cfn.factors.select(f|strategies.keySet().forAll(s|not f.name.endsWith(s)));
 	//for (f in baseFactors) {
@@ -62,22 +66,173 @@ operation addFactors(strategy:String) {
 		addSharedFactors(strategy);
 	}
 	else if (strategy = ".Shared.Code") {
-		addSharedCodeFactors(strategy);
+		addSharedTypeFactors(strategy, "code");
+	}
+	else if (strategy = ".Churn") {
+		addSharedChurnFactors(strategy);
+	}
+	else if (strategy = ".Churn.Code") {
+		addSharedChurnTypeFactors(strategy, "code");
+	}
+	else if (strategy = ".Size") {
+		addSharedSizeFactors(strategy);
+	}
+	else if (strategy = ".Size.Code") {
+		addSharedSizeTypeFactors(strategy, "code");
 	}
 	else {
     	("ERROR: Unknown Strategy:" + strategy).log(1);
 	}
 }
 
-operation addSharedCodeFactors(strategy : String) {
+operation addSharedSizeTypeFactors(strategy : String, type : String) {
 
 	for (s in CFA!GlobalState.allInstances) {
   		var splitCount = 1.asDouble();
   		s.addSharedFactors(splitCount, strategy);
 	}
-	for (s in CFA!ArtifactState.allInstances) {
-  		var splitCount = s.globalState.getArtifactSplitCount("code");
+	for (s in CFA!ArtifactState.allInstances()) {
+		//TODO: fix the inverses as they are largely unnecessary
+  		//inverse as it is divided by the global factor
+  		var splitCount = 0.asDouble();
+  		if (s.getSizesSum()<>0) {
+	  		splitCount = s.globalState.getSizesSum(type)/s.getSizesSum(); 
+  		}
+  		//(s.file.file_name +" at "+ s.ID + " : " +s.globalState.getSizesSum(type) +"/"+s.getSizesSum() + " = " + splitCount + " => " + 1.asDouble()/splitCount).println();
+  		s.addSharedFactors(splitCount, strategy, type);
+	}
+	for (s in CFA!LogicalState.allInstances) {
+  		//inverse as it is divided by the global factor
+  		var splitCount = s.getTypeSizesSum()/s.getSizesSum(); 
   		s.addSharedFactors(splitCount, strategy);
+	}
+}
+
+
+operation addSharedSizeFactors(strategy : String) {
+
+	for (s in CFA!GlobalState.allInstances) {
+  		var splitCount = 1.asDouble();
+  		s.addSharedFactors(splitCount, strategy);
+	}
+	for (s in CFA!ArtifactState.allInstances()) {
+  		//inverse as it is divided by the global factor
+  		var splitCount = 0.asDouble();
+  		if (s.getSizesSum()<>0) {
+	  		splitCount = s.globalState.getSizesSum()/s.getSizesSum(); 
+  		}
+  		//TODO: check rounding errors
+  		s.addSharedFactors(splitCount, strategy);
+	}
+	for (s in CFA!LogicalState.allInstances) {
+  		//inverse as it is divided by the global factor
+  		var splitCount = s.getTypeSizesSum()/s.getSizesSum(); 
+  		s.addSharedFactors(splitCount, strategy);
+	}
+}
+
+
+operation addSharedChurnTypeFactors(strategy : String, type : String) {
+
+	for (s in CFA!GlobalState.allInstances) {
+  		var splitCount = 1.asDouble();
+  		s.addSharedFactors(splitCount, strategy);
+	}
+	for (s in CFA!ArtifactState.allInstances()) {
+  		//inverse as it is divided by the global factor
+  		var splitCount = s.globalState.getPatchLinesSum(type)/s.getPatchLinesSum(); 
+  		s.addSharedFactors(splitCount, strategy, type);
+	}
+	for (s in CFA!LogicalState.allInstances) {
+  		//inverse as it is divided by the global factor
+  		var splitCount = s.getTypePatchLinesSum()/s.getPatchLinesSum(); 
+  		s.addSharedFactors(splitCount, strategy);
+	}
+}
+
+
+operation addSharedChurnFactors(strategy : String) {
+
+	for (s in CFA!GlobalState.allInstances) {
+  		var splitCount = 1.asDouble();
+  		s.addSharedFactors(splitCount, strategy);
+	}
+	for (s in CFA!ArtifactState.allInstances()) {
+  		//inverse as it is divided by the global factor
+  		var splitCount = s.globalState.getPatchLinesSum()/s.getPatchLinesSum(); 
+  		s.addSharedFactors(splitCount, strategy);
+	}
+	for (s in CFA!LogicalState.allInstances) {
+  		//inverse as it is divided by the global factor
+  		var splitCount = s.getTypePatchLinesSum()/s.getPatchLinesSum(); 
+  		s.addSharedFactors(splitCount, strategy);
+	}
+}
+
+
+@cached
+operation CFA!GlobalState getSizesSum(type : String) : Real {
+	return self.revision.content.select(x|x.file.file_type = type).collect(x|x.loc).sum().asDouble();
+}
+
+@cached
+operation CFA!GlobalState getSizesSum() : Real {
+	return self.revision.content.collect(x|x.loc).sum().asDouble();
+}
+
+@cached
+operation CFA!ArtifactState getSizesSum() : Real {
+	return self.globalState.revision.content.select(x|x.file = self.file).collect(x|x.loc).sum().asDouble();
+}
+
+@cached
+operation CFA!LogicalState getTypeSizesSum() : Real {
+	return self.globalState.logicalStates.select(x|x.artifact.type = self.artifact.type).collect(x|x.getSizesSum()).sum().asDouble();
+}
+
+@cached
+operation CFA!LogicalState getSizesSum() : Real {
+	var size = self.state.getValue("EndLine").content - self.state.getValue("StartLine").content + 1; 
+	return size.asDouble();
+}
+
+
+@cached
+operation CFA!GlobalState getPatchLinesSum(type : String) : Real {
+	return self.revision.patchLines.select(x|x.file.file_type = type).collect(x|x.added + x.removed).sum();
+}
+
+@cached
+operation CFA!GlobalState getPatchLinesSum() : Real {
+	return self.revision.patchLines.collect(x|x.added + x.removed).sum();
+}
+
+@cached
+operation CFA!ArtifactState getPatchLinesSum() : Real {
+	return self.globalState.revision.patchLines.select(x|x.file = self.file).collect(x|x.added + x.removed).sum();
+}
+
+@cached
+operation CFA!LogicalState getTypePatchLinesSum() : Real {
+	return self.globalState.logicalStates.select(x|x.artifact.type = self.artifact.type).collect(x|x.getPatchLinesSum()).sum();
+}
+
+@cached
+operation CFA!LogicalState getPatchLinesSum() : Real {
+	var post = self.state.getValue("LinesPostHits").content.size();
+	var pre = self.state.getValue("LinesPreHits").content.size();
+	return (pre+post).asDouble();
+}
+
+operation addSharedTypeFactors(strategy : String, type : String) {
+
+	for (s in CFA!GlobalState.allInstances) {
+  		var splitCount = 1.asDouble();
+  		s.addSharedFactors(splitCount, strategy);
+	}
+	for (s in CFA!ArtifactState.allInstances()) {
+  		var splitCount = s.globalState.getArtifactSplitCount(type);
+  		s.addSharedFactors(splitCount, strategy, type);
 	}
 	for (s in CFA!LogicalState.allInstances) {
   		var splitCount = s.globalState.getLogicalSplitCount(s.artifact.type);
@@ -101,6 +256,19 @@ operation addSharedFactors(strategy : String) {
 	}
 }
 
+operation CFA!CFAState addChurnFactors(splitCount : Real, strategy : String) {
+	for (f in CFA!CFN.allInstances().first().getStrategyFactors(strategy)) {
+  		var baseWeightFactor = self.getBaseWeightFactor(f);
+  		var weightFactor = 0.asDouble(); 
+  		if (splitCount <> 0) {
+  			weightFactor = baseWeightFactor/splitCount;
+  			//TODO: handle else differently? assign 1?
+  		}
+		self.addFactor(f, weightFactor);
+	}
+}
+
+
 operation CFA!CFAState addSharedFactors(splitCount : Real, strategy : String) {
 	for (f in CFA!CFN.allInstances().first().getStrategyFactors(strategy)) {
   		var baseWeightFactor = self.getBaseWeightFactor(f);
@@ -112,6 +280,19 @@ operation CFA!CFAState addSharedFactors(splitCount : Real, strategy : String) {
 		self.addFactor(f, weightFactor);
 	}
 }
+
+operation CFA!CFAState addSharedFactors(splitCount : Real, strategy : String, type : String) {
+	for (f in CFA!CFN.allInstances().first().getStrategyFactors(strategy)) {
+  		var baseWeightFactor = self.getBaseWeightFactor(f);
+  		var weightFactor = 0.asDouble(); 
+  		if (self.matchesType(type) and splitCount <> 0) {
+  			weightFactor = baseWeightFactor/splitCount;
+  			//TODO: handle else differently? assign 1?
+  		}
+		self.addFactor(f, weightFactor);
+	}
+}
+
 
 @cached
 operation CFA!CFN getStrategyFactors(strategy : String) : Collection {
@@ -147,5 +328,11 @@ operation CFA!GlobalState getArtifactSplitCount(type : String) : Real {
 @cached
 operation CFA!GlobalState getLogicalSplitCount(type : DECENT!ArtifactType) : Real {
 	return self.logicalStates.select(x|x.artifact.type = type).size().asDouble();
+}
+	
+	
+@cached
+operation CFA!ArtifactState matchesType(type : String) : Boolean {
+	return self.file.file_type = type;
 }
 	
