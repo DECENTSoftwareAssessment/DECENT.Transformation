@@ -131,6 +131,16 @@ public class DECENTEpsilonModelHandler {
 		return model;
 	}
 
+	public IModel getLOGModel(String location, boolean read, boolean write) throws Exception {
+		String resourceLocation = location+"/model.log";
+		if (!new File(resourceLocation).exists()) {
+			read = false;
+		}
+		IModel model = createEmfModel("LOG", resourceLocation, "../DECENT.Meta/model/LOG.ecore", read, write);
+		System.setProperty("epsilon.logFileAvailable", "true");
+		return model;
+	}
+	
 	public void convertDECENTModelToBinary(String location) {
 		unregisterMetaModels("decent");
 		DECENTResourceTool tool = new DECENTResourceTool();

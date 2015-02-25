@@ -179,6 +179,9 @@ public class MassEpsilonLauncher {
 		//TODO: extract and generalize steps as configuration files or models
 		//with description, source, required models, required steps, accepted arguments, dependencies, etc.
 		System.setProperty("epsilon.logLevel", properties.getProperty("logLevel", "1"));
+		System.setProperty("epsilon.logToFile", properties.getProperty("logToFile", "false"));
+		System.setProperty("epsilon.logFileAvailable", "false");
+
 		try {
 			switch (step) {
 			case "MG2NORMALIZEDHUNKS":
@@ -311,7 +314,7 @@ public class MassEpsilonLauncher {
 		IModel traceModel = modelHandler.getTRACEModel(location, true, false);
 		module.getContext().getModelRepository().addModel(traceModel);
 		module.getContext().getModelRepository().addModel(decentModel);
-		module.execute();
+		execute(module, location);
 		traceModel.dispose();
 		//can be stored and retained alternatively
 		decentModel.dispose();
@@ -329,7 +332,7 @@ public class MassEpsilonLauncher {
 		module.getContext().getModelRepository().addModel(mgModel);
 		module.getContext().getModelRepository().addModel(bzModel);
 		module.getContext().getModelRepository().addModel(traceModel);
-		module.execute();
+		execute(module, location);
 		bzModel.dispose();
 		mgModel.dispose();
 		//can be stored and retained alternatively
@@ -345,7 +348,7 @@ public class MassEpsilonLauncher {
 		IModel dagModel = modelHandler.getDAGModel(location);
 		module.getContext().getModelRepository().addModel(dagModel);
 		module.getContext().getModelRepository().addModel(decentModel);
-		module.execute();
+		execute(module, location);
 		dagModel.dispose();
 		// can be stored and retained alternatively
 		decentModel.dispose();
@@ -361,7 +364,7 @@ public class MassEpsilonLauncher {
 		IModel dudeModel = modelHandler.getDUDEModel(location);
 		module.getContext().getModelRepository().addModel(dudeModel);
 		module.getContext().getModelRepository().addModel(decentModel);
-		module.execute();
+		execute(module, location);
 		dudeModel.dispose();
 		// can be stored and retained alternatively
 		decentModel.dispose();
@@ -377,7 +380,7 @@ public class MassEpsilonLauncher {
 		//TODO: consider removing reliance on MG especially if it is only needed in one line
 		module.getContext().getModelRepository().addModel(cfaModel);
 		module.getContext().getModelRepository().addModel(decentModel);
-		module.execute();
+		execute(module, location);
 		cfaModel.dispose();
 		//can be stored and retained alternatively
 		decentModel.dispose();
@@ -393,7 +396,7 @@ public class MassEpsilonLauncher {
 		IModel cfaModel = modelHandler.getCFAModel(location, true, false);
 		module.getContext().getModelRepository().addModel(cfaModel);
 		module.getContext().getModelRepository().addModel(decentModel);
-		module.execute();
+		execute(module, location);
 		cfaModel.dispose();
 		//can be stored and retained alternatively
 		decentModel.dispose();
@@ -410,7 +413,7 @@ public class MassEpsilonLauncher {
 		// needed in one line
 		module.getContext().getModelRepository().addModel(cfaModel);
 		module.getContext().getModelRepository().addModel(decentModel);
-		module.execute();
+		execute(module, location);
 		cfaModel.dispose();
 		// can be stored and retained alternatively
 		decentModel.dispose();
@@ -446,11 +449,19 @@ public class MassEpsilonLauncher {
 		IModel cfaModel = modelHandler.getCFAModel(location, false, true);
 		module.getContext().getModelRepository().addModel(cfaModel);
 		module.getContext().getModelRepository().addModel(mgModel);
-		module.execute();
+		execute(module, location);
 		mgModel.dispose();
 		//can be stored and retained alternatively
 		cfaModel.dispose();
 		module.reset();
+	}
+
+	private void execute(IEolExecutableModule module, String location)
+			throws Exception {
+		IModel logModel = modelHandler.getLOGModel(location, true, true);
+		module.getContext().getModelRepository().addModel(logModel);
+		module.execute();
+		logModel.dispose();
 	}
 
 	private void executeTRACE2CFA(String location) throws Exception, URISyntaxException,
@@ -461,7 +472,7 @@ public class MassEpsilonLauncher {
 		IModel traceModel = modelHandler.getTRACEModel(location, true, false);
 		module.getContext().getModelRepository().addModel(cfaModel);
 		module.getContext().getModelRepository().addModel(traceModel);
-		module.execute();
+		execute(module, location);
 		traceModel.dispose();
 		//can be stored and retained alternatively
 		cfaModel.dispose();
@@ -474,7 +485,7 @@ public class MassEpsilonLauncher {
 		IEolExecutableModule module = loadModule(source);
 		IModel cfaModel = modelHandler.getCFAModel(location, true, true);
 		module.getContext().getModelRepository().addModel(cfaModel);
-		module.execute();
+		execute(module, location);
 		// can be stored and retained alternatively
 		cfaModel.dispose();
 		module.reset();
@@ -485,8 +496,10 @@ public class MassEpsilonLauncher {
 		String source = "epsilon/transform/shared2cfa.eol";
 		IEolExecutableModule module = loadModule(source);
 		IModel cfaModel = modelHandler.getCFAModel(location, true, true);
+		IModel decentModel = modelHandler.getDECENTModel(location, true, false);
 		module.getContext().getModelRepository().addModel(cfaModel);
-		module.execute();
+		module.getContext().getModelRepository().addModel(decentModel);
+		execute(module, location);
 		// can be stored and retained alternatively
 		cfaModel.dispose();
 		module.reset();
@@ -504,7 +517,7 @@ public class MassEpsilonLauncher {
 		IEolExecutableModule module = loadModule(source);
 		IModel decentModel = modelHandler.getDECENTModel(location, read, write);
 		module.getContext().getModelRepository().addModel(decentModel);
-		module.execute();
+		execute(module, location);
 		decentModel.dispose();
 		//can be stored and retained alternatively
 		module.reset();
@@ -544,7 +557,7 @@ public class MassEpsilonLauncher {
 		executeDECENTinPalace(location, source, true, false);
 	}
 
-	private void executeLIVE(String location)  {
+	private void executeLIVE(final String location)  {
 		final String source = "epsilon/query/live.eol";
 		try {
 			final IModel decentModel = modelHandler.getDECENTModel(location, true, false);
@@ -555,7 +568,7 @@ public class MassEpsilonLauncher {
 					try {
 						IEolExecutableModule module = loadModule(source);
 						module.getContext().getModelRepository().addModel(decentModel);
-						module.execute();
+						execute(module, location);
 						module.reset();
 					} catch (URISyntaxException e) {
 					} catch (EolRuntimeException e) {
@@ -587,7 +600,7 @@ public class MassEpsilonLauncher {
 		IEolExecutableModule module = loadModule(source);
 		IModel arffxModel = modelHandler.getARFFxModel(location, true, false);
 		module.getContext().getModelRepository().addModel(arffxModel);
-		module.execute();
+		execute(module, location);
 		arffxModel.dispose();
 		// can be stored and retained alternatively
 		module.reset();
@@ -601,7 +614,7 @@ public class MassEpsilonLauncher {
 		IModel arffxModel = modelHandler.getARFFxModel(location, false, true);;
 		module.getContext().getModelRepository().addModel(decentModel);
 		module.getContext().getModelRepository().addModel(arffxModel);
-		module.execute();
+		execute(module, location);
 		decentModel.dispose();
 		arffxModel.dispose();
 		// can be stored and retained alternatively
@@ -614,7 +627,7 @@ public class MassEpsilonLauncher {
 		IEolExecutableModule module = loadModule(source);
 		IModel mgModel = modelHandler.getMGModel(location, true, true);
 		module.getContext().getModelRepository().addModel(mgModel);
-		module.execute();
+		execute(module, location);
 		mgModel.dispose();
 		//can be stored and retained alternatively
 		module.reset();
@@ -629,7 +642,7 @@ public class MassEpsilonLauncher {
 		IModel mgModel = modelHandler.getMGModel(location, true, false);
 		module.getContext().getModelRepository().addModel(decentModel);
 		module.getContext().getModelRepository().addModel(mgModel);
-		module.execute();
+		execute(module, location);
 		mgModel.dispose();
 		//can be stored and retained alternatively
 		decentModel.dispose();
@@ -663,7 +676,7 @@ public class MassEpsilonLauncher {
 				famixModel.load();
 				module.getContext().getModelRepository().addModel(decentModel);
 				module.getContext().getModelRepository().addModel(famixModel);
-				module.execute();
+				execute(module, location);
 				famixModel.dispose();
 				decentModel.store();
 				module.reset();
