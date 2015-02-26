@@ -50,6 +50,7 @@ import org.eclipse.epsilon.eol.IEolExecutableModule;
 import org.eclipse.epsilon.eol.exceptions.EolRuntimeException;
 import org.eclipse.epsilon.eol.exceptions.models.EolModelLoadingException;
 import org.eclipse.epsilon.eol.models.IModel;
+import org.eclipse.epsilon.eol.tools.MathTool;
 import org.eclipse.epsilon.etl.EtlModule;
 import org.eclipse.epsilon.profiling.Profiler;
 import org.eclipse.epsilon.profiling.ProfilerTargetSummary;
@@ -59,6 +60,7 @@ import DECENT.DECENTPackage;
 import MG.MGPackage;
 import resource.tools.DECENTResourceTool;
 import resource.tools.MGResourceTool;
+import util.MathTools;
 import epsilon.launcher.EpsilonStandaloneLauncher;
 
 /**
@@ -663,8 +665,16 @@ public class MassEpsilonLauncher {
 		if (0<=(Integer.parseInt(upperBound))) {
 			upperBound=commits[commits.length-1];
 		}
-		//TODO: add option "semi-safe" which stores intermediate decent model but does not reload it (optionally with a frequency - every 1/2/5/10 revisions)
-		//TODO: add option "safe" which stores each intermediate decent model (and/or reloads it)
+
+		String storageStrategy = properties.getProperty("storageStrategy", "safe");
+		ArrayList<Double> factors = new ArrayList<>();
+		int windowSize = 1;
+
+		if (storageStrategy.equals("fixed-window")) {
+			windowSize = Integer.parseInt(properties.getProperty("storageWindow", "1"));
+		}
+		
+		long storageDuration = 0;
 		for (String c : commits) {
 			if (
 					Integer.parseInt(c)>=(Integer.parseInt(lowerBound)) &&
@@ -676,9 +686,43 @@ public class MassEpsilonLauncher {
 				famixModel.load();
 				module.getContext().getModelRepository().addModel(decentModel);
 				module.getContext().getModelRepository().addModel(famixModel);
+				
+				//some spaghetti below - collecting durations
+				//implementing dynamic window strategy
+				long executionStart = System.currentTimeMillis();
+				//execute
 				execute(module, location);
+				long executionEnd = System.currentTimeMillis();
+				long executionDuration=executionEnd-executionStart;
+				
+				int bufferSize = factors.size();
+				
+				if (factors.size()>=windowSize) {
+					long storageStart = System.currentTimeMillis();
+					//store
+					decentModel.store();
+					long storageEnd = System.currentTimeMillis();
+					storageDuration = storageEnd-storageStart;
+				
+					//implementing fixed and dynamic window strategies
+					int mean = (int) MathTools.getMean(factors);
+					factors.clear();
+					if (storageStrategy.equals("dynamic-window")) {
+						windowSize = mean+1;
+					}
+				}
+
+				long factor = storageDuration/executionDuration;
+				factors.add((double) factor);
+
+				//stats that may be useful
+				System.out.println("Execution: "+executionDuration + "; "+
+						"Storage: "+storageDuration  + "; "+
+						"Factor: "+factor  + "; "+
+						"Window: "+bufferSize+"/"+windowSize
+						);
+					
 				famixModel.dispose();
-				decentModel.store();
 				module.reset();
 			}
 		}
