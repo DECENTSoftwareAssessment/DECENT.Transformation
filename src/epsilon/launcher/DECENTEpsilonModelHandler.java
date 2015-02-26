@@ -29,7 +29,7 @@ public class DECENTEpsilonModelHandler {
 		EmfModel model;
 		
 		if (isUseDECENTBinary()) {
-			unregisterMetaModels("decent");
+			unregisterMetaModels("");
 			if (!read) {
 				new File(location+"/model.decent").delete();
 				new File(location+"/model.decentbin").delete();
@@ -142,7 +142,7 @@ public class DECENTEpsilonModelHandler {
 	}
 	
 	public void convertDECENTModelToBinary(String location) {
-		unregisterMetaModels("decent");
+		unregisterMetaModels("");
 		DECENTResourceTool tool = new DECENTResourceTool();
 		Resource resource = tool.loadResourceFromXMI(location+"/model.decent","decent", DECENTPackage.eINSTANCE);
 		tool.storeBinaryResourceContents(resource.getContents(), location+"/model.decent"+"bin", "decentbin");
