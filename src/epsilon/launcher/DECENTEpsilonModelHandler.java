@@ -150,7 +150,7 @@ public class DECENTEpsilonModelHandler {
 	}
 
 	public void convertDECENTModelToXMI(String location) {
-		unregisterMetaModels("decent");
+		unregisterMetaModels("");
 		DECENTResourceTool tool = new DECENTResourceTool(); 
 		Resource resource = tool.loadResourceFromBinary(location+"/model.decentbin","decentbin", DECENTPackage.eINSTANCE);
 		tool.storeResourceContents(resource.getContents(), location+"/model.decent", "decent");
