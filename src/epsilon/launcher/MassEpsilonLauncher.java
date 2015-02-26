@@ -673,7 +673,7 @@ public class MassEpsilonLauncher {
 		
 
 		String[] commits = getSortedCommits(location);
-		if (0<=(Integer.parseInt(upperBound))) {
+		if (0>=(Integer.parseInt(upperBound))) {
 			upperBound=commits[commits.length-1];
 		}
 
