@@ -675,12 +675,17 @@ public class MassEpsilonLauncher {
 		}
 		
 		long storageDuration = 0;
+		long totalDuration = 0;
+		int remainingCount = commits.length;
 		for (String c : commits) {
 			if (
 					Integer.parseInt(c)>=(Integer.parseInt(lowerBound)) &&
 					Integer.parseInt(c)<=(Integer.parseInt(upperBound))
 			) {
-				System.out.println("Processing: "+c);
+				long start = System.currentTimeMillis();
+				double eta = (remainingCount*totalDuration)/(60*1000);
+				System.out.println("Processing: "+c+"/"+upperBound + "; ETA: "+eta);
+
 				module.parse(modelHandler.getFile(source));
 				IModel famixModel = modelHandler.getFAMIXModel(location,Integer.parseInt(c));
 				famixModel.load();
@@ -724,7 +729,11 @@ public class MassEpsilonLauncher {
 					
 				famixModel.dispose();
 				module.reset();
+				
+				long end = System.currentTimeMillis();
+				totalDuration = end-start;
 			}
+			remainingCount--;
 		}
 		decentModel.dispose();
 	}
