@@ -266,6 +266,10 @@ public class MassEpsilonLauncher {
 				//duplicates RT functionality
 				executeBIN2DECENT(location);
 				break;
+			case "DECENT2BIN":
+				//duplicates RT functionality
+				executeDECENT2BIN(location);
+				break;
 			default:
 				System.out.println("ERROR: Unknown step "+step);
 				break;
@@ -297,6 +301,13 @@ public class MassEpsilonLauncher {
 		}
 	}
 
+	public void executeDECENT2BIN(String location) {
+		if (new File(location+"/model.decent").exists()) {
+			modelHandler.convertDECENTModelToBinary(location);
+		}
+	}
+
+	
 	private void registerMetaModels() throws Exception {
 		String metaModelsPath = "../DECENT.Meta/model/";
 		File metaModelsLocation = new File(metaModelsPath);
@@ -701,7 +712,7 @@ public class MassEpsilonLauncher {
 				long executionDuration=executionEnd-executionStart;
 				
 				int bufferSize = factors.size();
-				
+				int lastWindowSize = windowSize;
 				if (factors.size()>=windowSize) {
 					long storageStart = System.currentTimeMillis();
 					//store
@@ -724,7 +735,7 @@ public class MassEpsilonLauncher {
 				System.out.println("Execution: "+executionDuration + "; "+
 						"Storage: "+storageDuration  + "; "+
 						"Factor: "+factor  + "; "+
-						"Window: "+bufferSize+"/"+windowSize
+						"Window: "+bufferSize+"/"+lastWindowSize
 						);
 					
 				famixModel.dispose();
