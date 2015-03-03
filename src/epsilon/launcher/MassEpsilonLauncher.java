@@ -210,6 +210,9 @@ public class MassEpsilonLauncher {
 			case "CFA2DECENT":
 				executeCFA2DECENT(location);
 				break;
+			case "CFA2DECENTSimple":
+				executeCFA2DECENTSimple(location);
+				break;
 			case "CFATEMPORALS2DECENT":
 				executeCFATEMPORALS2DECENT(location);
 				break;
@@ -396,6 +399,23 @@ public class MassEpsilonLauncher {
 		execute(module, location);
 		cfaModel.dispose();
 		//can be stored and retained alternatively
+		decentModel.dispose();
+		module.reset();
+	}
+
+	private void executeCFA2DECENTSimple(String location) throws Exception,
+			URISyntaxException, EolModelLoadingException, EolRuntimeException {
+		String source = "epsilon/transform/cfa2decent3simple.etl";
+		IEolExecutableModule module = loadModule(source);
+		IModel cfaModel = modelHandler.getCFAModel(location, true, false);
+		IModel decentModel = modelHandler.getDECENTModel(location, true, true);
+		// TODO: consider removing reliance on MG especially if it is only
+		// needed in one line
+		module.getContext().getModelRepository().addModel(cfaModel);
+		module.getContext().getModelRepository().addModel(decentModel);
+		execute(module, location);
+		cfaModel.dispose();
+		// can be stored and retained alternatively
 		decentModel.dispose();
 		module.reset();
 	}
@@ -710,6 +730,9 @@ public class MassEpsilonLauncher {
 				execute(module, location);
 				long executionEnd = System.currentTimeMillis();
 				long executionDuration=executionEnd-executionStart;
+				
+				//TODO: check why it takes about 60s between this 
+				//and the next print statement even if the next step is actually skipped 
 				
 				int bufferSize = factors.size();
 				int lastWindowSize = windowSize;
