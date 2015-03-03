@@ -153,8 +153,8 @@ public class DECENTEpsilonModelHandler {
 		unregisterMetaModels("");
 		DECENTResourceTool tool = new DECENTResourceTool(); 
 		Resource resource = tool.loadResourceFromBinary(location+"/model.decentbin","decentbin", DECENTPackage.eINSTANCE);
-		tool.storeResourceContents(resource.getContents(), location+"/model.decent", "decent");
 		restoreMetaModels();		
+		tool.storeResourceContents(resource.getContents(), location+"/model.decent", "decent");
 	}
 
 	public IModel getBinaryDECENTModel(String location, boolean readOnLoad, boolean storedOnDisposal) throws Exception {
