@@ -2,6 +2,7 @@ import "../libraries/cfa/common.eol";
 import "../libraries/decent/common.eol";
 import "../libraries/decent/logging.eol";
 
+	//NOTE: does not work with binary decent for some reason
 	//run before cfa2decent
   	"Running shared2cfa".log(1);
 
@@ -15,11 +16,11 @@ import "../libraries/decent/logging.eol";
 
 	var strategies = new Native("java.util.LinkedHashMap");
 	strategies.put(".Shared","Equal split");
-	strategies.put(".Shared.Code","Equal split (code type only)");
+	//strategies.put(".Shared.Code","Equal split (code type only)");
 	strategies.put(".Churn","Based on the amount of change");
-	strategies.put(".Churn.Code","Based on the amount of change (code type only)");
+	//strategies.put(".Churn.Code","Based on the amount of change (code type only)");
 	strategies.put(".Size","Based on the size of the artifacts");
-	strategies.put(".Size.Code","Based on the size of the artifacts (code type only)");
+	//strategies.put(".Size.Code","Based on the size of the artifacts (code type only)");
 	
 	var baseFactors = cfn.factors.select(f|strategies.keySet().forAll(s|not f.name.endsWith(s)));
 	//for (f in baseFactors) {
@@ -62,6 +63,7 @@ import "../libraries/decent/logging.eol";
     ("Duration: "+duration.toMinutes().round(5)).log(1);
 
 operation addFactors(strategy:String) {
+    ("Strategy: "+strategy).log(2);
 	if (strategy = ".Shared") {
 		addSharedFactors(strategy);
 	}
@@ -97,6 +99,8 @@ operation addSharedSizeTypeFactors(strategy : String, type : String) {
   		var splitCount = 0.asDouble();
   		if (s.getSizesSum()<>0) {
 	  		splitCount = s.globalState.getSizesSum(type)/s.getSizesSum(); 
+   		} else {
+	  		(s.file.file_name + " at " + s.ID + " had " + s.getSizesSum() + " size (missing size information?)").log(1);
   		}
   		//(s.file.file_name +" at "+ s.ID + " : " +s.globalState.getSizesSum(type) +"/"+s.getSizesSum() + " = " + splitCount + " => " + 1.asDouble()/splitCount).println();
   		s.addSharedFactors(splitCount, strategy, type);
@@ -120,6 +124,8 @@ operation addSharedSizeFactors(strategy : String) {
   		var splitCount = 0.asDouble();
   		if (s.getSizesSum()<>0) {
 	  		splitCount = s.globalState.getSizesSum()/s.getSizesSum(); 
+   		} else {
+	  		(s.file.file_name + " at " + s.ID + " had " + s.getSizesSum() + " size (missing size information?)").log(1);
   		}
   		//TODO: check rounding errors
   		s.addSharedFactors(splitCount, strategy);
@@ -140,7 +146,12 @@ operation addSharedChurnTypeFactors(strategy : String, type : String) {
 	}
 	for (s in CFA!ArtifactState.allInstances()) {
   		//inverse as it is divided by the global factor
-  		var splitCount = s.globalState.getPatchLinesSum(type)/s.getPatchLinesSum(); 
+  		var splitCount = 0.asDouble();
+  		if (s.getPatchLinesSum()<>0) {
+  			splitCount = s.globalState.getPatchLinesSum(type)/s.getPatchLinesSum(); 
+  		} else {
+	  		(s.file.file_name + " at " + s.ID + " had " + s.getPatchLinesSum() + " changed lines (missing patch information?)").log(1);
+  		}
   		s.addSharedFactors(splitCount, strategy, type);
 	}
 	for (s in CFA!LogicalState.allInstances) {
@@ -159,7 +170,14 @@ operation addSharedChurnFactors(strategy : String) {
 	}
 	for (s in CFA!ArtifactState.allInstances()) {
   		//inverse as it is divided by the global factor
-  		var splitCount = s.globalState.getPatchLinesSum()/s.getPatchLinesSum(); 
+  		var splitCount = 0.asDouble();
+  		if (s.getPatchLinesSum()<>0) {
+  			splitCount = s.globalState.getPatchLinesSum()/s.getPatchLinesSum(); 
+	  		//(s.file.file_name + " at " + s.ID + " : " + s.getPatchLinesSum() + " / "+s.globalState.getPatchLinesSum() + " = " + splitCount + "==>"+1.asDouble()/splitCount).log(1);
+  		} else {
+	  		(s.file.file_name + " at " + s.ID + " had " + s.getPatchLinesSum() + " changed lines (missing patch information?)").log(1);
+  		}
+  		
   		s.addSharedFactors(splitCount, strategy);
 	}
 	for (s in CFA!LogicalState.allInstances) {
@@ -199,22 +217,22 @@ operation CFA!LogicalState getSizesSum() : Real {
 
 @cached
 operation CFA!GlobalState getPatchLinesSum(type : String) : Real {
-	return self.revision.patchLines.select(x|x.file.file_type = type).collect(x|x.added + x.removed).sum();
+	return self.revision.patchLines.select(x|x.file.file_type = type).collect(x|x.added + x.removed).sum().asDouble();
 }
 
 @cached
 operation CFA!GlobalState getPatchLinesSum() : Real {
-	return self.revision.patchLines.collect(x|x.added + x.removed).sum();
+	return self.revision.patchLines.collect(x|x.added + x.removed).sum().asDouble();
 }
 
 @cached
 operation CFA!ArtifactState getPatchLinesSum() : Real {
-	return self.globalState.revision.patchLines.select(x|x.file = self.file).collect(x|x.added + x.removed).sum();
+	return self.globalState.revision.patchLines.select(x|x.file = self.file).collect(x|x.added + x.removed).sum().asDouble();
 }
 
 @cached
 operation CFA!LogicalState getTypePatchLinesSum() : Real {
-	return self.globalState.logicalStates.select(x|x.artifact.type = self.artifact.type).collect(x|x.getPatchLinesSum()).sum();
+	return self.globalState.logicalStates.select(x|x.artifact.type = self.artifact.type).collect(x|x.getPatchLinesSum()).sum().asDouble();
 }
 
 @cached
