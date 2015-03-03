@@ -4,6 +4,12 @@ import "../libraries/decent/common.eol";
 import "../libraries/decent/logging.eol";
 
 pre {
+	//TODO: thorough revision to move from global/local to single values, fixes and causes counts, etc.
+	//while fixes and causes may still be beneficial, global/local distinction no longer necessary as the 
+	//distribution shall take some care for it
+	//AT LEAST make optional not to flood the decent model with junk (566 attributes!!!)
+	//Produce datasets with only one or two factors and only one strategy in place 
+
   //Some initialization
   var step = "cfa2decent3"; 
   ("Running "+step).log(1);
