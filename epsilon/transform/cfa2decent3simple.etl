@@ -1,0 +1,233 @@
+//import "cfa-init.etl";
+import "../libraries/cfa/common.eol";
+import "../libraries/decent/common.eol";
+import "../libraries/decent/logging.eol";
+
+pre {
+	//TODO: thorough revision to move from global/local to single values, fixes and causes counts, etc.
+	//while fixes and causes may still be beneficial, global/local distinction no longer necessary as the 
+	//distribution shall take some care for it
+	//AT LEAST make optional not to flood the decent model with junk (566 attributes!!!)
+	//Produce datasets with only one or two factors and only one strategy in place 
+
+  //Some initialization
+  var step = "cfa2decent3simple"; 
+  ("Running "+step).log(1);
+  var start = Native("java.lang.System").currentTimeMillis();
+  
+  ("DECENT States: "+DECENT!State.allInstances().size()).log(2);
+  var Model = DECENT!DECENT::Model.allInstances().first();	
+
+
+  ("Initializing CFA definitions").log(2);
+  //This should only run once!!!
+  
+  var attributes = new Map;
+  
+  for (f in CFA!Factor.allInstances()) {
+  	//TODO: add dimension
+  	for (a in CFA!CFAAttribute.allInstances()) {
+  		//TODO: assign dimensions
+		attributes.put(f.name+"."+a.name,a.description+" ("+f.name+")");
+  	}
+  	attributes.put(f.name+".ClearedWeight","Cleared weight ("+f.name+")");
+  	attributes.put(f.name+".CarriedWeight","Carried weight ("+f.name+")");
+  }
+
+  //TODO: initialize attributes automagically?
+  attributes.put("CausesCount","Number of caused changes in future states");
+  attributes.put("FixesCount","Number of causing past states");
+
+  //TODO: these may need to be pre-calculated in mg2cfa
+  Model.addAttributes(attributes);
+  
+  var CFAWeightFactor = "WeightFactor".getCFAAttribute();
+  var CFAAverageWeight = "AverageWeight".getCFAAttribute();
+  var CFATotalWeight = "TotalWeight".getCFAAttribute();
+  var FilePathAttribute = "FilePath".getAttribute();
+  
+  
+  var CausesCountAttribute = "CausesCount".getAttribute();
+  var FixesCountAttribute = "FixesCount".getAttribute();
+
+  //TODO: need to accumulate a value? i.e. keep a balance of sorts? bug cause adds, bug fix removes
+  // - or do we focus only on the states that introduce a bug and the activities that lead to them??
+  //   in which case it would make sense to report the target state instead of the source state
+  //   which would also prompt the use of a balance for all the weights in order to have a meaningful
+  //   delta, or alternatively these could become activity values, although the intuition behind that 
+  //   may be unclear 
+  //DONE: also investigate the reasons behind those off-the-charts values in the preliminary report
+  // -> asumed to be number conversion issues with numbers
+  // -> TODO: add normalizationn
+  //DONE: need to investigate the failed assignments too, see the log for details
+  // -> still an issue after improved assignments?
+  //TODO: add ratios, e.g. averageBugWeight/averageWeight, also for totals, define interpretation
+  //TODO: add lifespans
+
+  //var profiler : new Native("org.eclipse.epsilon.eol.tools.ProfilerTool");
+  transformArtifactStates();
+  transformLogicalStates();
+  transformAgentStates();
+  addCarriedWeights();
+  ("...done!").log(2);
+}
+
+post {
+    var end = Native("java.lang.System").currentTimeMillis();
+    var duration = end - start;
+  	Model.content.add(step);
+  	Model.addStep(step,duration.toMinutes().round(5));
+    ("Duration: "+duration.toMinutes().round(5)).log(1);
+    //TODO: use this check to enable BZ based processing
+}
+
+operation dumpAgentStates() {
+  var separator = "\t";
+  var h = false;
+  
+  for (s in DECENT!AgentState.allInstances()) {
+  	var o = ""+s.ID+separator;
+  	var header = ""+"State"+separator;
+	if (not h) {
+	  	for (v in s.values) {
+	  		header = header + v.ofAttribute.name + separator;
+		}
+		header.println();
+		h = true;
+	}
+  	for (v in s.values) {
+  		
+  		o = o + v.content + separator;
+  	}
+  	o.replaceAll("\\.",",").println();
+  }
+}
+
+operation transformArtifactStates() {
+  ("...transforming artifact states...").log(2);
+  for (g in CFA!GlobalState.allInstances()) {
+  	var states = g.ID.getMGStatesForID();
+	for (s in g.artifactStates) {
+		
+		("  " + s.file.file_name + " @ "+s.ID).log(3);
+	  	var fileName = s.file.file_name;
+	  	var filePath = s.action.current_file_path;
+	  	var matchedStates = states.getMatchingStateForPath(filePath);
+	   	var size = matchedStates.size();
+		//check if correct matches can be found 
+	  	if (size <> 1) {
+	  		("  "+size+" DECENT matches found for: "+fileName+" at "+s.ID).log(4);
+	  		("    Avaliable states at "+s.ID+" are:").log(4);
+	  		//for (x in DECENT!State.allInstances().select(x|x.artifact.isMGType() and x.ID = s.ID)) {
+	  			//("      "+x.artifact.name+" at "+x.ID+" ("+x.getValue(FilePathAttribute).content+")").log(4);
+	  		//}
+	  	} else {
+	  		var state = matchedStates.first();
+	  		
+			//TODO: add proper backout  		
+	  		for (f in s.factors.keySet()) {
+			  	var factorValues = s.factors.get(f);
+			  	for (a in factorValues.keySet()) {
+		  			var LocalAttribute = (f.name+"."+a.name).getAttribute();
+		  			//state.values.removeAll(state.values.select(v|v.ofAttribute.name = LocalAttribute));
+		  			//state.values.removeAll(state.values.select(v|v.ofAttribute.name = GlobalAttribute));
+		  			state.addValue(LocalAttribute,factorValues.get(a));
+			  	}
+			  	
+	  	  		var clearedBugWeight = 0.asDouble();
+		  		if (s.fixes.size()>0) {
+		  			//TODO: what's the sense behind the multiplication below???
+		  			clearedBugWeight = factorValues.get(CFAWeightFactor) * (s.fixes.size().asDouble()/s.fixes.size().asDouble());
+		  		}
+		  		var ClearedWeightAttribute = (f.name+".ClearedWeight").getAttribute();
+		   		state.addValue(ClearedWeightAttribute, clearedBugWeight);
+			}
+	  		
+	  		state.addValue(CausesCountAttribute, s.causes.size().asDouble());
+	  		state.addValue(FixesCountAttribute, s.fixes.size().asDouble());
+	  	}
+  	}
+  }
+  
+}
+
+operation transformLogicalStates() {
+  ("...transforming logical states...").log(2);
+  for (g in CFA!GlobalState.allInstances()) {
+	for (s in g.logicalStates) {
+		//TODO: add proper backout  		
+  		for (f in s.factors.keySet()) {
+		  	var factorValues = s.factors.get(f);
+		  	for (a in factorValues.keySet()) {
+	  			var LocalAttribute = (f.name+"."+a.name).getAttribute();
+	  			//state.values.removeAll(state.values.select(v|v.ofAttribute.name = LocalAttribute));
+	  			//state.values.removeAll(state.values.select(v|v.ofAttribute.name = GlobalAttribute));
+	  			s.state.addValue(LocalAttribute,factorValues.get(a));
+		  	}
+		  	
+  	  		var clearedBugWeight = 0.asDouble();
+	  		if (s.fixes.size()>0) {
+	  			//TODO: what's the sense behind the multiplication below???
+	  			clearedBugWeight = factorValues.get(CFAWeightFactor) * (s.fixes.size().asDouble()/s.fixes.size().asDouble());
+	  		}
+	  		var ClearedWeightAttribute = (f.name+".ClearedWeight").getAttribute();
+	   		s.state.addValue(ClearedWeightAttribute, clearedBugWeight);
+
+		}
+	  		
+  		s.state.addValue(CausesCountAttribute, s.causes.size().asDouble());
+  		s.state.addValue(FixesCountAttribute, s.fixes.size().asDouble());
+
+  	}
+  }
+  
+}
+
+
+operation addCarriedWeights() {
+  ("...adding carried weights...").log(2);
+
+  	for (f in CFA!Factor.allInstances()) {
+		var CarriedWeightAttribute = (f.name+".CarriedWeight").getAttribute();
+		var TotalWeightAttribute = (f.name+".TotalWeight").getAttribute();
+	  	var ClearedWeightAttribute = (f.name+".ClearedWeight").getAttribute();
+
+
+		//TODO: check for negatives
+	    for (a in DECENT!Artifact.allInstances().select(x|x.isMGType())) {
+		  	var lastWeight = 0.asDouble();
+	  		for (s in a.states) {
+	  			var totalWeight = s.getValue(TotalWeightAttribute).content;
+		  		lastWeight = lastWeight + totalWeight;
+	  			var clearedWeight = s.getValue(ClearedWeightAttribute).content;
+		  		lastWeight = lastWeight - clearedWeight;
+	  			s.addValue(CarriedWeightAttribute, lastWeight);
+	  			//TODO: add globals as well?
+	  		}
+	  	}
+	  	
+	}
+}
+
+
+//TODO: largely copied from trasnformArtifactStates
+operation transformAgentStates() {
+  ("...adding agent state values...").log(2);
+  
+  for (s in CFA!GlobalState.allInstances()) {
+	("  " + " @ "+s.ID).log(3);
+  	var authorName = s.revision.author.name;
+  	var matchedStates = DECENT!AgentState.allInstances().select(m|m.ID = s.ID);
+  	var size = matchedStates.size();
+	//check if correct matches can be found 
+  	if (size <> 1) {
+  		("  "+size+" DECENT matches found for: "+authorName+" at "+s.ID).log(1);
+  	} else {
+  		var state = matchedStates.first();
+  		//TODO: add appropriate backout  		
+  		state.addValue(CausesCountAttribute, s.causes.size().asDouble());
+  		state.addValue(FixesCountAttribute, s.fixes.size().asDouble());
+	}
+  }
+}
+
