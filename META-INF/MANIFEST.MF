@@ -23,5 +23,6 @@ Require-Bundle: org.eclipse.core.runtime,
  emf.resource.tools,
  DECENT,
  MG,
- DECENT.Utils
+ DECENT.Utils,
+ ARFFx
 Bundle-ActivationPolicy: lazy
