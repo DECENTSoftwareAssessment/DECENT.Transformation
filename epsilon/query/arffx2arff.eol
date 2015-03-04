@@ -9,16 +9,40 @@ var start = Native("java.lang.System").currentTimeMillis();
 var s = ",";
 var targetAttributes = new Map;
 //TODO: export options
-targetAttributes.put("Artifact.Target.BugFix.AverageWeight.Local",0.1);
-targetAttributes.put("Artifact.Target.Refactoring.AverageWeight.Local",0.1);
-targetAttributes.put("Artifact.Target.Fix.AverageWeight.Local",0.1);
-targetAttributes.put("Artifact.Target.IssueCount.AverageWeight.Local",0.1);
-targetAttributes.put("Artifact.Target.IssueReference.AverageWeight.Local",0.1);
-targetAttributes.put("Artifact.Target.UsersPerIssue.AverageWeight.Local",0.1);
-targetAttributes.put("Artifact.Target.CommentsPerIssue.AverageWeight.Local",0.1);
+//targetAttributes.put("Artifact.Target.BugFix.AverageWeight.Local",0.1);
+//targetAttributes.put("Artifact.Target.Refactoring.AverageWeight.Local",0.1);
+//targetAttributes.put("Artifact.Target.Fix.AverageWeight.Local",0.1);
+//targetAttributes.put("Artifact.Target.IssueCount.AverageWeight.Local",0.1);
+//targetAttributes.put("Artifact.Target.IssueReference.AverageWeight.Local",0.1);
+//targetAttributes.put("Artifact.Target.UsersPerIssue.AverageWeight.Local",0.1);
+//targetAttributes.put("Artifact.Target.CommentsPerIssue.AverageWeight.Local",0.1);
 
+targetAttributes.put("Artifact.Target.BugFix.AverageWeight",0.1);
+targetAttributes.put("Artifact.Target.Refactoring.AverageWeight",0.1);
+targetAttributes.put("Artifact.Target.Fix.AverageWeight",0.1);
+targetAttributes.put("Artifact.Target.IssueCount.AverageWeight",0.1);
+targetAttributes.put("Artifact.Target.IssueReference.AverageWeight",0.1);
+targetAttributes.put("Artifact.Target.UsersPerIssue.AverageWeight",0.1);
+targetAttributes.put("Artifact.Target.CommentsPerIssue.AverageWeight",0.1);
 
-var modelFile = new Native("java.io.File") (ARFFx.getModelFile());
+targetAttributes.put("Artifact.Target.BugFix.Shared.AverageWeight",0.1);
+targetAttributes.put("Artifact.Target.Refactoring.Shared.AverageWeight",0.1);
+targetAttributes.put("Artifact.Target.Fix.Shared.AverageWeight",0.1);
+targetAttributes.put("Artifact.Target.IssueReference.Shared.AverageWeight",0.1);
+
+targetAttributes.put("Artifact.Target.BugFix.Churn.AverageWeight",0.1);
+targetAttributes.put("Artifact.Target.Refactoring.Churn.AverageWeight",0.1);
+targetAttributes.put("Artifact.Target.Fix.Churn.AverageWeight",0.1);
+targetAttributes.put("Artifact.Target.IssueReference.Churn.AverageWeight",0.1);
+
+targetAttributes.put("Artifact.Target.BugFix.Size.AverageWeight",0.1);
+targetAttributes.put("Artifact.Target.Refactoring.Size.AverageWeight",0.1);
+targetAttributes.put("Artifact.Target.Fix.Size.AverageWeight",0.1);
+targetAttributes.put("Artifact.Target.IssueReference.Size.AverageWeight",0.1);
+
+//does not work with binary resources
+//var modelFile = new Native("java.io.File") (ARFFx.getModelFile());
+var modelFile = new Native("java.io.File") (ARFFx.getModelImpl().getURI().toString().replaceAll("^file:",""));
 
 //var CONFIDENCE = "CONFIDENCE".getARFFAttribute();
 //var LABEL = "LABEL".getARFFAttribute();
@@ -282,7 +306,7 @@ operation ARFFx!Instance assignClassAndConfidence(baseAttribute : String, thresh
 		label = "true";
 	}
 	//TODO: also export as parameters
-	if (base.asDouble() < 1.1*threshold and base.asDouble() > 0.9*threshold) {
+	if (base.asDouble() < 1.01*threshold and base.asDouble() > 0.09*threshold) {
 		confidence = "low";
 	}
 	self.updateValue(confidence, confidenceAttribute);
