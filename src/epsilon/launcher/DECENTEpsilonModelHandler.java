@@ -14,13 +14,16 @@ import org.eclipse.epsilon.eol.exceptions.models.EolModelLoadingException;
 import org.eclipse.epsilon.eol.models.CachedModel;
 import org.eclipse.epsilon.eol.models.IModel;
 
+import resource.tools.ARFFxResourceTool;
 import resource.tools.DECENTResourceTool;
 import resource.tools.MGResourceTool;
+import ARFFx.ARFFxPackage;
 import DECENT.DECENTPackage;
 import MG.MGPackage;
 
 public class DECENTEpsilonModelHandler {
 	private HashMap<String, Object> metaModelCache = new HashMap<>();
+	private boolean useARFFxBinary = false;
 	private boolean useDECENTBinary = false;
 	private boolean useDECENTDB = false;
 	private boolean useMGBinary = false;
@@ -127,9 +130,36 @@ public class DECENTEpsilonModelHandler {
 	
 	public IModel getARFFxModel(String location, boolean read, boolean write) throws Exception {
 		String resourceLocation = location+"/model.arffx";
-		IModel model = createEmfModel("ARFFx", resourceLocation, "../DECENT.Meta/model/ARFFx.ecore", read, write);
-		//In memory example -> can be used to work with DB? or even EMF-Fragments
-		//new InMemoryEmfModel("DECENT", resource, "../DECENT.Meta/model/DECENTv3.ecore")
+		EmfModel model;
+		
+		if (isUseARFFxBinary()) {
+			unregisterMetaModels("");
+			if (!read) {
+				new File(location+"/model.arffx").delete();
+				new File(location+"/model.arffxbin").delete();
+			}
+			ARFFxResourceTool tool = new ARFFxResourceTool();
+			if (new File(location+"/model.arffx").exists() && !new File(location+"/model.arffx"+"bin").exists()) {
+				Resource resource = tool.loadResourceFromXMI(location+"/model.arffx","arffx", ARFFxPackage.eINSTANCE);
+				tool.storeBinaryResourceContents(resource.getContents(), location+"/model.arffx"+"bin", "arffxbin");
+			}
+			
+			Resource resourceBin = tool.loadResourceFromBinary(resourceLocation+"bin","arffxbin", ARFFxPackage.eINSTANCE);
+			//alternative pattern
+//			model = createInMemoryEmfModel("DECENT", resourceLocation, "../DECENT.Meta/model/DECENTv3.ecore", read, write, resourceBin, DECENTPackage.eINSTANCE);
+//			restoreMetaModels();
+
+			//NOTE: Adding the package is essential as otherwise epsilon breaks
+			model = new InMemoryEmfModel("ARFFx", resourceBin, ARFFxPackage.eINSTANCE);
+//			model.getModelImpl().getURI().toFileString()
+			model.setStoredOnDisposal(write);
+			model.setReadOnLoad(read);
+			model.setCachingEnabled(true);
+			restoreMetaModels();		
+		} else {
+			model = createEmfModel("ARFFx", resourceLocation, "../DECENT.Meta/model/ARFFx.ecore", read, write);
+		}
+		
 		return model;
 	}
 	
@@ -211,6 +241,24 @@ public class DECENTEpsilonModelHandler {
 		tool.storeResourceContents(resource.getContents(), location+"/model.decent", "decent");
 	}
 
+
+	public void convertARFFxModelToBinary(String location) {
+		unregisterMetaModels("");
+		ARFFxResourceTool tool = new ARFFxResourceTool();
+		Resource resource = tool.loadResourceFromXMI(location+"/model.arffx","arffx", ARFFxPackage.eINSTANCE);
+		tool.storeBinaryResourceContents(resource.getContents(), location+"/model.arffx"+"bin", "arffxbin");
+		restoreMetaModels();		
+	}
+
+	public void convertARFFxModelToXMI(String location) {
+		unregisterMetaModels("");
+		ARFFxResourceTool tool = new ARFFxResourceTool(); 
+		Resource resource = tool.loadResourceFromBinary(location+"/model.arffxbin","arffxbin", DECENTPackage.eINSTANCE);
+		restoreMetaModels();		
+		tool.storeResourceContents(resource.getContents(), location+"/model.arffx", "arffx");
+	}
+
+	
 	public IModel getBinaryDECENTModel(String location, boolean readOnLoad, boolean storedOnDisposal) throws Exception {
 		String resourceLocation = location+"/model.decent";
 		unregisterMetaModels("decent");
@@ -334,6 +382,14 @@ public class DECENTEpsilonModelHandler {
 
 	public void setUseDECENTDB(boolean useDECENTDB) {
 		this.useDECENTDB = useDECENTDB;
+	}
+
+	public boolean isUseARFFxBinary() {
+		return useARFFxBinary;
+	}
+
+	public void setUseARFFxBinary(boolean useARFFxBinary) {
+		this.useARFFxBinary = useARFFxBinary;
 	}
 
 }

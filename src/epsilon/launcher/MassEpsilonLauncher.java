@@ -154,6 +154,7 @@ public class MassEpsilonLauncher {
 		String propertiesFilename = arguments[0];
 		properties.load(new FileInputStream(propertiesFilename));
 		modelHandler.setUseDECENTBinary(Boolean.parseBoolean(properties.getProperty("useDECENTBinary","false")));
+		modelHandler.setUseARFFxBinary(Boolean.parseBoolean(properties.getProperty("useARFFxBinary","false")));
 		modelHandler.setUseDECENTDB(Boolean.parseBoolean(properties.getProperty("useDECENTDB","false")));
 		modelHandler.setUseMGBinary(Boolean.parseBoolean(properties.getProperty("useMGBinary","false")));
 		if (arguments.length > 1) {
@@ -274,6 +275,14 @@ public class MassEpsilonLauncher {
 				//duplicates RT functionality
 				executeDECENT2BIN(location);
 				break;
+			case "BIN2ARFFx":
+				//duplicates RT functionality
+				executeBIN2ARFFx(location);
+				break;
+			case "ARFFx2BIN":
+				//duplicates RT functionality
+				executeARFFx2BIN(location);
+				break;
 			case "DECENT2DB":
 				//duplicates RT functionality
 				executeDECENT2DB(location);
@@ -315,6 +324,19 @@ public class MassEpsilonLauncher {
 		}
 	}
 
+	public void executeBIN2ARFFx(String location) {
+		if (new File(location+"/model.arffx"+"bin").exists()) {
+			modelHandler.convertARFFxModelToXMI(location);
+		}
+	}
+
+	public void executeARFFx2BIN(String location) {
+		if (new File(location+"/model.arffx").exists()) {
+			modelHandler.convertARFFxModelToBinary(location);
+		}
+	}
+
+	
 	public void executeDECENT2DB(String location) {
 		if (new File(location+"/model.decent").exists()) {
 			modelHandler.convertDECENTModelToDB(location);
