@@ -22,6 +22,7 @@ import MG.MGPackage;
 public class DECENTEpsilonModelHandler {
 	private HashMap<String, Object> metaModelCache = new HashMap<>();
 	private boolean useDECENTBinary = false;
+	private boolean useDECENTDB = false;
 	private boolean useMGBinary = false;
 
 	public IModel getDECENTModel(String location, boolean read, boolean write) throws Exception {
@@ -51,6 +52,45 @@ public class DECENTEpsilonModelHandler {
 			model.setReadOnLoad(read);
 			model.setCachingEnabled(true);
 			restoreMetaModels();		
+		} else if (isUseDECENTDB()) {
+			unregisterMetaModels("");
+			if (!read) {
+				new File(location+"/model.decent").delete();
+			}
+			
+			DECENTResourceTool tool = new DECENTResourceTool();
+			//TODO: export settings
+			String db = "decent_test";
+			tool.setDbServer("localhost");
+			tool.setDbPort("7317");
+			tool.setDbUser("cvsanaly");
+			tool.setDbPass("vcsanaly");
+
+			if (!tool.isInitializedDB(db, new EPackage[] { DECENTPackage.eINSTANCE })) {
+				System.out.println("here?");
+				tool.initializeDB(db);
+				if (new File(location+"/model.decent").exists()) {
+					Resource resource = tool.loadResourceFromXMI(location+"/model.decent","decent", DECENTPackage.eINSTANCE);
+					tool.storeResourceInDB(resource.getContents(), db);
+				} else {
+					//TODO: if it is not initialised not converted it can be a problem
+				}
+			}
+			//TODO: doesn't seem to work!
+			Resource resourceBin = tool.loadResourceFromDB(db);
+			restoreMetaModels();		
+			//tool.storeResourceContents(resourceBin.getContents(), location+"/model-from-db.decent", "decent");
+
+			//alternative pattern
+//			model = createInMemoryEmfModel("DECENT", resourceLocation, "../DECENT.Meta/model/DECENTv3.ecore", read, write, resourceBin, DECENTPackage.eINSTANCE);
+//			restoreMetaModels();
+
+			//NOTE: Adding the package is essential as otherwise epsilon breaks
+			model = new InMemoryEmfModel("DECENT", resourceBin, DECENTPackage.eINSTANCE);
+			model.setStoredOnDisposal(write);
+			model.setReadOnLoad(read);
+			model.setCachingEnabled(true);
+			
 		} else {
 			model = createEmfModel("DECENT", resourceLocation, "../DECENT.Meta/model/DECENTv3.ecore", read, write);
 		}
@@ -146,6 +186,20 @@ public class DECENTEpsilonModelHandler {
 		DECENTResourceTool tool = new DECENTResourceTool();
 		Resource resource = tool.loadResourceFromXMI(location+"/model.decent","decent", DECENTPackage.eINSTANCE);
 		tool.storeBinaryResourceContents(resource.getContents(), location+"/model.decent"+"bin", "decentbin");
+		restoreMetaModels();		
+	}
+
+	public void convertDECENTModelToDB(String location) {
+		unregisterMetaModels("");
+		DECENTResourceTool tool = new DECENTResourceTool();
+		String db = "decent_test";
+		tool.setDbServer("localhost");
+		tool.setDbPort("7317");
+		tool.setDbUser("cvsanaly");
+		tool.setDbPass("vcsanaly");
+		tool.initializeDB(db);
+		Resource resource = tool.loadResourceFromXMI(location+"/model.decent","decent", DECENTPackage.eINSTANCE);
+		tool.storeResourceInDB(resource.getContents(), db );
 		restoreMetaModels();		
 	}
 
@@ -272,6 +326,14 @@ public class DECENTEpsilonModelHandler {
 
 	public void setUseMGBinary(boolean useMGBinary) {
 		this.useMGBinary = useMGBinary;
+	}
+
+	public boolean isUseDECENTDB() {
+		return useDECENTDB;
+	}
+
+	public void setUseDECENTDB(boolean useDECENTDB) {
+		this.useDECENTDB = useDECENTDB;
 	}
 
 }
