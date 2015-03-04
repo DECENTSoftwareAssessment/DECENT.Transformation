@@ -153,8 +153,9 @@ public class MassEpsilonLauncher {
 		System.out.println("INIT: Loading settings...");
 		String propertiesFilename = arguments[0];
 		properties.load(new FileInputStream(propertiesFilename));
-		modelHandler.setUseDECENTBinary(Boolean.parseBoolean(properties.getProperty("useDECENTBinary")));
-		modelHandler.setUseMGBinary(Boolean.parseBoolean(properties.getProperty("useMGBinary")));
+		modelHandler.setUseDECENTBinary(Boolean.parseBoolean(properties.getProperty("useDECENTBinary","false")));
+		modelHandler.setUseDECENTDB(Boolean.parseBoolean(properties.getProperty("useDECENTDB","false")));
+		modelHandler.setUseMGBinary(Boolean.parseBoolean(properties.getProperty("useMGBinary","false")));
 		if (arguments.length > 1) {
 			properties.setProperty("steps", arguments[1]);
 		}
@@ -273,6 +274,10 @@ public class MassEpsilonLauncher {
 				//duplicates RT functionality
 				executeDECENT2BIN(location);
 				break;
+			case "DECENT2DB":
+				//duplicates RT functionality
+				executeDECENT2DB(location);
+				break;
 			default:
 				System.out.println("ERROR: Unknown step "+step);
 				break;
@@ -307,6 +312,12 @@ public class MassEpsilonLauncher {
 	public void executeDECENT2BIN(String location) {
 		if (new File(location+"/model.decent").exists()) {
 			modelHandler.convertDECENTModelToBinary(location);
+		}
+	}
+
+	public void executeDECENT2DB(String location) {
+		if (new File(location+"/model.decent").exists()) {
+			modelHandler.convertDECENTModelToDB(location);
 		}
 	}
 
