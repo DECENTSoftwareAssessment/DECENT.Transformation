@@ -81,27 +81,6 @@ post {
     //TODO: use this check to enable BZ based processing
 }
 
-operation dumpAgentStates() {
-  var separator = "\t";
-  var h = false;
-  
-  for (s in DECENT!AgentState.allInstances()) {
-  	var o = ""+s.ID+separator;
-  	var header = ""+"State"+separator;
-	if (not h) {
-	  	for (v in s.values) {
-	  		header = header + v.ofAttribute.name + separator;
-		}
-		header.println();
-		h = true;
-	}
-  	for (v in s.values) {
-  		
-  		o = o + v.content + separator;
-  	}
-  	o.replaceAll("\\.",",").println();
-  }
-}
 
 operation transformArtifactStates() {
   ("...transforming artifact states...").log(2);
