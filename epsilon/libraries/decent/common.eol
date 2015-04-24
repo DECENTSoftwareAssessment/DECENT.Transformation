@@ -382,3 +382,8 @@ operation Collection getVariance() : Real {
     var variance = (sum2 - (sum3*sum3)/n)/(n - 1);
     return variance;
 }
+
+@cached
+operation Collection getFractalValue() : Real {
+	return 1 - self.collect(c|(c.asDouble()/self.sum()).pow(2)).sum().round(3);
+}
