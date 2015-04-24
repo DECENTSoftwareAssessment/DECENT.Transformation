@@ -59,9 +59,12 @@ operation Any assignAgentStatesToActivities() {
   for (a in DECENT!Agent.allInstances()) {
   	("  Agent: "+a.name).log(3);
   	for (s in a.states) {
-  		if (s.previous.isDefined()) {
-	  		s.previous.activities.addAll(a.activities.select(ax|ax.targetState.ID = s.ID));
-  		}
+  	
+  		//NEW approach - update description if needed
+		s.activities.addAll(a.activities.select(ax|ax.targetState.ID = s.ID));  		
+		//if (s.previous.isDefined()) {
+	  		//s.previous.activities.addAll(a.activities.select(ax|ax.targetState.ID = s.ID));
+  		//}
   	}
   }
 }
