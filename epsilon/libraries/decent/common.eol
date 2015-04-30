@@ -1,5 +1,7 @@
 operation Any addValue(attribute : DECENT!Attribute, content : Any, value : DECENT!Value) : DECENT!Value {
     value.name = attribute.name;
+    //note potential casting issues when changing the value type for an existing value 
+    //-> will need to rerun or clean up
     value.content = content;
     self.values.add(value);
     //if the is to be kept this should be moved too
