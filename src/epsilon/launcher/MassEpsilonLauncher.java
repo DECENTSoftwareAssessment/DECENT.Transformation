@@ -233,6 +233,9 @@ public class MassEpsilonLauncher {
 			case "DELTA2DECENT":
 				executeDELTA2DECENT(location);
 				break;
+			case "COLLABORATION2DECENT":
+				executeCOLLABORATION2DECENT(location);
+				break;
 			case "BZ2TRACE":
 				executeBZ2TRACE(location);
 				break;
@@ -596,6 +599,11 @@ public class MassEpsilonLauncher {
 	private void executeDELTA2DECENT(String location) throws Exception, URISyntaxException,
 			EolModelLoadingException, EolRuntimeException {
 		String source = "epsilon/transform/delta2decent3.eol";
+		executeDECENTinPalace(location, source, true, true);
+	}
+	private void executeCOLLABORATION2DECENT(String location) throws Exception, URISyntaxException,
+			EolModelLoadingException, EolRuntimeException {
+		String source = "epsilon/transform/collaboration2decent3.eol";
 		executeDECENTinPalace(location, source, true, true);
 	}
 
