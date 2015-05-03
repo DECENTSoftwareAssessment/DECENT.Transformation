@@ -68,7 +68,7 @@ operation processAgents() {
 	var allArtifacts = DECENT!Artifact.allInstances().select(x|not x.name.matches(nestedAnonymousClassFilter)).sortBy(x|x.name);
 	var agents = DECENT!Agent.allInstances();
 	for (a in agents.sortBy(x|x.name)) {
-		("Processing [agent] "+a.name).println();
+		("Processing [agent] "+a.name).log(2);
 		for (type in types) {
 			var ACT = ("ArtifactCount."+type).getAttribute();
 			var ART = ("ArtifactRatio."+type).getAttribute();
@@ -88,7 +88,7 @@ operation processAgents() {
 					and x.targetState.artifact.type.name == type
 					);
 				if (activities.size() > 0) {
-					("  ["+type+"] @ "+s.ID).println();
+					("  ["+type+"] @ "+s.ID).log(4);
 					for (ax in activities) {
 						var artifact = ax.targetState.artifact;
 						var last = null;
@@ -109,7 +109,7 @@ operation processAgents() {
 								collaborators.get(agent).put("count",collaborations+1);
 							}
 							last = sx;
-							("    " + sx.artifact.name + " @ "+ sx.ID + " -> " + sx.previous.first().ID + " : "+ sx.getValue(StateOwnershipRatioDistributionAttribute).content).println();
+							//("    " + sx.artifact.name + " @ "+ sx.ID + " -> " + sx.previous.first().ID + " : "+ sx.getValue(StateOwnershipRatioDistributionAttribute).content).log(4);
 							stateOwnershipRatios.add(sx.getValue(StateOwnershipRatioDistributionAttribute).content);
 						}
 						if (last.isDefined()) {
@@ -155,7 +155,7 @@ operation processArtifacts() {
 	var artifacts = DECENT!Artifact.allInstances().select(x|not x.name.matches(nestedAnonymousClassFilter)).sortBy(x|x.name);
 	
 	for (a in artifacts) {
-		("Processing ["+a.type.name+"] "+a.name).println();
+		("Processing ["+a.type.name+"] "+a.name).log(2);
 		var collaborators = new Native("java.util.LinkedHashMap");
 		var states = a.states.select(x|x.isHit()).sortBy(x|x.ID);
 		for (s in states) {
@@ -167,7 +167,7 @@ operation processArtifacts() {
 			if (p.isDefined()){
 				var agent = s.fromActivity.first().agentState.agent;
 				var previousAgent = p.fromActivity.first().agentState.agent;
-				("  ["+a.type.name+":"+a.name+"] @ "+p.ID +" -> "+s.ID).println();	
+				("  ["+a.type.name+":"+a.name+"] @ "+p.ID +" -> "+s.ID).log(3);	
 				//("    "+p.fromActivity.first().agentState.agent.name +" -> "+agent.name).println();
 	
 				if (not collaborators.containsKey(agent)) {
@@ -211,7 +211,7 @@ operation processArtifacts() {
 				s.addValue(CollaborationsLastAuthorRatioAttribute, collaborationsWithLastAuthorRatio);
 	
 			} else {
-				("  No previous state for ["+a.type.name+":"+a.name+"] @ "+s.ID).println();
+				("  No previous state for ["+a.type.name+":"+a.name+"] @ "+s.ID).log(1);
 				s.addValue(SameAuthorAttribute, "false");	
 				s.addValue(CollaboratorCountAttribute, 0.asDouble());
 				s.addValue(AuthorExperienceAttribute, 0.asDouble());
