@@ -211,7 +211,7 @@ operation processArtifacts() {
 				s.addValue(CollaborationsLastAuthorRatioAttribute, collaborationsWithLastAuthorRatio);
 	
 			} else {
-				("  No previous state for ["+a.type.name+":"+a.name+"] @ "+s.ID).log(1);
+				("  No previous state for ["+a.type.name+":"+a.name+"] @ "+s.ID).log(2);
 				s.addValue(SameAuthorAttribute, "false");	
 				s.addValue(CollaboratorCountAttribute, 0.asDouble());
 				s.addValue(AuthorExperienceAttribute, 0.asDouble());
