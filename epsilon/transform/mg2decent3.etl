@@ -56,9 +56,11 @@ pre mgInitPre {
   var artifactCount = MG!File.allInstances().size();
   var processedCount = 0;
   
+  var defaultBranch = Native("java.lang.System").getProperty("epsilon.transformation.defaultBranch"); 
   //TODO: handle all branches
   var filterBranches = new Set(); 
   filterBranches.add("master");
+  filterBranches.add(defaultBranch);
 }
 
 post mgInitPost{

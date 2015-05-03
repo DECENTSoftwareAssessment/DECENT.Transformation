@@ -192,6 +192,7 @@ public class MassEpsilonLauncher {
 				executeMG2NORMALIZEDHUNKS(location);
 				break;
 			case "MG2DECENT":
+				System.setProperty("epsilon.transformation.defaultBranch", properties.getProperty("defaultBranch", "master"));
 				executeMG2DECENT(location);
 				break;
 			case "MG2CFA":

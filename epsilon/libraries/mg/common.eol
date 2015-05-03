@@ -25,7 +25,7 @@ operation MG!Revision getBranch() : MG!Branch {
 	if (self.actions.size() = 0) {
 		//TODO: DAG can help here
 		("  No actions for " +self.commit_id + " / " + self.rev + " ! Branch cannot be determined, defaulting to master!").log(1);
-		return MG!Branch.all().select(b|b.name="master").first();
+		return MG!Branch.all().select(b|b.name=defaultBranch).first();
 	}
 	return self.actions.first().branch;
 }
