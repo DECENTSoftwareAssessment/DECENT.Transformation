@@ -4,7 +4,13 @@ import "../libraries/decent/logging.eol";
 
 pre {
   //Some initialization
-  var revisionId = FAMIX!AnchoredElement.allInstances().first().revisionId;
+  var revisionId = -1; 
+  if (FAMIX!AnchoredElement.allInstances().first().isDefined()) {
+  	revisionId = FAMIX!AnchoredElement.allInstances().first().revisionId;
+  } else {
+	var modelFile = new Native("java.io.File") (FAMIX.getModelImpl().getURI().toString().replaceAll("^file:",""));
+  	revisionId = modelFile.getAbsolutePath().replaceAll(".+famix\\/","").replaceAll("\\/.+","");
+  }
   
   var step = "famix2decent3 @ "+revisionId; 
   ("Running "+step).log(1);
