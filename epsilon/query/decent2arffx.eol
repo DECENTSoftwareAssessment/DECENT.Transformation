@@ -63,6 +63,7 @@ operation String printlno() {
 	self.println();
 }	
 
+//deprecated
 operation transferValuesToChildren() {
 	//add filters or similar
 	//add different strategies
@@ -145,7 +146,7 @@ operation DECENT!State processTargetState (arffx : ARFFx!Model) {
     	//TODO: these are notably missing in several places!
     	if (ax.agentState.isDefined()) {
 	    	for (v in ax.agentState.values.select(x|x.isTypeOf(DECENT!DoubleValue) or x.isTypeOf(DECENT!IntegerValue))) {
-				//i.addValue(v.content.asString(), "Agent."+v.name);
+				i.addValue(v.content.asString(), "Agent."+v.name);
 	    	}
     	}
 
