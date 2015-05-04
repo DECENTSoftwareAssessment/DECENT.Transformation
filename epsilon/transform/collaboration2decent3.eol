@@ -137,7 +137,7 @@ operation processAgents() {
 				} else {
 					//defaults in case no activity was performed in the state on a certain type of artifact
 					//TODO: check if reasonable - may create some noise
-					//s.addValue(ACT,0.asDouble());
+					s.addValue(ACT,0.asDouble());
 					s.addValue(ART,0.asDouble());
 					s.addValue(CCT,0.asDouble());
 					s.addValue(CLACT,0.asDouble());
