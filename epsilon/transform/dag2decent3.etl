@@ -3,28 +3,38 @@ import "../libraries/decent/logging.eol";
 
 pre dagInitPre {
 
-  //Some initialization
-  //More generic (might be simplified)
-  var step = "dag2decent3"; 
-  ("Running "+step).log(1);
-  var start = Native("java.lang.System").currentTimeMillis();
-  /********************************** INIT (1x) *******************************/
-  var Model = DECENT!Model.allInstances().first();
+  	//Some initialization
+  	//More generic (might be simplified)
+  	var step = "dag2decent3"; 
+  	("Running "+step).log(1);
+  	var start = Native("java.lang.System").currentTimeMillis();
+  	/********************************** INIT (1x) *******************************/
+  	var Model = DECENT!Model.allInstances().first();
+  	
+  	("Create State ID mapping... ").log(1);
+  	
+  	var idMap = new Native("java.util.LinkedHashMap");
+  	for (n in DAG!Node.allInstances()) {
+  		var s = DECENT!AgentState.allInstances().select(x|x.name = n.name).first();
+		idMap.put(n.name,s);  	
+  	}
+  	var d = "";
+  	var blocked = new Set;
 }
 
 post dagInitPost{
-  //DONE: Note that this doesn't work as it is a global graph
-  //artifact states are a projection on this graph and it would be 
-  //more appropriate to assemble these projections which would 
-  //probably result in the very same sequence of states as the one
-  //produced by the sequence of actions 
+  	//DONE: Note that this doesn't work as it is a global graph
+  	//artifact states are a projection on this graph and it would be 
+  	//more appropriate to assemble these projections which would 
+  	//probably result in the very same sequence of states as the one
+  	//produced by the sequence of actions 
   
-  //TODO: The DAG is nonetheless potentially relevant for the 
-  //CFA analysis or at least some variations thereof
-  ("Post processing... ").log(1);
-  //checkCorrectStateSequence();
-  assignAgentStateSequence();
-  assignAgentStatesToActivities();
+  	//TODO: The DAG is nonetheless potentially relevant for the 
+  	//CFA analysis or at least some variations thereof
+  	("Post processing... ").log(1);
+  	//checkCorrectStateSequence();
+  	assignAgentStateSequence();
+  	assignAgentStatesToActivities();
    
  
   	var end = Native("java.lang.System").currentTimeMillis();
@@ -72,13 +82,39 @@ operation Any assignAgentStatesToActivities() {
 @cached
 operation DAG!Node findPreviousStateInParentNodes(state : DECENT!AgentState) {
 	if (self.parents.size() > 0) {
-		for (p in self.parents) {
-			state.previous = state.agent.states.select(x|x.name = p.name).first();
+		d = d + "  ";
+		for (p in self.parents.select(x|not blocked.includes(x))) {
+			var ps = idMap.get(p.name);
+			if (ps.isDefined()){
+				//(d+"           "+ps.ID +" ["+ps.agent.name+"] ").log(3);
+				if (ps.agent = state.agent) {
+					//(d+"             ::->HIT!").log(3);
+					state.previous = ps;
+				}
+			} else {
+				//(d+"           No id for "+p.name).log(3);
+			}
 			if (state.previous.isUndefined()) {
 				p.findPreviousStateInParentNodes(state);
 			}
+			if (state.previous.isUndefined()) {
+				//(d+"           ->Block "+p.name+"!").log(3);
+				blocked.add(p);
+			}
 		}
+		d = d.substring(2);
 	}
+}
+
+@cached
+operation DECENT!Agent getState(name : String) : DECENT!AgentState {
+	var s = idMap.get(name);
+	if (s.isDefined()){
+		return self.states.select(x|x.ID = idMap.get(name).ID).first();
+	} else {
+		return null;
+	}
+	//return idMap.get(name);
 }
 
 @cached
@@ -110,18 +146,19 @@ operation Any assignAgentStateSequence() {
   	("  Agent: "+a.name).log(3);
   	var count = 0;
   	for (s in a.states) {
-  		("  State: "+s.ID + " ("+count+"/"+a.states.size()+")").log(3);
+  		("    State: "+s.ID + " ("+count+"/"+a.states.size()+")").log(3);
   		var node = nodes.select(n|n.name = s.name).first();
 		node.findPreviousStateInParentNodes(s);
 		if (s.previous.isUndefined() and count > 0) {
 			//TODO: most of these are harmless for first commits but sometimes the chains are broken - e.g. rebase? 
 			//TODO: how to handle these? simply fall back to last known change? what if parallel?
-			(    "Failed to assign previous state for state "+s.ID+" / "+s.name+"!").log(1);
-			(    "Corresponding node has "+node.parents.size()+" parents!").log(1);
+			(      "Failed to assign previous state for state "+s.ID+" / "+s.name+"!").log(1);
+			(      "Corresponding node has "+node.parents.size()+" parents!").log(1);
 		} else {
 		}
 		count = count + 1;
   	}
+  	blocked.clear();
   }
 }
 
