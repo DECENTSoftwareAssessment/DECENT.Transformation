@@ -259,6 +259,18 @@ public class MassEpsilonLauncher {
 			case "ARFFx2ARFF":
 				executeARFFx2ARFF(location);
 				break;
+			case "binDECENT2ARFFx":
+				System.setProperty("epsilon.transformation.decent2arffx.skipSource", properties.getProperty("decent2arffx.skipSource", "false"));
+				System.setProperty("epsilon.transformation.decent2arffx.type", properties.getProperty("decent2arffx.type", "code"));
+				modelHandler.setUseDECENTBinary(true);
+				modelHandler.setUseARFFxBinary(true);
+				executeDECENT2ARFFx(location);
+				break;
+			case "binARFFx2ARFF":
+				modelHandler.setUseDECENTBinary(true);
+				modelHandler.setUseARFFxBinary(true);
+				executeARFFx2ARFF(location);
+				break;
 			case "QUERY":
 				executeQUERY(location);
 				break;
