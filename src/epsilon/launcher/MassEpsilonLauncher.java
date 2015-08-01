@@ -747,7 +747,7 @@ public class MassEpsilonLauncher {
 		
 
 		String[] commits = getSortedCommits(location);
-		if (0>=(Integer.parseInt(upperBound))) {
+		if (commits.length>0 && 0>=(Integer.parseInt(upperBound))) {
 			upperBound=commits[commits.length-1];
 		}
 
@@ -852,6 +852,9 @@ public class MassEpsilonLauncher {
 	
 	private String[] getSortedCommits(String location) {
 		File ws = new File(location+"/famix");
+		if (!ws.exists()) {
+			return new String[]{};
+		}
 		String[] commits = ws.list();
 		Arrays.sort(commits, new Comparator<String>() {
 
