@@ -1,0 +1,138 @@
+import "../libraries/decent/common.eol";
+import "../libraries/decent/logging.eol";
+
+"Running ecore2plantuml".log(1);
+var start = Native("java.lang.System").currentTimeMillis();
+
+	var modelName = EMF!EPackage.allInstances().first().name;
+
+	var filename = "/Users/philip-iii/Dev/workspaces/emf/DECENT.Data/output/models/model.generated."+modelName+".plantuml";
+	var writer;
+
+	var file = new Native("java.io.File") (filename);
+	var writer = new Native("java.io.FileWriter") (file);
+
+	var directions = new Map;
+	directions.put("Model->MetaData","l");
+	directions.put("Model->Attribute","r");
+	directions.put("Model->Instance","u");
+	directions.put("Instance->Value","r");
+
+	directions.put("CFN->GlobalState","r");
+	directions.put("CFN->Factor","u");
+	directions.put("CFN->CFAAttribute","l");
+	directions.put("CFAState->FactorEntry","l");
+	directions.put("CFAState->CFAState","r");
+	directions.put("CFN->CFAAttribute","l");
+	directions.put("GlobalState->ArtifactState","r");
+	directions.put("GlobalState->LogicalState","d");
+
+	directions.put("BZRepo->BZProduct","r");
+	directions.put("BZProduct->BZComponent","r");
+	directions.put("BZComponent->BZIssue","d");
+
+
+	directions.put("Model->People","r");
+	directions.put("Model->Revision","r");
+	directions.put("Model->Action","d");
+	directions.put("Model->File","u");
+	directions.put("Model->Branch","u");
+	directions.put("Revision->Action","u");
+	directions.put("Revision->Patch","r");
+	directions.put("Revision->PatchLines","r");
+	directions.put("Action->File","r");
+	directions.put("Action->Branch","l");
+	directions.put("File->FileType","u");
+	directions.put("File->FileCopy","r");
+	directions.put("File->FileCopy","r");
+	directions.put("File->Patch","d");
+	directions.put("File->Content","r");
+	directions.put("Hunk->HunkBlames","r");
+
+
+	("@startuml").printlno(writer);
+	("skinparam shadowing false").printlno(writer);
+	("skinparam classArrowColor #444488").printlno(writer);
+	("skinparam objectBorderColor #444444").printlno(writer);
+	("skinparam objectBackgroundColor #EDEDED").printlno(writer);
+	("skinparam classArrowFontStyle bold").printlno(writer);
+	("skinparam classArrowFontSize 10").printlno(writer);
+	("skinparam classArrowFontColor #444444").printlno(writer);
+	("").printlno(writer);
+	
+	
+	for (c in EMF!EClass.allInstances().select(x|x.ePackage.name = modelName)) {
+		c.visualise();
+		c.visualiseInheritance();
+	}
+	for (c in EMF!EReference.allInstances().select(x|x.eType.ePackage.name = modelName)) {
+		c.visualise();
+	}
+
+	("@enduml").printlno(writer);
+
+	writer.close();
+
+
+var end = Native("java.lang.System").currentTimeMillis();
+var duration = end - start;
+("Duration: "+duration.toMinutes().round(5)).log(1);
+
+
+
+operation EMF!EClass visualise() {
+	var content = "";
+	if (self.eAttributes.size() > 0) {
+		content = content + " { \n";
+		for (a in self.eAttributes) {
+			content = content + "  " + a.name + " : " + a.eType.name + 
+					  " ["+a.lowerBound + ".."+a.upperBound+"] " + "\n";
+		}
+		content = content + "} \n";
+	}
+	("object " + self.name + content).printlno(writer);
+}
+
+operation EMF!EReference visualise() {
+	if (self.~oppositeDone = true) {
+		return;
+	}
+	
+	var content = "";
+	var type = "--";
+	if (self.containment = true) {
+		type = "*--";
+	}
+	for (o in self.eOpposite) {
+		if (o.isDefined()) {
+			o.~oppositeDone = true;
+			if (o.containment = true) {
+				type = "--"+"*";
+			}
+		}
+	}
+
+	type = type + directions.get(self.eContainingClass.name+"->"+self.eType.name);
+
+	var label = " \""+self.name+" ["+self.lowerBound + ".."+self.upperBound+"] "+"\"";
+	label = " "; 
+	
+	content = content + self.eContainingClass.name + " " + 
+		type + 
+		label + 
+		self.eType.name;
+	(content).printlno(writer);
+	//(self.eType.name + " " + type + " " + self.eContainingClass.name).printlno(writer);
+
+	
+}
+
+operation EMF!EClass visualiseInheritance() {
+	var content = "";
+	for (s in self.eSuperTypes) {
+		content = content + s.name + " <|-- " + self.name + "\n";
+	}
+	(content).printlno(writer);
+}
+
+ 
