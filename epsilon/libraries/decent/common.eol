@@ -27,6 +27,10 @@ operation Any startProfiling(target : String) {
 	}
 }
 
+operation Real toLong() : Any {
+	return Native("java.lang.Math").round(self);
+}
+
 operation Any stopProfiling() {
 	if (self.isDefined()) {
 		self.stop();
@@ -162,6 +166,32 @@ operation DECENT!Activity addDelta(attribute : DECENT!Attribute, value : DECENT!
     return delta;
 }
 
+operation DECENT!Workload addDelta(attribute : DECENT!Attribute) : DECENT!Delta {
+    return self.addDelta(attribute, self.targetState.values.select(v|v.ofAttribute = attribute).first());
+}
+
+operation DECENT!Workload getDelta(attribute : DECENT!Attribute) : DECENT!Delta {
+    return self.deltas.select(d|d.onAttribute = attribute).first();
+}
+
+operation DECENT!Workload addDelta(attribute : DECENT!Attribute, value : DECENT!Value) : DECENT!Delta {
+	var delta = self.getDelta(attribute);
+	if (delta.isUndefined()) {
+	    delta = new DECENT!Delta;
+	    delta.onAttribute = attribute;
+	}
+
+	var p = self.state;
+    if (p.isDefined()){
+        delta.change = (value.content - p.getValue(attribute).content).asDouble();
+    } else {
+        delta.change = value.content.asDouble();
+    }
+    self.deltas.add(delta);
+    return delta;
+}
+
+
 operation Any toDays() : Real {
 	return self.asDouble() / (3600*1000*24);
 }
@@ -210,8 +240,8 @@ operation DECENT!State isHit() : Boolean {
 	if (self.artifact.isMGType()) {
 		return true;
 	}
-	var pre = self.getValue("LinesPostHits".getAttribute());
-	var post = self.getValue("LinesPreHits".getAttribute());
+	var pre = self.getValue("HITS.LinesPostHits".getAttribute());
+	var post = self.getValue("HITS.LinesPreHits".getAttribute());
 	return ((pre.isDefined() and pre.content.isDefined() and pre.content.size() > 0) 
 	     or (post.isDefined() and post.content.isDefined() and post.content.size() > 0));
 }
@@ -247,6 +277,7 @@ operation addArtifactType(name : String) : DECENT!ArtifactType {
 	if (type.isUndefined()) {
 	  	type = new DECENT!ArtifactType;
 	  	type.name = name;
+	  	Model.artifactTypeHierarchy.types.add(type);
   	}
   	return type;
 }
@@ -341,11 +372,11 @@ operation Real getSqrt() : Real {
 	return Native("java.lang.Math").sqrt(self);
 }
 
-operation Collection getMin() : Real {
+operation Collection getMin() : Any {
 	return Native("java.util.Collections").min(self);
 }
 
-operation Collection getMax() : Real {
+operation Collection getMax() : Any {
 	return Native("java.util.Collections").max(self);
 }
 
