@@ -35,6 +35,7 @@ post dagInitPost{
   	//checkCorrectStateSequence();
   	assignAgentStateSequence();
   	assignAgentStatesToActivities();
+  	assignAgentWorkloads();
    
  
   	var end = Native("java.lang.System").currentTimeMillis();
@@ -76,6 +77,19 @@ operation Any assignAgentStatesToActivities() {
 	  		//s.previous.activities.addAll(a.activities.select(ax|ax.targetState.ID = s.ID));
   		//}
   	}
+  }
+}
+
+operation Any assignAgentWorkloads() {
+  ("Adding agent workloads... ").log(2);
+  for (w in DECENT!Workload.allInstances()) {
+  	w.activities.clear();
+  }
+  for (s in DECENT!AgentState.allInstances()) {
+  	var w = new DECENT!Workload();
+  	w.targetState = s;
+  	w.state = s.previous;
+  	w.activities.addAll(s.activities);
   }
 }
 
