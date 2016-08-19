@@ -1,0 +1,238 @@
+import "../libraries/decent/common.eol";
+import "../libraries/decent/logging.eol";
+
+var step = "pattern2decent3"; 
+("Running "+step).log(1);
+
+var start = Native("java.lang.System").currentTimeMillis();
+
+var Model = DECENT!Model.allInstances().first();
+
+//TODO: merge with collaboration/experience
+  var NOA = addAttribute("Agent.EXP.NOA","Number of own activities");
+  var NFA = addAttribute("Agent.EXP.NFA","Number of foreign activities");
+  var NKA = addAttribute("Agent.EXP.NKA","Number of known artifacts");
+  var RKA = addAttribute("Agent.EXP.RKA","Ratio of known artifacts");
+  var ROF = addAttribute("Agent.EXP.ROF","Ratio of own to foreign activities");
+  var ROA = addAttribute("Agent.EXP.ROA","Ratio of own activities");
+  var NOAd = addAttribute("Agent.EXP.NOA.Delta","Number of own activities since last state");
+  var NFAd = addAttribute("Agent.EXP.NFA.Delta","Number of foreign activities since last state");
+  var NKAd = addAttribute("Agent.EXP.NKA.Delta","Number of known artifacts since last state");
+  var RKAd = addAttribute("Agent.EXP.RKA.Delta","Delta ratio of known artifacts");
+  var ROFd = addAttribute("Agent.EXP.ROF.Delta","Delta ratio of own to foreign activities");
+  var ROAd = addAttribute("Agent.EXP.ROA.Delta","Delta datio of own activities");
+
+  var ATime = "VCS.AuthorTime".getAttribute();
+  var CTime = "VCS.CommitTime".getAttribute();
+
+
+transferTimestamps();
+
+for (a in DECENT!Artifact.allInstances()) {
+  	a.~timeStamps = a.getTimestampSignature();
+  	a.~distances = new Map();
+}
+
+//TODO: consider different ways of detecting patterns
+// - within most similar files
+// - based on sliding window (bounded by N or T)
+// - other options
+
+//calculateModifiedHausdorffDistance();
+
+addActivityCounts(null);
+addTypedActivityCounts();
+
+addActivityDeltas(null);
+addTypedActivityDeltas();
+
+var end = Native("java.lang.System").currentTimeMillis();
+var duration = end - start;
+Model.content.add(step);
+Model.addStep(step,duration.toMinutes().round(5));
+
+("Duration: "+duration.toMinutes().round(5)).log(1);
+
+//TODO: MOVE TO A SEPARATE MODULE
+var tool = new Native("epsilon.tools.Bridge");
+tool.run(Model.agentPool.agents);
+
+
+operation addActivityDeltas(type : DECENT!ArtifactType) {
+	var NOAt = NOA;
+	var NFAt = NFA;
+	var NKAt = NKA;
+	var RKAt = RKA;
+	var ROFt = ROF;
+	var ROAt = ROA;
+	if (not type.isUndefined()) {
+		("+++++++++++ "+type.name + " ++++++++++++++").log(3);
+		NOAt = addAttribute(NOA.name+"."+type.name,NOA.description+" ("+type.name+")");
+		NFAt = addAttribute(NFA.name+"."+type.name,NFA.description+" ("+type.name+")");
+		NKAt = addAttribute(NKA.name+"."+type.name,NKA.description+" ("+type.name+")");
+		RKAt = addAttribute(RKA.name+"."+type.name,RKA.description+" ("+type.name+")");
+		ROFt = addAttribute(ROF.name+"."+type.name,ROF.description+" ("+type.name+")");
+		ROAt = addAttribute(ROA.name+"."+type.name,ROA.description+" ("+type.name+")");
+	}
+	for (a in DECENT!Agent.allInstances()) {
+		for (s in a.states) {
+			s.fromWorkload.addDelta(NOAt);
+			s.fromWorkload.addDelta(NFAt);
+			s.fromWorkload.addDelta(NKAt);
+			s.fromWorkload.addDelta(RKAt);
+			s.fromWorkload.addDelta(ROFt);
+			s.fromWorkload.addDelta(ROAt);
+		}
+	}
+}
+
+
+operation addActivityCounts(type : DECENT!ArtifactType) {
+	var NOAt = NOA;
+	var NFAt = NFA;
+	var NKAt = NKA;
+	var RKAt = RKA;
+	var ROFt = ROF;
+	var ROAt = ROA;
+	if (not type.isUndefined()) {
+		("+++++++++++ "+type.name + " ++++++++++++++").log(3);
+		NOAt = addAttribute(NOA.name+"."+type.name,NOA.description+" ("+type.name+")");
+		NFAt = addAttribute(NFA.name+"."+type.name,NFA.description+" ("+type.name+")");
+		NKAt = addAttribute(NKA.name+"."+type.name,NKA.description+" ("+type.name+")");
+		RKAt = addAttribute(RKA.name+"."+type.name,RKA.description+" ("+type.name+")");
+		ROFt = addAttribute(ROF.name+"."+type.name,ROF.description+" ("+type.name+")");
+		ROAt = addAttribute(ROA.name+"."+type.name,ROA.description+" ("+type.name+")");
+	}
+	
+	var counts = new Map();
+	var total = 0;
+	var allArtifacts = new Set();
+	for (s in DECENT!AgentState.allInstances().sortBy(x|x.date.time)) {
+		(s.agent.name +" : " + s.ID + " : " + s.date).log(3);
+		var activities = s.activities.select(a|a.targetState.isHit());
+		if (not type.isUndefined()) {
+			activities = activities.select(a|a.targetState.artifact.type = type);
+		}
+		
+		var stateArtifacts = activities.collect(a|a.targetState.artifact);
+		for (a in stateArtifacts) {
+			("  "+a.name).log(3);
+		}
+		allArtifacts.addAll(stateArtifacts);
+		
+		var aCount = activities.size(); //TODO: filter?
+		total = total + aCount;
+		if (not counts.containsKey(s.agent)) {
+			counts.put(s.agent,new Map());
+			counts.get(s.agent).put(NOAt, 0);
+			counts.get(s.agent).put(NFAt, 0);
+			counts.get(s.agent).put(NKAt, new Set());
+		}
+		var own = counts.get(s.agent).get(NOAt)+aCount;
+		var foreign = total-counts.get(s.agent).get(NOAt)-aCount;
+		//("  " +total +" = " + own + " + " + foreign +" ::: " +aCount).log(1);
+
+		counts.get(s.agent).put(NOAt, own);
+		counts.get(s.agent).put(NFAt, foreign);
+		counts.get(s.agent).get(NKAt).addAll(stateArtifacts);
+		//counts.get(s.agent).put(ROFt, own/foreign);
+		//counts.get(s.agent).put(ROAt, own/total);
+		
+		s.addValue(NOAt, counts.get(s.agent).get(NOAt).asDouble());
+		s.addValue(NFAt, counts.get(s.agent).get(NFAt).asDouble());
+		if (total > 0) {
+			s.addValue(ROAt, own.asDouble()/total.asDouble());
+		} else {
+			s.addValue(ROAt, own.asDouble());
+		}
+		if (foreign > 0) {
+			s.addValue(ROFt, own.asDouble()/foreign.asDouble());
+		} else {
+			s.addValue(ROFt, own.asDouble());
+		}
+
+		s.addValue(NKAt, counts.get(s.agent).get(NKAt).size().asDouble());
+		if (allArtifacts.size() > 0) {
+			s.addValue(RKAt, counts.get(s.agent).get(NKAt).size().asDouble()/allArtifacts.size().asDouble());
+		} else {
+			s.addValue(RKAt, counts.get(s.agent).get(NKAt).size().asDouble());
+		}
+
+	}
+}
+
+operation addTypedActivityCounts() {
+	for (t in DECENT!ArtifactType.allInstances().sortBy(x|x.name)) {
+		addActivityCounts(t);
+	}
+}
+
+operation addTypedActivityDeltas() {
+	for (t in DECENT!ArtifactType.allInstances().sortBy(x|x.name)) {
+		addActivityDeltas(t);
+	}
+}
+
+
+
+operation calculateModifiedHausdorffDistance() {
+	var type = "";
+	for (a in DECENT!Artifact.allInstances().select(x|x.~timeStamps.size() > 1 and x.typeFilter(type))) {
+		for (b in DECENT!Artifact.allInstances().select(x|not (x == a) and x.~timeStamps.size() > 1 and x.typeFilter(type))) {
+			var d = getModifiedHausdorff(a, b);
+			("MH ("+a.name+","+b.name+"): "+d).log(1);
+		}
+	}
+}
+
+operation Any typeFilter(type : String) : Boolean {
+	if (type = "") {
+		return true;
+	}
+	if (self.type.name = type) {
+		return true;
+	}
+	return false;
+}
+
+operation getModifiedHausdorff(a : DECENT!Artifact, b : DECENT!Artifact) : Any {
+	var d = new Sequence();
+	d.add(getDirectedModifiedHausdorff(a, b));
+	d.add(getDirectedModifiedHausdorff(b, a));
+	return d.getMax();
+}
+
+//transforms to minutes otherwise numbers quickly explode
+operation getDirectedModifiedHausdorff(a : DECENT!Artifact, b : DECENT!Artifact) : Any {
+  	var s = a.~distances.get(b);
+  	if (s.isDefined()) {
+  		return s;
+  	}
+  	
+  	var sum = 0;
+  	for (n in a.~timeStamps) {
+  		var d = new Sequence();
+  		for (m in b.~timeStamps) {
+  			d.add((m-n).abs());
+  		}
+  		var min = d.getMin().toMinutes().round(5);
+  		sum = sum + min*min;
+  	}
+  	a.~distances.put(b, sum);
+  	return sum;
+}
+
+operation Any getTimestampSignature() : Collection {
+	return self.states.select(x|x.isHit()).collect(y|y.getValue(ATime).content.toLong());
+}
+
+operation Any transferTimestamps() {
+	for (a in DECENT!Artifact.allInstances().select(x|x.isMGType())) {
+	  	for (s in a.states) {
+	  		for (c in s.children) {
+		  		c.addValue(ATime,s.getValue(ATime).content);
+		  		c.addValue(CTime,s.getValue(CTime).content);
+	  		}
+	  	}
+	}
+}
