@@ -11,11 +11,11 @@ pre {
   	var TotalWeightAttribute = "TotalWeight".getCFAAttribute();
   	var AverageWeightAttribute = "AverageWeight".getCFAAttribute();
 	
-	var StartLineAttribute = "StartLine".getAttribute();
-	var EndLineAttribute = "EndLine".getAttribute();
-	var LinesPreHitsAttribute = "LinesPreHits".getAttribute();
-	var LinesPostHitsAttribute = "LinesPostHits".getAttribute();
-  	var FilePathAttribute = "FilePath".getAttribute();
+	var StartLineAttribute = "MX.StartLine".getAttribute();
+	var EndLineAttribute = "MX.EndLine".getAttribute();
+	var LinesPreHitsAttribute = "HITS.LinesPreHits".getAttribute();
+	var LinesPostHitsAttribute = "HITS.LinesPostHits".getAttribute();
+  	var FilePathAttribute = "VCS.FilePath".getAttribute();
 
   	var WeightFactorAttribute = "WeightFactor".getCFAAttribute();
   	var TotalWeightAttribute = "TotalWeight".getCFAAttribute();
