@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="ASCII"?>
+<Configuration:Setting
+    xmlns:Configuration="http://Configuration/1.0"
+    name="Project"
+    value="PROTO">
+  <settings
+      name="CFA">
+    <settings
+        name="Factors">
+      <settings
+          name="Refactoring"
+          value="Refactoring classification, based on commit messages">
+        <settings
+            name="regex"
+            value=".+(factored|factoring).*"/>
+      </settings>
+      <settings
+          name="Fix"
+          value="Fix classification, based on commit messages">
+        <settings
+            name="regex"
+            value=".*(fix|bug|bug:).*"/>
+      </settings>
+      <settings
+          name="IssueReference"
+          value="Fix classification, based on commit messages with issue references">
+        <settings
+            name="regex"
+            value=".*(bug\\s*:\\s*\\d+).*"/>
+      </settings>
+    </settings>
+    <settings
+        name="Strategies">
+      <settings
+          name=".Shared"
+          value="Equal split"/>
+      <settings
+          name=".Shared.Code"
+          value="Equal split (code type only)"/>
+      <settings
+          name=".Churn"
+          value="Based on the amount of change"/>
+      <settings
+          name=".Churn.Code"
+          value="Based on the amount of change (code type only)"/>
+      <settings
+          name=".Size"
+          value="Based on the size of the artifacts"/>
+      <settings
+          name=".Size.Code"
+          value="Based on the size of the artifacts (code type only)"/>
+    </settings>
+  </settings>
+  <settings
+      name="MG">
+    <settings
+        name="DB">
+      <settings
+          name="dbName"
+          value="mg_PROTO"/>
+      <settings
+          name="dbUser"
+          value="root"/>
+      <settings
+          name="dbPass"
+          value="r007k!773h"/>
+      <settings
+          name="dbPort"
+          value="3306"/>
+      <settings
+          name="dbServer"
+          value="swe17.swe.loc"/>
+    </settings>
+  </settings>
+  <settings
+      name="DUDE"
+      value="">
+    <settings
+        name="DB">
+      <settings
+          name="dbName"
+          value="dd_PROTO"/>
+      <settings
+          name="dbUser"
+          value="root"/>
+      <settings
+          name="dbPass"
+          value="r007k!773h"/>
+      <settings
+          name="dbPort"
+          value="3306"/>
+      <settings
+          name="dbServer"
+          value="localhost"/>
+    </settings>
+  </settings>
+  <settings
+      name="BZ">
+    <settings
+        name="DB"
+        value="">
+      <settings
+          name="dbName"
+          value="bz_PROTO"/>
+      <settings
+          name="dbUser"
+          value="root"/>
+      <settings
+          name="dbPass"
+          value="r007k!773h"/>
+      <settings
+          name="dbPort"
+          value="3306"/>
+      <settings
+          name="dbServer"
+          value="swe17.swe.loc"/>
+    </settings>
+  </settings>
+</Configuration:Setting>
