@@ -10,20 +10,20 @@ var start = Native("java.lang.System").currentTimeMillis();
 
 var Model = DECENT!Model.allInstances().first();
 
-var LinesPostHitsAttribute = addAttribute("LinesPostHits","Changed lines within artifact in resulting state");
-var LinesPreHitsAttribute = addAttribute("LinesPreHits","Changed lines within artifact in context state");
+var LinesPostHitsAttribute = addAttribute("HITS.LinesPostHits","Changed lines within artifact in resulting state");
+var LinesPreHitsAttribute = addAttribute("HITS.LinesPreHits","Changed lines within artifact in context state");
 
 var ClassArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "Class").first();
 var MethodArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "Method").first();
 var FunctionArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "Function").first();
 var ModuleArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "Module").first();
-var StartLineAttribute = "StartLine".getAttribute();
-var EndLineAttribute = "EndLine".getAttribute();
-var LinesPreAttribute = "LinesPre".getAttribute();
-var LinesPostAttribute = "LinesPost".getAttribute();
+var StartLineAttribute = "MX.StartLine".getAttribute();
+var EndLineAttribute = "MX.EndLine".getAttribute();
+var LinesPreAttribute = "VCS.LinesPre".getAttribute();
+var LinesPostAttribute = "VCS.LinesPost".getAttribute();
 
-var VarianceLinesPreAttribute = "VarianceLinesPre".getAttribute();
-var VarianceLinesPostAttribute = "VarianceLinesPost".getAttribute();
+var VarianceLinesPreAttribute = "SP.VLB".getAttribute();
+var VarianceLinesPostAttribute = "SP.VLA".getAttribute();
 
 
 var existingStatesInRevision = DECENT!State.allInstances().select(s|
