@@ -1,15 +1,4 @@
 package epsilon.launcher;
-/*******************************************************************************
- * Copyright (c) 2008 The University of York.
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v1.0
- * which accompanies this distribution, and is available at
- * http://www.eclipse.org/legal/epl-v10.html
- * 
- * Contributors:
- *     Dimitrios Kolovos - initial API and implementation
- ******************************************************************************/
-
 
 import java.io.BufferedInputStream;
 import java.io.File;
@@ -63,12 +52,6 @@ import resource.tools.MGResourceTool;
 import util.MathTools;
 import epsilon.launcher.EpsilonStandaloneLauncher;
 
-/**
- * This example demonstrates using the 
- * Epsilon Transformation Language, the M2M language
- * of Epsilon, in a stand-alone manner 
- * @author Dimitrios Kolovos
- */
 @SuppressWarnings("unused")
 public class MassEpsilonLauncher {
 	
@@ -236,6 +219,9 @@ public class MassEpsilonLauncher {
 				break;
 			case "COLLABORATION2DECENT":
 				executeCOLLABORATION2DECENT(location);
+				break;
+			case "PATTERN2DECENT":
+				executePATTERN2DECENT(location);
 				break;
 			case "BZ2TRACE":
 				executeBZ2TRACE(location);
@@ -614,6 +600,11 @@ public class MassEpsilonLauncher {
 		String source = "epsilon/transform/delta2decent3.eol";
 		executeDECENTinPalace(location, source, true, true);
 	}
+	private void executePATTERN2DECENT(String location) throws Exception, URISyntaxException,
+			EolModelLoadingException, EolRuntimeException {
+		String source = "epsilon/transform/pattern2decent3.eol";
+		executeDECENTinPalace(location, source, true, true);
+}
 	private void executeCOLLABORATION2DECENT(String location) throws Exception, URISyntaxException,
 			EolModelLoadingException, EolRuntimeException {
 		String source = "epsilon/transform/collaboration2decent3.eol";
