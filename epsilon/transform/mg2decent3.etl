@@ -24,37 +24,40 @@ pre mgInitPre {
   BranchArtifactType.name = "Branch";
   Model.artifactTypeHierarchy.types.add(BranchArtifactType);
     
-  var FilePathAttribute = addAttribute("FilePath","File path");
-  var BranchAttribute = addAttribute("Branch","Branch name");
-  var FileSizeAttribute = addAttribute("FileSize","File size in bytes");
-  var LOCAttribute = addAttribute("LOC","Lines of code");
-  var LinesAddedAttribute = addAttribute("LinesAdded","Lines added");
-  var LinesRemovedAttribute = addAttribute("LinesRemoved","Lines removed");
-  var TagsAttribute = addAttribute("Tags","Assigned tags");
-  var TagsCountAttribute = addAttribute("TagsCount","Number of assigned tags");
-  var IsBugFixAttribute = addAttribute("IsBugFix","Revision is labeled as bug fix");
-  var BugFixCountAttribute = addAttribute("BugFixCount","Number of bug fixes in past revisions");
-  var AggregateFragmentCountAttribute = addAttribute("AggregateFragmentCount","");
-  var FragmentCountAttribute = addAttribute("FragmentCount","Number of fragments");
-  var HunkCountAttribute = addAttribute("HunkCount","Number of changed fragments");
-  var ChangedFragmentsAttribute = addAttribute("ChangedFragments","Changed and unchanged fragments");
-  var FragmentsAttribute = addAttribute("Fragments","Fragments");
-  var VarianceChangedFragmentsAttribute = addAttribute("VarianceChangedFragments","Variance of changed and unchanged fragments");
-  var VarianceFragmentsAttribute = addAttribute("VarianceFragments","Variance of fragments");
-  var MessageAttribute = addAttribute("Message","Commit message");
-  var LinesPreAttribute = addAttribute("LinesPre","Affected lines from the previous state");
-  var LinesPostAttribute = addAttribute("LinesPost","Affected lines in the resulting state");
-  var LinesMergedAttribute = addAttribute("LinesMerged","Affected lines from both the previous and the resulting state (merged)");
-  var LinesMergedTypeAttribute = addAttribute("LinesMergedType","Type of change in affected lines from both the previous and the resulting state (merged type)");
-  var VarianceLinesPreAttribute = addAttribute("VarianceLinesPre","Variance of the affected lines from the previous state");
-  var VarianceLinesPostAttribute = addAttribute("VarianceLinesPost","Variance of the affected lines in the resulting state");
-  var VarianceLinesMergedAttribute = addAttribute("VarianceLinesMerged","Variance of the affected lines from both the previous and the resulting state");
+  var FilePathAttribute = addAttribute("VCS.FilePath","File path");
+  var BranchAttribute = addAttribute("VCS.Branch","Branch name");
+  var FileSizeAttribute = addAttribute("VCS.FileSize","File size in bytes");
+  var LOCAttribute = addAttribute("VCS.LOC","Lines of code");
+  var LinesAddedAttribute = addAttribute("VCS.LinesAdded","Lines added");
+  var LinesRemovedAttribute = addAttribute("VCS.LinesRemoved","Lines removed");
+  var TagsAttribute = addAttribute("VCS.Tags","Assigned tags");
+  var TagsCountAttribute = addAttribute("VCS.TagsCount","Number of assigned tags");
+  var AggregateFragmentCountAttribute = addAttribute("VCS.AggregateFragmentCount","");
+  var FragmentCountAttribute = addAttribute("SP.NAF","Number of fragments");
+  var HunkCountAttribute = addAttribute("VCS.HunkCount","Number of changed fragments");
+  var FragmentsAttribute = addAttribute("VCS.Fragments","Fragments");
+  var VarianceFragmentsAttribute = addAttribute("SP.VAF","Variance of all fragments");
+  var ChangedFragmentsAttribute = addAttribute("VCS.ChangedFragments","Changed fragments");
+  var SP_NCF = addAttribute("SP.NCF","Number of changed fragments");
+  var SP_VCF = addAttribute("SP.VCF","Variance of changed fragments");
+  var MessageAttribute = addAttribute("VCS.Message","Commit message");
+  var LinesPreAttribute = addAttribute("VCS.LinesPre","Affected lines from the previous state");
+  var LinesPostAttribute = addAttribute("VCS.LinesPost","Affected lines in the resulting state");
+  var LinesMergedAttribute = addAttribute("VCS.LinesMerged","Affected lines from both the previous and the resulting state (merged)");
+  var LinesMergedTypeAttribute = addAttribute("VCS.LinesMergedType","Type of change in affected lines from both the previous and the resulting state (merged type)");
+  var SP_NLB = addAttribute("SP.NLB","Number of Changed Lines (before)");
+  var SP_NLA = addAttribute("SP.NLA","Number of Changed Lines (after)");
+  var SP_NLM = addAttribute("SP.NLM","Number of Changed Lines (merged)");
+  var VarianceLinesPreAttribute = addAttribute("SP.VLB","Variance of the affected lines from the previous state");
+  var VarianceLinesPostAttribute = addAttribute("SP.VLA","Variance of the affected lines in the resulting state");
+  var VarianceLinesMergedAttribute = addAttribute("SP.VLM","Variance of the affected lines from both the previous and the resulting state");
+
+  var SP_CM1 = addAttribute("SP.CM1","Churned LOC / Total LOC");
+  var SP_CM2 = addAttribute("SP.CM2","Deleted LOC / Total LOC");
 
 
-
-
-  var CTime = addAttribute("CommitTime", "Commit time");
-  var ATime = addAttribute("AuthorTime", "Author time");
+  var CTime = addAttribute("VCS.CommitTime", "Commit time");
+  var ATime = addAttribute("VCS.AuthorTime", "Author time");
 
   var Project = new DECENT!Project;
   Project.name = MG!Model.allInstances().first().name;
@@ -73,6 +76,34 @@ pre mgInitPre {
 post mgInitPost{
   ("Post processing...").log(1);
 
+  addTagsToStates();
+
+  var end = Native("java.lang.System").currentTimeMillis();
+  var duration = end - start;
+
+  Model.content.add(step);
+  Model.addStep(step,duration.toMinutes().round(5));
+  ("Duration: "+duration.toMinutes().round(5)).log(1);
+  
+  dumpValues();
+  
+}
+
+//DEBUG
+operation Any dumpValues() {
+  for (a in DECENT!Artifact.allInstances()) {
+  	for (s in a.states) {
+  		(a.name + " @ " + s.ID).log(3);
+  		//for (v in s.values.select(v|v.ofAttribute.name.startsWith("SP."))) {
+  		for (v in s.values.sortBy(v|v.ofAttribute.name)){
+  			("  "+v.ofAttribute.name + " = " +v.content).log(3);
+  		}
+  	}
+  }
+}
+
+operation Any addTagsToStates() {
+  ("Adding tags to states...").log(2);
   var tagsstart = Native("java.lang.System").currentTimeMillis();
   for (a in DECENT!Artifact.allInstances()) {
   	for (s in a.states) {
@@ -94,14 +125,6 @@ post mgInitPost{
   var tagsend = Native("java.lang.System").currentTimeMillis();
   var tagsduration = tagsend - tagsstart;
   ("Duration(tags): "+tagsduration.toMinutes().round(5)).log(1);
-
-
-  var end = Native("java.lang.System").currentTimeMillis();
-  var duration = end - start;
-
-  Model.content.add(step);
-  Model.addStep(step,duration.toMinutes().round(5));
-  ("Duration: "+duration.toMinutes().round(5)).log(1);
 }
 
 rule Branch2Location 
@@ -257,6 +280,7 @@ operation DECENT!State addSpatialCharacteristics(hunks : Collection) {
 	var postDifference = 0;
 	var fragmentCount = 0;
 	var tailChanged = false;
+	var headChanged = false;
     for (h in hunks) {
 		var oldStartLine = h.old_start_line_normalized;
 		var newStartLine = h.new_start_line_normalized;
@@ -301,6 +325,7 @@ operation DECENT!State addSpatialCharacteristics(hunks : Collection) {
 		}
     	
 		if (oldStartLine = 1 or newStartLine = 1) {
+			headChanged = true;
 		} else {
 			fragmentCount = fragmentCount + 1;
 			fragments.add(fragmentCount);
@@ -319,6 +344,33 @@ operation DECENT!State addSpatialCharacteristics(hunks : Collection) {
 	self.addIntegerCollectionValue(LinesPreAttribute, linesPre.sortBy(l|l));
 	self.addIntegerCollectionValue(LinesPostAttribute, linesPost.sortBy(l|l));
 	self.addIntegerCollectionValue(LinesMergedAttribute, linesMerged.sortBy(l|l));
+	self.addValue(SP_NLB, linesPre.size());
+	self.addValue(SP_NLA, linesPost.size());
+	self.addValue(SP_NLM, linesMerged.size());
+
+	self.addValue(SP_NCF, hunks.size());
+	var changedFragments = new OrderedSet;
+	if (headChanged) {
+		changedFragments = 1.iota(fragments.size(),2);
+	} else {
+		changedFragments = 0.iota(fragments.size(),2);
+		changedFragments.removeAt(0);
+	}
+	self.addIntegerCollectionValue(ChangedFragmentsAttribute, changedFragments.sortBy(l|l));
+	self.addValue(SP_VCF, changedFragments.getVariance());
+
+	var loc = self.getValue(LOCAttribute);
+	var cm1 = 0.asDouble();
+	var cm2 = 0.asDouble();
+	if (loc > 0) {
+		//TODO: current calculation is oversimplified
+		cm1 = linesPost.size()/loc;
+		cm2 = linesPre.size()/loc;
+	}
+	self.addValue(SP_CM1, cm1);
+	self.addValue(SP_CM2, cm2);
+
+
 	for (l in linesMerged.sortBy(l|l)) {
 		linesMergedTypeSequence.add(linesMergedType.get(l));
 	}
