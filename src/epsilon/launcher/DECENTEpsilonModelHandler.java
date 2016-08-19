@@ -4,6 +4,7 @@ import java.io.File;
 import java.net.URISyntaxException;
 import java.util.HashMap;
 
+import org.apache.commons.io.FileUtils;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EPackage;
 import org.eclipse.emf.ecore.resource.Resource;
@@ -103,6 +104,10 @@ public class DECENTEpsilonModelHandler {
 
 	public IModel getMGModel(String location,boolean read, boolean write) throws Exception {
 		String resourceLocation = location+"/model.mg";
+		if (!new File(resourceLocation).exists()) {
+			System.out.println("ERROR: Missing Resource: " + resourceLocation);
+			System.exit(1);
+		}
 		EmfModel model;
 		if (isUseMGBinary()) {
 			unregisterMetaModels("");
