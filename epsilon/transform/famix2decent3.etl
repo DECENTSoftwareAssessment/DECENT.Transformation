@@ -26,11 +26,11 @@ pre {
   var FunctionArtifactType = addArtifactType("Function");
   var ModuleArtifactType = addArtifactType("Module");
 
-  var StartLineAttribute = addAttribute("StartLine", "Artifact start line");
-  var EndLineAttribute = addAttribute("EndLine", "Artifact end line");
-  var FileAnchorAttribute = addAttribute("FileAnchor", "File anchor summary");
+  var StartLineAttribute = addAttribute("MX.StartLine", "Artifact start line");
+  var EndLineAttribute = addAttribute("MX.EndLine", "Artifact end line");
+  var FileAnchorAttribute = addAttribute("FAMIX.FileAnchor", "File anchor summary");
   
-  var FilePathAttribute = "FilePath".getAttribute();
+  var FilePathAttribute = "VCS.FilePath".getAttribute();
   
   var revisionId = -1;
   var potentiallyAffectedClasses = new OrderedSet;
@@ -202,9 +202,9 @@ operation DECENT!State mapAnchoredElement(c : FAMIX!AnchoredElement, artifactTyp
     activity.agent = parentArtifactActivity.agent;
     
     for (attr in c.eClass().getSelectedAttributes()) {
-        var attribute = attr.getName().getAttribute(); 
+        var attribute = ("MX."+attr.getName()).getAttribute(); 
         if (not attribute.isDefined()){
-        	attribute = addAttribute(attr.getName(),"See FAMIX attributes.");
+        	attribute = addAttribute("MX."+attr.getName(),"See FAMIX attributes.");
             attribute.artifactTypes.add(artifactType);
         }
         self.addValue(attribute, c.eGet(attr));
