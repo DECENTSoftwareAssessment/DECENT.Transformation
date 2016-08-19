@@ -1,0 +1,180 @@
+import "../libraries/decent/common.eol";
+import "../libraries/decent/logging.eol";
+
+var content = MG!Content.allInstances();
+var patches = MG!Patch.allInstances();
+var revisions = MG!Revision.allInstances();
+
+//TODO: export as configuration
+var splitTokens = "\\+|=|-|>|<|\\:|;|\\?|\\!|'|\"|\\s|\\.|,|\\(|\\)|\\{|\\}|\\[|\\]";
+var ignoreTokens = "to,of,as,in,can,on,be,and,or,that,itself,an,also,which,the,@Override,public,private,protected,int,String,double,long,import,void,new,//,@@,java,cpp,xml".split(",");
+var limitCount = 10;
+var minLength = 2;
+//assign distribution within each state and also within patches 
+//define operation for processing repos and adding features
+
+
+//based on what is contained
+var globalCounts = content.collect(c|c.content).getGlobalTokenCounts(splitTokens, minLength);
+//based on what is being changed
+globalCounts = patches.collect(c|c.patch).getGlobalTokenCounts(splitTokens, minLength);
+var topGlobalCounts = globalCounts.filter(ignoreTokens).limit(limitCount);
+var topGlobalTokens = topGlobalCounts.keySet();
+
+//("Project\tAll revisions\t"+topGlobalCounts).println();
+
+
+for (c in content) {
+	var localCounts = c.content.getLocalTokenCounts(splitTokens, minLength);
+	//(c.file.file_name+"\t"+c.revision.commit_id+"\t"+localCounts.limit(limitCount)).println();
+	//("  "+c.file.file_name+"\t"+c.revision.commit_id+"\t"+localCounts.transform().limit(limitCount)).println();
+	("  "+c.file.file_name+"\t"+c.revision.commit_id+"\t"+localCounts.limit(topGlobalTokens)).println();
+	("  "+c.file.file_name+"\t"+c.revision.commit_id+"\t"+localCounts.transform().limit(topGlobalTokens)).println();
+}
+
+for (c in patches) {
+	var added = c.patch.split("\n").select(l|l.matches("\\+\\s.+")).concat("\n");
+	var localAddedCounts = added.getLocalTokenCounts(splitTokens, minLength);
+	var removed = c.patch.split("\n").select(l|l.matches("-\\s.+")).concat("\n");
+	var localRemovedCounts = removed.getLocalTokenCounts(splitTokens, minLength);
+	//("Added:\n"+added).println();
+	//("Removed:\n"+removed).println();
+	
+	//("  +"+c.file.file_name+"\t"+c.revision.commit_id+"\t"+localAddedCounts.limit(limitCount)).println();
+	//("  +"+c.file.file_name+"\t"+c.revision.commit_id+"\t"+localAddedCounts.transform().limit(limitCount)).println();
+	("  +"+c.file.file_name+"\t"+c.revision.commit_id+"\t"+localAddedCounts.limit(topGlobalTokens)).println();
+	("  +"+c.file.file_name+"\t"+c.revision.commit_id+"\t"+localAddedCounts.transform().limit(topGlobalTokens)).println();
+
+	//("  -"+c.file.file_name+"\t"+c.revision.commit_id+"\t"+localRemovedCounts.limit(limitCount)).println();
+	//("  -"+c.file.file_name+"\t"+c.revision.commit_id+"\t"+localRemovedCounts.transform().limit(limitCount)).println();
+	("  -"+c.file.file_name+"\t"+c.revision.commit_id+"\t"+localRemovedCounts.limit(topGlobalTokens)).println();
+	("  -"+c.file.file_name+"\t"+c.revision.commit_id+"\t"+localRemovedCounts.transform().limit(topGlobalTokens)).println();
+	
+	("  ="+c.file.file_name+"\t"+c.revision.commit_id+"\t"+(localAddedCounts.limit(topGlobalTokens)).getTokenCountDifferences(localRemovedCounts.limit(topGlobalTokens))).println();
+}
+
+("Project\tAll revisions\t"+topGlobalCounts).println();
+("Project\tAll revisions\t"+globalCounts.transform().limit(topGlobalTokens)).println();
+
+var globalMessageCounts = revisions.collect(r|r.message).getGlobalTokenCounts(splitTokens, minLength);
+var topGlobalMessageCounts = globalMessageCounts.filter(ignoreTokens).limit(limitCount);
+var topGlobalMessageTokens = topGlobalMessageCounts.keySet();
+
+for (r in revisions) {
+	var localCounts = r.message.getLocalTokenCounts(splitTokens, minLength);
+	//(c.file.file_name+"\t"+c.revision.commit_id+"\t"+localCounts.limit(limitCount)).println();
+	//("  "+c.file.file_name+"\t"+c.revision.commit_id+"\t"+localCounts.transform().limit(limitCount)).println();
+	("  Message\t"+r.commit_id+"\t"+localCounts.limit(topGlobalMessageTokens)).println();
+	("  Message\t"+r.commit_id+"\t"+localCounts.transform().limit(topGlobalMessageTokens)).println();
+}
+("Messages\tAll revisions\t"+globalMessageCounts.limit(limitCount)).println();
+("Messages\tAll revisions\t"+globalMessageCounts.transform().limit(limitCount)).println();
+
+
+
+operation Any textSample() {
+	var d1 = "Code duplication is also referred to as a code smell. Detection of code smells can be used to enrich the description of the context in which an activity and the activity itself even further. In this chapter we contemplate code duplication as an example. Further code smells can be added as needed, depending on the assessment task, and also depending on the availability of tool support for a given language.";
+	var d2 = "While code smells are considered anti-patterns in software development describing poor development practices that often lead to increased technical debt, design patterns describe best practices in software development that outline design solutions to common problems. The presence or absence of such design patterns can be used to provide additional description of the context in which an activity was performed and of the activity itself."; 
+	
+	var d_globalCounts = (d1+"\n"+d2).split("\n").getGlobalTokenCounts(splitTokens, minLength);
+	var d_topGlobalCounts = d_globalCounts.filter(ignoreTokens).limit(limitCount);
+	var d_topGlobalTokens = d_topGlobalCounts.keySet();
+	
+	var d1localCounts = d1.getLocalTokenCounts(splitTokens, minLength);
+	("  All:\t"+d_topGlobalCounts).println();
+	("  D1:\t"+d1localCounts.limit(d_topGlobalTokens)).println();
+	var d2localCounts = d2.getLocalTokenCounts(splitTokens, minLength);
+	("  D2:\t"+d2localCounts.limit(d_topGlobalTokens)).println();
+	
+	var s = " & ";
+	var t = " \\\\";
+	s = "\t";
+	t = "";
+	for (k in d_globalCounts.filter(ignoreTokens).keySet()) {
+		("  "+k+s+d_globalCounts.get(k)+s+d1localCounts.get(k)+s+d2localCounts.get(k)+t).println();
+	}
+}
+
+
+
+operation Map getTokenCountDifferences(reference:Map) : Map {
+	var result = new Map();
+	for (k in self.keySet()) {
+		result.put(k, (self.get(k)-reference.get(k)));
+		//("\t\t\t"+k+" : "+self.get(k) + " - " + reference.get(k)+" = " + (self.get(k)-reference.get(k))).println();
+	}
+	return result;
+}
+
+operation String getLocalTokenCounts(splitPattern:String, length:Integer) : Map {
+	var result = new Map();
+	var tokens = self.split(splitTokens).select(t|t.length() >= minLength);
+	for (t in tokens) {
+		result.add(t);
+	}
+	return result;
+}
+
+operation Collection getGlobalTokenCounts(splitPattern:String, length:Integer) : Map {
+	var result = new Map();
+	for (c in self) {
+		var tokens = c.split(splitPattern).select(t|t.length() >= length);
+		for (t in tokens) {
+			result.add(t);
+		}
+	}
+	return result;
+}
+
+operation Map add(w:String) {
+	if (not self.containsKey(w)) {
+		self.put(w,0);
+	}
+	var c = self.get(w);
+	self.put(w,c+1);
+}
+
+operation Map filter(ignored:Collection) : Map {
+	var result = new Map();
+	for (k in self.keySet().excludingAll(ignored)) {
+		result.put(k,self.get(k));
+	}
+	return result;
+}
+
+operation Map limit(size:Integer) : Map {
+	if (size >= self.size()) {
+		return self;
+	}
+	var v = self.values().sortBy(s|s).invert();
+	var l = v.get(size-1);
+	var result = new Map();
+	for (k in self.keySet()) {
+		if (self.get(k) >= l and result.size() <= size) {
+			result.put(k,self.get(k));
+		}
+	}
+	return result;
+}
+
+operation Map limit(selection:Collection) : Map {
+	var result = new Map();
+	for (k in selection) {
+		if (not self.containsKey(k)) {
+			result.put(k,0);
+		} else {
+			result.put(k,self.get(k));
+		}
+	}
+	return result;
+}
+
+
+operation Map transform() : Map {
+	var tokenCount = self.values().sum();
+	var result = new Map();
+	for (k in self.keySet()) {
+		result.put(k,(self.get(k).asDouble()/tokenCount).round(4));
+	}
+	return result;
+}
