@@ -28,13 +28,13 @@ var FunctionArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = 
 var ModuleArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "Module").first();
 
 var BugFixCount = ("BugFixCount").getAttribute();
-var StartLineAttribute = ("StartLine").getAttribute();
-var EndLineAttribute = ("EndLine").getAttribute();
-var LinesPreAttribute = ("LinesPre").getAttribute();
-var LinesPostAttribute = ("LinesPost").getAttribute();
+var StartLineAttribute = ("MX.StartLine").getAttribute();
+var EndLineAttribute = ("MX.EndLine").getAttribute();
+var LinesPreAttribute = ("VCS.LinesPre").getAttribute();
+var LinesPostAttribute = ("VCS.LinesPost").getAttribute();
 
-var LinesPostHitsAttribute = ("LinesPostHits").getAttribute();
-var LinesPreHitsAttribute = ("LinesPreHits").getAttribute();
+var LinesPostHitsAttribute = ("HITS.LinesPostHits").getAttribute();
+var LinesPreHitsAttribute = ("HITS.LinesPreHits").getAttribute();
 
 var Model = DECENT!Model.allInstances().first();
   
