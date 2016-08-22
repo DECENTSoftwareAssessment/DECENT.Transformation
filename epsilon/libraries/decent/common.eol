@@ -420,3 +420,14 @@ operation Collection getVariance() : Real {
 operation Collection getFractalValue() : Real {
 	return 1 - self.collect(c|(c.asDouble()/self.sum()).pow(2)).sum().round(3);
 }
+
+operation Any typeFilter(type : String) : Boolean {
+	if (type = "") {
+		return true;
+	}
+	if (self.type.name = type) {
+		return true;
+	}
+	return false;
+}
+
