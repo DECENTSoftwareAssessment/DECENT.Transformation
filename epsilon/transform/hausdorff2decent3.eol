@@ -1,0 +1,93 @@
+import "../libraries/decent/common.eol";
+import "../libraries/decent/logging.eol";
+
+var step = "pattern2decent3"; 
+("Running "+step).log(1);
+
+var start = Native("java.lang.System").currentTimeMillis();
+
+var Model = DECENT!Model.allInstances().first();
+
+//TODO: figure out what to do with the hausdorff distance 
+
+var ATime = "VCS.AuthorTime".getAttribute();
+var CTime = "VCS.CommitTime".getAttribute();
+
+
+transferTimestamps();
+
+for (a in DECENT!Artifact.allInstances()) {
+  	a.~timeStamps = a.getTimestampSignature();
+  	a.~distances = new Map();
+}
+
+//TODO: consider different ways of detecting patterns
+// - within most similar files
+// - based on sliding window (bounded by N or T)
+// - other options
+
+calculateModifiedHausdorffDistance();
+
+var end = Native("java.lang.System").currentTimeMillis();
+var duration = end - start;
+Model.content.add(step);
+Model.addStep(step,duration.toMinutes().round(5));
+
+("Duration: "+duration.toMinutes().round(5)).log(1);
+
+//TODO: MOVE TO A SEPARATE MODULE
+var tool = new Native("epsilon.tools.Bridge");
+tool.run(Model.agentPool.agents);
+
+
+operation calculateModifiedHausdorffDistance() {
+	var type = "";
+	for (a in DECENT!Artifact.allInstances().select(x|x.~timeStamps.size() > 1 and x.typeFilter(type))) {
+		for (b in DECENT!Artifact.allInstances().select(x|not (x == a) and x.~timeStamps.size() > 1 and x.typeFilter(type))) {
+			var d = getModifiedHausdorff(a, b);
+			("MH ("+a.name+","+b.name+"): "+d).log(1);
+		}
+	}
+}
+
+operation getModifiedHausdorff(a : DECENT!Artifact, b : DECENT!Artifact) : Any {
+	var d = new Sequence();
+	d.add(getDirectedModifiedHausdorff(a, b));
+	d.add(getDirectedModifiedHausdorff(b, a));
+	return d.getMax();
+}
+
+//transforms to minutes otherwise numbers quickly explode
+operation getDirectedModifiedHausdorff(a : DECENT!Artifact, b : DECENT!Artifact) : Any {
+  	var s = a.~distances.get(b);
+  	if (s.isDefined()) {
+  		return s;
+  	}
+  	
+  	var sum = 0;
+  	for (n in a.~timeStamps) {
+  		var d = new Sequence();
+  		for (m in b.~timeStamps) {
+  			d.add((m-n).abs());
+  		}
+  		var min = d.getMin().toMinutes().round(5);
+  		sum = sum + min*min;
+  	}
+  	a.~distances.put(b, sum);
+  	return sum;
+}
+
+operation Any getTimestampSignature() : Collection {
+	return self.states.select(x|x.isHit()).collect(y|y.getValue(ATime).content.toLong());
+}
+
+operation Any transferTimestamps() {
+	for (a in DECENT!Artifact.allInstances().select(x|x.isMGType())) {
+	  	for (s in a.states) {
+	  		for (c in s.children) {
+		  		c.addValue(ATime,s.getValue(ATime).content);
+		  		c.addValue(CTime,s.getValue(CTime).content);
+	  		}
+	  	}
+	}
+}
