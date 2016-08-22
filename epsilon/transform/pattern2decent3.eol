@@ -8,7 +8,8 @@ var start = Native("java.lang.System").currentTimeMillis();
 
 var Model = DECENT!Model.allInstances().first();
 
-//TODO: merge with collaboration/experience
+//TODO: merge with / move to collaboration/experience
+//TODO: figure out what to do with the hausdorff distance 
   var NOA = addAttribute("Agent.EXP.NOA","Number of own activities");
   var NFA = addAttribute("Agent.EXP.NFA","Number of foreign activities");
   var NKA = addAttribute("Agent.EXP.NKA","Number of known artifacts");
@@ -25,20 +26,11 @@ var Model = DECENT!Model.allInstances().first();
   var ATime = "VCS.AuthorTime".getAttribute();
   var CTime = "VCS.CommitTime".getAttribute();
 
-
-transferTimestamps();
-
-for (a in DECENT!Artifact.allInstances()) {
-  	a.~timeStamps = a.getTimestampSignature();
-  	a.~distances = new Map();
-}
-
 //TODO: consider different ways of detecting patterns
 // - within most similar files
 // - based on sliding window (bounded by N or T)
 // - other options
 
-//calculateModifiedHausdorffDistance();
 
 addActivityCounts(null);
 addTypedActivityCounts();
@@ -170,69 +162,5 @@ operation addTypedActivityCounts() {
 operation addTypedActivityDeltas() {
 	for (t in DECENT!ArtifactType.allInstances().sortBy(x|x.name)) {
 		addActivityDeltas(t);
-	}
-}
-
-
-
-operation calculateModifiedHausdorffDistance() {
-	var type = "";
-	for (a in DECENT!Artifact.allInstances().select(x|x.~timeStamps.size() > 1 and x.typeFilter(type))) {
-		for (b in DECENT!Artifact.allInstances().select(x|not (x == a) and x.~timeStamps.size() > 1 and x.typeFilter(type))) {
-			var d = getModifiedHausdorff(a, b);
-			("MH ("+a.name+","+b.name+"): "+d).log(1);
-		}
-	}
-}
-
-operation Any typeFilter(type : String) : Boolean {
-	if (type = "") {
-		return true;
-	}
-	if (self.type.name = type) {
-		return true;
-	}
-	return false;
-}
-
-operation getModifiedHausdorff(a : DECENT!Artifact, b : DECENT!Artifact) : Any {
-	var d = new Sequence();
-	d.add(getDirectedModifiedHausdorff(a, b));
-	d.add(getDirectedModifiedHausdorff(b, a));
-	return d.getMax();
-}
-
-//transforms to minutes otherwise numbers quickly explode
-operation getDirectedModifiedHausdorff(a : DECENT!Artifact, b : DECENT!Artifact) : Any {
-  	var s = a.~distances.get(b);
-  	if (s.isDefined()) {
-  		return s;
-  	}
-  	
-  	var sum = 0;
-  	for (n in a.~timeStamps) {
-  		var d = new Sequence();
-  		for (m in b.~timeStamps) {
-  			d.add((m-n).abs());
-  		}
-  		var min = d.getMin().toMinutes().round(5);
-  		sum = sum + min*min;
-  	}
-  	a.~distances.put(b, sum);
-  	return sum;
-}
-
-operation Any getTimestampSignature() : Collection {
-	return self.states.select(x|x.isHit()).collect(y|y.getValue(ATime).content.toLong());
-}
-
-operation Any transferTimestamps() {
-	for (a in DECENT!Artifact.allInstances().select(x|x.isMGType())) {
-	  	for (s in a.states) {
-	  		for (c in s.children) {
-		  		c.addValue(ATime,s.getValue(ATime).content);
-		  		c.addValue(CTime,s.getValue(CTime).content);
-	  		}
-	  	}
 	}
 }
