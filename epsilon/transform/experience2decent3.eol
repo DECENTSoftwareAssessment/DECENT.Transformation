@@ -6,23 +6,12 @@ var step = "experience2decent3";
 
 var start = Native("java.lang.System").currentTimeMillis();
 
-//TODO: could also be integrated back into famix2decent as inline checking 
-//to further filter out unchanged elements 
+//TODO: add temporals - to last change, to first change, averages, etc.
+//TODO: add new material
+//cleaned up legacy code
 
 var Model = DECENT!Model.allInstances().first();
 
-var ProjectActivitiesAttribute = addAttribute("ProjectActivities","");
-var TotalProjectActivitiesAttribute = addAttribute("TotalProjectActivities","");
-var ProjectCommitsAttribute = addAttribute("ProjectCommits","");
-var DeveloperActivitiesAttribute = addAttribute("DeveloperActivities","");
-var TotalDeveloperActivitiesAttribute = addAttribute("TotalDeveloperActivities","");
-var DeveloperCommitsAttribute = addAttribute("DeveloperCommits","");
-var ArtifactActivitiesAttribute = addAttribute("ArtifactActivities","");
-var TotalArtifactActivitiesAttribute = addAttribute("TotalArtifactActivities","");
-var ArtifactDevelopersAttribute = addAttribute("ArtifactDevelopers","");
-var ArtifactDeveloperActivitiesAttribute = addAttribute("ArtifactDeveloperActivities","");
-
-//TODO: add temporals - to last change, to first change, averages, etc.
 
 var CodeArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "code").first();
 
@@ -30,48 +19,6 @@ var ClassArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "Cl
 var MethodArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "Method").first();
 var FunctionArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "Function").first();
 var ModuleArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "Module").first();
-
-
-//TODO: this can only be executed prior to FAMIX
-var progress = 0;
-var artifacts = DECENT!Artifact.allInstances().select(x|x.type = CodeArtifactType);
-for (a in artifacts) {
-	progress = progress+1;
-	("Processing "+a.name+" : "+progress+" / "  + artifacts.size()).log(3);
-	for (s in a.states) {
-		//TODO: unify clean-up of existing values and deltas (a separate procedure?)
-		//TODO: this shall likely be activity values
-		//TODO: this is also horribly inefficient
-		//TODO: simplification assumption first
-		var projectActivitiesSoFar = DECENT!Activity.allInstances().select(ax|ax.date.time < s.fromActivity.first().date.time);
-		var paCount = projectActivitiesSoFar.size();
-		s.values.removeAll(s.values.select(v|v.ofAttribute = ProjectActivitiesAttribute));
-		s.addValue(ProjectActivitiesAttribute, paCount);
-
-		var artifactActivitiesSoFar = projectActivitiesSoFar.select(ax|ax.targetState.artifact = a);
-		var aCount = artifactActivitiesSoFar.size();
-		s.values.removeAll(s.values.select(v|v.ofAttribute = ArtifactActivitiesAttribute));
-		s.addValue(ArtifactActivitiesAttribute, aCount);
-		
-		//TODO: activity or fromActivity?
-		//TODO: simplification assumption first
-		var developerActivitiesSoFar = projectActivitiesSoFar.select(ax|ax.agent = s.fromActivity.first().agent);
-		var daCount = developerActivitiesSoFar.size();
-		//var daCount = s.fromActivity.first().agent.activities.select(ax|ax.date.time < s.fromActivity.first().date.time).size();
-		s.values.removeAll(s.values.select(v|v.ofAttribute = DeveloperActivitiesAttribute));
-		s.addValue(DeveloperActivitiesAttribute, daCount);
-
-		//TODO: activity or fromActivity?
-		//TODO: simplification assumption first
-
-		var developerActivitiesOnArtifactSoFar = developerActivitiesSoFar.select(ax|ax.targetState.artifact = a);
-		var adaCount = developerActivitiesOnArtifactSoFar.size();
-		//var adaCount = s.fromActivity.first().agent.activities.select(ax|ax.targetState.artifact = a and ax.date.time < s.fromActivity.first().date.time).size();
-		s.values.removeAll(s.values.select(v|v.ofAttribute = ArtifactDeveloperActivitiesAttribute));
-		s.addValue(ArtifactDeveloperActivitiesAttribute, adaCount);
-
-	}
-}
 
 
 var end = Native("java.lang.System").currentTimeMillis();
