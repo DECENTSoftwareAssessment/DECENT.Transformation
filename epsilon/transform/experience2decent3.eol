@@ -6,24 +6,180 @@ var step = "experience2decent3";
 
 var start = Native("java.lang.System").currentTimeMillis();
 
-//TODO: add temporals - to last change, to first change, averages, etc.
-//TODO: add new material
-//cleaned up legacy code
-
 var Model = DECENT!Model.allInstances().first();
 
+  var NOA = addAttribute("Agent.EXP.NOA","Number of own activities");
+  var NFA = addAttribute("Agent.EXP.NFA","Number of foreign activities");
+  var NKA = addAttribute("Agent.EXP.NKA","Number of known artifacts");
+  var RKA = addAttribute("Agent.EXP.RKA","Ratio of known artifacts");
+  var ROF = addAttribute("Agent.EXP.ROF","Ratio of own to foreign activities");
+  var ROA = addAttribute("Agent.EXP.ROA","Ratio of own activities");
+  var NOAd = addAttribute("Agent.EXP.NOA.Delta","Number of own activities since last state");
+  var NFAd = addAttribute("Agent.EXP.NFA.Delta","Number of foreign activities since last state");
+  var NKAd = addAttribute("Agent.EXP.NKA.Delta","Number of known artifacts since last state");
+  var RKAd = addAttribute("Agent.EXP.RKA.Delta","Delta ratio of known artifacts");
+  var ROFd = addAttribute("Agent.EXP.ROF.Delta","Delta ratio of own to foreign activities");
+  var ROAd = addAttribute("Agent.EXP.ROA.Delta","Delta datio of own activities");
 
-var CodeArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "code").first();
+  var ATime = "VCS.AuthorTime".getAttribute();
+  var CTime = "VCS.CommitTime".getAttribute();
 
-var ClassArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "Class").first();
-var MethodArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "Method").first();
-var FunctionArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "Function").first();
-var ModuleArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "Module").first();
+  var CC = addAttribute("EXP.CC","Number of states of the artifact authored by the author of the target state");
+  var CCR = addAttribute("EXP.CCR","Ratio of states authored by the developer to states authored by everyone");
+  var ACCR = addAttribute("EXP.ACCR","1 / EXP.CC");
 
+
+var nestedAnonymousClassFilter = "\"[\\w]+\\$[\\d]+.*\"";
+
+addArtifactExperience();
+
+addActivityCounts(null);
+addTypedActivityCounts();
+
+addActivityDeltas(null);
+addTypedActivityDeltas();
 
 var end = Native("java.lang.System").currentTimeMillis();
 var duration = end - start;
 Model.content.add(step);
 Model.addStep(step,duration.toMinutes().round(5));
+
 ("Duration: "+duration.toMinutes().round(5)).log(1);
 
+//TODO: MOVE TO A SEPARATE MODULE
+var tool = new Native("epsilon.tools.Bridge");
+tool.run(Model.agentPool.agents);
+
+
+operation addArtifactExperience() {
+	var artifacts = DECENT!Artifact.allInstances().select(x|not x.name.matches(nestedAnonymousClassFilter)).sortBy(x|x.name);
+	for (a in artifacts) {
+		("Processing ["+a.type.name+"] "+a.name).log(2);
+		var states = a.states.select(x|x.isHit()).sortBy(x|x.ID);
+		for (s in states) {
+			var agent = s.fromActivity.first().agentState.agent;
+		
+			var authorExperience = states.select(x|x.fromActivity.first().agentState.agent = agent and x.ID <= s.ID).size();
+			s.addValue(CC, authorExperience.asDouble());
+			var statesSoFar = states.select(x|x.ID <= s.ID).size();		
+			s.addValue(CCR, authorExperience.asDouble()/statesSoFar.asDouble());
+			var collaboratorCount = states.select(x|x.ID <= s.ID).collect(x|x.fromActivity.first().agentState.agent).asSet().size();
+			s.addValue(ACCR, 1.asDouble()/collaboratorCount.asDouble());
+		}
+	}
+}
+
+operation addActivityDeltas(type : DECENT!ArtifactType) {
+	var NOAt = NOA;
+	var NFAt = NFA;
+	var NKAt = NKA;
+	var RKAt = RKA;
+	var ROFt = ROF;
+	var ROAt = ROA;
+	if (not type.isUndefined()) {
+		("+++++++++++ "+type.name + " ++++++++++++++").log(3);
+		NOAt = addAttribute(NOA.name+"."+type.name,NOA.description+" ("+type.name+")");
+		NFAt = addAttribute(NFA.name+"."+type.name,NFA.description+" ("+type.name+")");
+		NKAt = addAttribute(NKA.name+"."+type.name,NKA.description+" ("+type.name+")");
+		RKAt = addAttribute(RKA.name+"."+type.name,RKA.description+" ("+type.name+")");
+		ROFt = addAttribute(ROF.name+"."+type.name,ROF.description+" ("+type.name+")");
+		ROAt = addAttribute(ROA.name+"."+type.name,ROA.description+" ("+type.name+")");
+	}
+	for (a in DECENT!Agent.allInstances()) {
+		for (s in a.states) {
+			s.fromWorkload.addDelta(NOAt);
+			s.fromWorkload.addDelta(NFAt);
+			s.fromWorkload.addDelta(NKAt);
+			s.fromWorkload.addDelta(RKAt);
+			s.fromWorkload.addDelta(ROFt);
+			s.fromWorkload.addDelta(ROAt);
+		}
+	}
+}
+
+
+operation addActivityCounts(type : DECENT!ArtifactType) {
+	var NOAt = NOA;
+	var NFAt = NFA;
+	var NKAt = NKA;
+	var RKAt = RKA;
+	var ROFt = ROF;
+	var ROAt = ROA;
+	if (not type.isUndefined()) {
+		("+++++++++++ "+type.name + " ++++++++++++++").log(3);
+		NOAt = addAttribute(NOA.name+"."+type.name,NOA.description+" ("+type.name+")");
+		NFAt = addAttribute(NFA.name+"."+type.name,NFA.description+" ("+type.name+")");
+		NKAt = addAttribute(NKA.name+"."+type.name,NKA.description+" ("+type.name+")");
+		RKAt = addAttribute(RKA.name+"."+type.name,RKA.description+" ("+type.name+")");
+		ROFt = addAttribute(ROF.name+"."+type.name,ROF.description+" ("+type.name+")");
+		ROAt = addAttribute(ROA.name+"."+type.name,ROA.description+" ("+type.name+")");
+	}
+	
+	var counts = new Map();
+	var total = 0;
+	var allArtifacts = new Set();
+	for (s in DECENT!AgentState.allInstances().sortBy(x|x.date.time)) {
+		(s.agent.name +" : " + s.ID + " : " + s.date).log(3);
+		var activities = s.activities.select(a|a.targetState.isHit());
+		if (not type.isUndefined()) {
+			activities = activities.select(a|a.targetState.artifact.type = type);
+		}
+		
+		var stateArtifacts = activities.collect(a|a.targetState.artifact);
+		for (a in stateArtifacts) {
+			("  "+a.name).log(3);
+		}
+		allArtifacts.addAll(stateArtifacts);
+		
+		var aCount = activities.size(); //TODO: filter?
+		total = total + aCount;
+		if (not counts.containsKey(s.agent)) {
+			counts.put(s.agent,new Map());
+			counts.get(s.agent).put(NOAt, 0);
+			counts.get(s.agent).put(NFAt, 0);
+			counts.get(s.agent).put(NKAt, new Set());
+		}
+		var own = counts.get(s.agent).get(NOAt)+aCount;
+		var foreign = total-counts.get(s.agent).get(NOAt)-aCount;
+		//("  " +total +" = " + own + " + " + foreign +" ::: " +aCount).log(1);
+
+		counts.get(s.agent).put(NOAt, own);
+		counts.get(s.agent).put(NFAt, foreign);
+		counts.get(s.agent).get(NKAt).addAll(stateArtifacts);
+		//counts.get(s.agent).put(ROFt, own/foreign);
+		//counts.get(s.agent).put(ROAt, own/total);
+		
+		s.addValue(NOAt, counts.get(s.agent).get(NOAt).asDouble());
+		s.addValue(NFAt, counts.get(s.agent).get(NFAt).asDouble());
+		if (total > 0) {
+			s.addValue(ROAt, own.asDouble()/total.asDouble());
+		} else {
+			s.addValue(ROAt, own.asDouble());
+		}
+		if (foreign > 0) {
+			s.addValue(ROFt, own.asDouble()/foreign.asDouble());
+		} else {
+			s.addValue(ROFt, own.asDouble());
+		}
+
+		s.addValue(NKAt, counts.get(s.agent).get(NKAt).size().asDouble());
+		if (allArtifacts.size() > 0) {
+			s.addValue(RKAt, counts.get(s.agent).get(NKAt).size().asDouble()/allArtifacts.size().asDouble());
+		} else {
+			s.addValue(RKAt, counts.get(s.agent).get(NKAt).size().asDouble());
+		}
+
+	}
+}
+
+operation addTypedActivityCounts() {
+	for (t in DECENT!ArtifactType.allInstances().sortBy(x|x.name)) {
+		addActivityCounts(t);
+	}
+}
+
+operation addTypedActivityDeltas() {
+	for (t in DECENT!ArtifactType.allInstances().sortBy(x|x.name)) {
+		addActivityDeltas(t);
+	}
+}
