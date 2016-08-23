@@ -10,32 +10,26 @@ var Model = DECENT!Model.allInstances().first();
 
 //ArtifactState
 
-var SameAuthorAttribute = addAttribute("SameAuthorAsLast","True if the developer in the target state is the same the developer in the source state");
-var AuthorExperienceAttribute = addAttribute("AuthorExperience","Number of states of the artifact authored by the author of the target state");
-var CollaboratorCountAttribute = addAttribute("CollaboratorCount","Number of developers working on an artifact up to the current state");
-var StateOwnershipRatioAttribute = addAttribute("StateOwnershipRatio","Ratio of states authored by the developer to states authored by everyone");
-var StateOwnershipAverageAttribute = addAttribute("StateOwnershipAverage","(1) / (CollaboratorCount)");
-//also based on fractal values
-var StateOwnershipRatioDistributionAttribute = addAttribute("StateOwnershipRatioDistribution","Based on fractal values");
+var SAL = addAttribute("COL.SAL","True if the developer in the target state is the same the developer in the source state");
+var ACC = addAttribute("COL.ACC","Number of developers working on the artifact up to the current state");
+var ACR = addAttribute("COL.ACR","Ratio of developers working on the artifact up to the current state to all the active developers up to the current state");
+var FCCR = addAttribute("COL.FCCR","Fractal distribution of ACCR");
 
 //only with respect to the present artifact
 //TODO: expand to cover all artifacts of the type
-var CollaborationsLastAuthorAttribute = addAttribute("CollaborationsLastAuthor","Collaborations between developer in the target state the developer in the source state");
-var CollaborationsLastAuthorRatioAttribute = addAttribute("CollaborationsLastAuthorRatio","Ratio of collaborations between developer in the target state the developer in the source state to collaborations between developer in the target state and all other collaborators of the developer (in)");
+var CBLA = addAttribute("COL.CBLA","Collaborations between developer in the target state the developer in the source state");
+var RBLA = addAttribute("COL.RBLA","Ratio of collaborations between developer in the target state the developer in the source state to collaborations between developer in the target state and all other collaborators of the developer (in)");
 
-//DeveloperState (proto - to be typed)
+//DeveloperState
 
-var CollaboratorsLastAuthorCountAttribute = addAttribute("CollaboratorsLastAuthorCount","Number of distinct developers that were authors of the source states the developer worked on (proto)");
-var CollaboratorsCountAttribute = addAttribute("CollaboratorsCount","Number of developers working on known artifacts up to the current state (proto)");
-var ArtifactCountAttribute = addAttribute("ArtifactCount","Number of artifacts the developer working on the target state has already worked on (proto)");
-var ArtifactRatioAttribute = addAttribute("ArtifactRatio","Ratio of the number of artifacts the developer working on the target state has already worked on to the total number of artifacts up to the current state (proto)");
-//from D'Ambros et al 2005
-//TODO: or use fractal instead?
-var ArtifactRatioDistributionAttribute = addAttribute("ArtifactRatioDistribution","Mean state ownerships ratio based on fractal values");
+var DCCR = addAttribute("Agent.COL.DCCR","Mean state ownerships ratio based on fractal values");
+var DCC = addAttribute("Agent.COL.DCC","Direct Collaborator Count: Number of distinct developers that were authors of the source states the developer worked on");
+var ICC = addAttribute("Agent.COL.ICC","Indirect Collaborator Count: Number of developers working on known artifacts up to the current state");
 
 var nestedAnonymousClassFilter = "\"[\\w]+\\$[\\d]+.*\"";
 
 processArtifacts();
+//TODO: run also for general case?
 processAgents();
 
 var end = Native("java.lang.System").currentTimeMillis();
@@ -46,110 +40,84 @@ Model.addStep(step,duration.toMinutes().round(5));
 ("Duration: "+duration.toMinutes().round(5)).log(1);
 
 
-operation processAgents() {
-	var types = new OrderedSet();
-	types.add("code");
-	types.add("Class");
-	types.add("Method");
-	types.add("Function");
-	types.add("Module");
-	for (type in types) {
-		addAttribute("ArtifactCount."+type,"Number of artifacts the developer working on the target state has already worked on ("+type+")");
-		addAttribute("ArtifactRatio."+type,"Ratio of the number of artifacts the developer working on the target state has already worked on to the total number of artifacts up to the current state ("+type+")");
-		addAttribute("CollaboratorsCount."+type,"Number of developers working on known artifacts up to the current state ("+type+")");
-		addAttribute("CollaboratorsLastAuthorCount."+type,"Number of distinct developers that were authors of the source states the developer worked on ("+type+")");
-		addAttribute("ArtifactRatioDistribution."+type,"Mean state ownerships ratio based on fractal values ("+type+")");		
-		//TODO: double check oppen issues below
-		//TODO: refine and streamline processes (could be rather computationally expensive as it is)
-		//TODO: ensure that DAG integration is correct and in place 
+operation processAgents(type : DECENT!ArtifactType) {
+	var ICCt = ICC;
+	var DCCt = DCC;
+	var DCCRt = DCCR;
 
+	if (not type.isUndefined()) {
+		ICCt = addAttribute(ICC.name+"."+type.name,ICC.description+" ("+type.name+")");
+		DCCt = addAttribute(DCC.name+"."+type.name,DCC.description+" ("+type.name+")");
+		DCCRt = addAttribute(DCCR.name+"."+type.name,DCCR.description+" ("+type.name+")");		
 	}
-
-	var allArtifacts = DECENT!Artifact.allInstances().select(x|not x.name.matches(nestedAnonymousClassFilter)).sortBy(x|x.name);
 	var agents = DECENT!Agent.allInstances();
 	for (a in agents.sortBy(x|x.name)) {
-		("Processing [agent] "+a.name).log(2);
-		for (type in types) {
-			var ACT = ("ArtifactCount."+type).getAttribute();
-			var ART = ("ArtifactRatio."+type).getAttribute();
-			var CCT = ("CollaboratorsCount."+type).getAttribute();
-			var CLACT = ("CollaboratorsLastAuthorCount."+type).getAttribute();
-			var ARDT = ("ArtifactRatioDistribution."+type).getAttribute();
-			
-			var collaborators = new Native("java.util.LinkedHashMap");
-			var artifacts = new OrderedSet();
-			
-			for (s in a.states.sortBy(x|x.ID)) {
-				var stateOwnershipRatios = new Sequence();
+		if (not type.isUndefined()) {
+			("Processing [agent] "+a.name + " for type " +type.name).log(2);
+		} else {
+			("Processing [agent] "+a.name + " for all types ").log(2);
+		}		
+		var collaborators = new Native("java.util.LinkedHashMap");
+		
+		for (s in a.states.sortBy(x|x.ID)) {
+			var stateOwnershipRatios = new Sequence();
 
-				//TODO: state or targetState?
-				var activities = s.activities.select(x|x.targetState.isHit() 
-					and not x.targetState.artifact.name.matches(nestedAnonymousClassFilter)
-					and x.targetState.artifact.type.name == type
-					);
-				if (activities.size() > 0) {
-					("  ["+type+"] @ "+s.ID).log(4);
-					for (ax in activities) {
-						var artifact = ax.targetState.artifact;
-						var last = null;
-						artifacts.add(artifact);
-						for (sx in artifact.states.select(x|x.isHit()
-								and x.previous.first().isDefined() 
-								and x.fromActivity.first().date.time < ax.date.time
-								)
-						) {
-							var agent = sx.fromActivity.first().agentState.agent;
-							if (not collaborators.containsKey(agent)) {
-								var entry = new Native("java.util.LinkedHashMap");
-								collaborators.put(agent,entry);
-								collaborators.get(agent).put("count",1);
-								collaborators.get(agent).put("LA.count",0);
-							} else {
-								var collaborations = collaborators.get(agent).get("count");
-								collaborators.get(agent).put("count",collaborations+1);
-							}
-							last = sx;
-							//("    " + sx.artifact.name + " @ "+ sx.ID + " -> " + sx.previous.first().ID + " : "+ sx.getValue(StateOwnershipRatioDistributionAttribute).content).log(4);
-							stateOwnershipRatios.add(sx.getValue(StateOwnershipRatioDistributionAttribute).content);
+			//TODO: state or targetState?
+			var activities = s.activities.select(x|x.targetState.isHit() 
+				and not x.targetState.artifact.name.matches(nestedAnonymousClassFilter)
+				and x.targetState.artifact.type == type
+				);
+			if (activities.size() > 0) {
+				("  ["+type+"] @ "+s.ID).log(4);
+				for (ax in activities) {
+					var artifact = ax.targetState.artifact;
+					var last = null;
+					for (sx in artifact.states.select(x|x.isHit()
+							and x.previous.first().isDefined() 
+							and x.fromActivity.first().date.time < ax.date.time
+							)
+					) {
+						var agent = sx.fromActivity.first().agentState.agent;
+						if (not collaborators.containsKey(agent)) {
+							var entry = new Native("java.util.LinkedHashMap");
+							collaborators.put(agent,entry);
+							collaborators.get(agent).put("count",1);
+							collaborators.get(agent).put("LA.count",0);
+						} else {
+							var collaborations = collaborators.get(agent).get("count");
+							collaborators.get(agent).put("count",collaborations+1);
 						}
-						if (last.isDefined()) {
-							var agent = last.fromActivity.first().agentState.agent;
-							var collaborations = collaborators.get(agent).get("LA.count");
-							collaborators.get(agent).put("LA.count",collaborations+1);
-						}
+						last = sx;
+						//("    " + sx.artifact.name + " @ "+ sx.ID + " -> " + sx.previous.first().ID + " : "+ sx.getValue(FCCR).content).log(4);
+						stateOwnershipRatios.add(sx.getValue(FCCR).content);
 					}
-					//TODO: is this for the present state or for the next?
-					s.addValue(ACT,artifacts.size().asDouble());
-					
-					//TODO: time-based filter may be naive
-					var existingArtifacts = allArtifacts.select(x|x.type.name = type
-						and x.states.select(y|y.fromActivity.first().date.time <= activities.first().date.time).size() > 0);
-					var allArtifactCount = existingArtifacts.size();
-					s.addValue(ART,artifacts.size().asDouble()/allArtifactCount);
-	
-					s.addValue(CCT,collaborators.size().asDouble());
-					
-					s.addValue(CLACT,collaborators.select(x|x.get("LA.count") > 0).size().asDouble());
-					
-					var ardt = 0.asDouble();
-					ardt = stateOwnershipRatios.getFractalValue();
-					s.addValue(ARDT,ardt);
-				} else {
-					//defaults in case no activity was performed in the state on a certain type of artifact
-					//TODO: check if reasonable - may create some noise
-					s.addValue(ACT,0.asDouble());
-					s.addValue(ART,0.asDouble());
-					s.addValue(CCT,0.asDouble());
-					s.addValue(CLACT,0.asDouble());
-					s.addValue(ARDT,0.asDouble());
+					if (last.isDefined()) {
+						var agent = last.fromActivity.first().agentState.agent;
+						var collaborations = collaborators.get(agent).get("LA.count");
+						collaborators.get(agent).put("LA.count",collaborations+1);
+					}
 				}
-
+					
+				s.addValue(ICCt,collaborators.size().asDouble());
+				
+				s.addValue(DCCt,collaborators.select(x|x.get("LA.count") > 0).size().asDouble());
+				
+				var ardt = 0.asDouble();
+				ardt = stateOwnershipRatios.getFractalValue();
+				s.addValue(DCCRt,ardt);
+			} else {
+				//defaults in case no activity was performed in the state on a certain type of artifact
+				//TODO: check if reasonable - may create some noise
+				s.addValue(ICCt,0.asDouble());
+				s.addValue(DCCt,0.asDouble());
+				s.addValue(DCCRt,0.asDouble());
 			}
-			collaborators.clear();
-			artifacts.clear();
+
 		}
+		collaborators.clear();
 	}
 }
+
 
 operation processArtifacts() {
 	var artifacts = DECENT!Artifact.allInstances().select(x|not x.name.matches(nestedAnonymousClassFilter)).sortBy(x|x.name);
@@ -181,48 +149,54 @@ operation processArtifacts() {
 				}
 				collaborators.get(agent).get("previousAuthors").add(previousAgent);
 				var sameAuthor = (previousAgent == agent);
-				s.addValue(SameAuthorAttribute, sameAuthor.asString());	
+				s.addValue(SAL, sameAuthor.asString());	
 	
-				var collaboratorCount = collaborators.size();
-				s.addValue(CollaboratorCountAttribute, collaboratorCount.asDouble());
+				var collaboratorCount = states.select(x|x.ID <= s.ID).collect(x|x.fromActivity.first().agentState.agent).asSet().size();
+				s.addValue(ACC, collaboratorCount.asDouble());
 				
-				var authorExperience = states.select(x|x.fromActivity.first().agentState.agent = agent and x.ID < s.ID).size();
-				s.addValue(AuthorExperienceAttribute, authorExperience.asDouble());
-				
-				var statesSoFar = states.select(x|x.ID < s.ID).size();		
-				s.addValue(StateOwnershipRatioAttribute, authorExperience.asDouble()/statesSoFar);
-	
-				s.addValue(StateOwnershipAverageAttribute, 1.asDouble()/collaboratorCount);
-	
-				s.addValue(StateOwnershipRatioDistributionAttribute, collaborators.collect(x|x.values.collect(y|y.get("count"))).first().getFractalValue());
+				s.addValue(FCCR, collaborators.collect(x|x.values.collect(y|y.get("count"))).first().getFractalValue());
+
+				var developerCount = s.ID.getDeveloperCount();
+				s.addValue(ACR, collaboratorCount/developerCount);
 	
 				//TODO: a rather narrow approach, further possibilities to be explored
 				//only with respect to the present artifact
 				//TODO: expand to cover all artifacts of the type
 				var collaborationsWithLastAuthor = collaborators.get(agent).get("previousAuthors").select(x|x = previousAgent).size();
-				s.addValue(CollaborationsLastAuthorAttribute, collaborationsWithLastAuthor.asDouble());
+				s.addValue(CBLA, collaborationsWithLastAuthor.asDouble());
 				
 				//only with respect to the present artifact
 				//TODO: expand to cover all artifacts of the type
 				var collaborationsWithLastAuthorRatio = 0.asDouble();
+				var authorExperience = states.select(x|x.fromActivity.first().agentState.agent = agent and x.ID <= s.ID).size();
+				
 				if (authorExperience > 0) {
 					collaborationsWithLastAuthorRatio = collaborationsWithLastAuthor.asDouble()/authorExperience;
 				}
-				s.addValue(CollaborationsLastAuthorRatioAttribute, collaborationsWithLastAuthorRatio);
+				s.addValue(RBLA, collaborationsWithLastAuthorRatio);
 	
 			} else {
 				("  No previous state for ["+a.type.name+":"+a.name+"] @ "+s.ID).log(2);
-				s.addValue(SameAuthorAttribute, "false");	
-				s.addValue(CollaboratorCountAttribute, 0.asDouble());
-				s.addValue(AuthorExperienceAttribute, 0.asDouble());
-				s.addValue(StateOwnershipRatioAttribute, 0.asDouble());
-				s.addValue(StateOwnershipAverageAttribute, 0.asDouble());
-				s.addValue(StateOwnershipRatioDistributionAttribute, 0.asDouble());
-				s.addValue(CollaborationsLastAuthorAttribute, 0.asDouble());
-				s.addValue(CollaborationsLastAuthorRatioAttribute, 0.asDouble());
+				s.addValue(SAL, "false");	
+				s.addValue(ACC, 0.asDouble());
+				s.addValue(ACR, 0.asDouble());
+				s.addValue(CBLA, 0.asDouble());
+				s.addValue(RBLA, 0.asDouble());
 				
+				s.addValue(FCCR, 0.asDouble());
 			}
 		}
 		collaborators.clear();
 	}
+}
+
+operation processAgents() {
+	for (t in DECENT!ArtifactType.allInstances().sortBy(x|x.name)) {
+		processAgents(t);
+	}
+}
+
+@cached
+operation Integer getDeveloperCount() : Integer {
+	return DECENT!AgentState.allInstances().select(s|s.ID <= self).collect(s|s.agent).size();
 }
