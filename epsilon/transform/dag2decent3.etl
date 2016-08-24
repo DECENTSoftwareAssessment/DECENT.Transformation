@@ -89,7 +89,7 @@ operation Any assignAgentWorkloads() {
   	var w = new DECENT!Workload();
   	w.targetState = s;
   	w.state = s.previous;
-  	w.activities.addAll(s.activities);
+  	w.activities.addAll(s.activities.select(a|a.targetState.isHit()));
   }
 }
 
