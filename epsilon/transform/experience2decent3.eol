@@ -226,8 +226,10 @@ operation addActivityCounts(type : DECENT!ArtifactType) {
 			ocl = ocl+hits;
 		}
 		tcl = tcl + ocl;
-		s.agent.~ocl = s.agent.~ocl+ocl; 
-		ocr = s.agent.~ocl/tcl;
+		s.agent.~ocl = s.agent.~ocl+ocl;
+		if (tcl > 0) {
+			ocr = s.agent.~ocl/tcl;
+		} 
 		s.addValue(OCLt, s.agent.~ocl);
 		s.addValue(OCRt, ocr);
 	}
