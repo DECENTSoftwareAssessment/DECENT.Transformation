@@ -22,9 +22,13 @@ var RBLA = addAttribute("COL.RBLA","Ratio of collaborations between developer in
 
 //DeveloperState
 
-var DCCR = addAttribute("Agent.COL.DCCR","Mean state ownerships ratio based on fractal values");
-var DCC = addAttribute("Agent.COL.DCC","Direct Collaborator Count: Number of distinct developers that were authors of the source states the developer worked on");
 var ICC = addAttribute("Agent.COL.ICC","Indirect Collaborator Count: Number of developers working on known artifacts up to the current state");
+var DCC = addAttribute("Agent.COL.DCC","Direct Collaborator Count: Number of distinct developers that were authors of the source states the developer worked on");
+var DCCR = addAttribute("Agent.COL.DCCR","Mean state ownerships ratio based on fractal values");
+var DCR = addAttribute("Agent.COL.DCR","Direct Collaborator Ratio: Ratio of developers that the developer has directly collaborated with");
+var ICR = addAttribute("Agent.COL.ICR","Indirect Collaborator Ratio: Ratio of developers that the developer has indirectly collaborated with");
+var DIR = addAttribute("Agent.COL.DIR","Direct to Indirect Collaborator Ratio");
+
 
 var nestedAnonymousClassFilter = "\"[\\w]+\\$[\\d]+.*\"";
 
@@ -44,11 +48,17 @@ operation processAgents(type : DECENT!ArtifactType) {
 	var ICCt = ICC;
 	var DCCt = DCC;
 	var DCCRt = DCCR;
+	var DCRt = DCR;
+	var ICRt = ICR;
+	var DIRt = DIR;
 
 	if (not type.isUndefined()) {
 		ICCt = addAttribute(ICC.name+"."+type.name,ICC.description+" ("+type.name+")");
 		DCCt = addAttribute(DCC.name+"."+type.name,DCC.description+" ("+type.name+")");
 		DCCRt = addAttribute(DCCR.name+"."+type.name,DCCR.description+" ("+type.name+")");		
+		DCRt = addAttribute(DCR.name+"."+type.name,DCR.description+" ("+type.name+")");
+		ICRt = addAttribute(ICR.name+"."+type.name,ICR.description+" ("+type.name+")");
+		DIRt = addAttribute(DIR.name+"."+type.name,DIR.description+" ("+type.name+")");
 	}
 	var agents = DECENT!Agent.allInstances();
 	for (a in agents.sortBy(x|x.name)) {
@@ -97,20 +107,29 @@ operation processAgents(type : DECENT!ArtifactType) {
 						collaborators.get(agent).put("LA.count",collaborations+1);
 					}
 				}
-					
-				s.addValue(ICCt,collaborators.size().asDouble());
+				var icc = collaborators.size().asDouble();
+				s.addValue(ICCt,icc);
 				
-				s.addValue(DCCt,collaborators.select(x|x.get("LA.count") > 0).size().asDouble());
+				var dcc = collaborators.select(x|x.get("LA.count") > 0).size().asDouble();
+				s.addValue(DCCt,dcc);
 				
 				var ardt = 0.asDouble();
 				ardt = stateOwnershipRatios.getFractalValue();
 				s.addValue(DCCRt,ardt);
+				
+				var dc = s.ID.getDeveloperCount();
+				s.addValue(DCRt,dcc/dc);
+				s.addValue(ICRt,icc/dc);
+				s.addValue(DIRt,dcc/icc);
 			} else {
 				//defaults in case no activity was performed in the state on a certain type of artifact
 				//TODO: check if reasonable - may create some noise
 				s.addValue(ICCt,0.asDouble());
 				s.addValue(DCCt,0.asDouble());
 				s.addValue(DCCRt,0.asDouble());
+				s.addValue(DCRt,0.asDouble());
+				s.addValue(ICRt,0.asDouble());
+				s.addValue(DIRt,0.asDouble());
 			}
 
 		}
