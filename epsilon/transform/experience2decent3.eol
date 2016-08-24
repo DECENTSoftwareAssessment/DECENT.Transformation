@@ -14,12 +14,6 @@ var Model = DECENT!Model.allInstances().first();
   var RKA = addAttribute("Agent.EXP.RKA","Ratio of known artifacts");
   var ROF = addAttribute("Agent.EXP.ROF","Ratio of own to foreign activities");
   var ROA = addAttribute("Agent.EXP.ROA","Ratio of own activities");
-  var NOAd = addAttribute("Agent.EXP.NOA.Delta","Number of own activities since last state");
-  var NFAd = addAttribute("Agent.EXP.NFA.Delta","Number of foreign activities since last state");
-  var NKAd = addAttribute("Agent.EXP.NKA.Delta","Number of known artifacts since last state");
-  var RKAd = addAttribute("Agent.EXP.RKA.Delta","Delta ratio of known artifacts");
-  var ROFd = addAttribute("Agent.EXP.ROF.Delta","Delta ratio of own to foreign activities");
-  var ROAd = addAttribute("Agent.EXP.ROA.Delta","Delta datio of own activities");
 
   var ATime = "VCS.AuthorTime".getAttribute();
   var CTime = "VCS.CommitTime".getAttribute();
@@ -27,17 +21,29 @@ var Model = DECENT!Model.allInstances().first();
   var CC = addAttribute("EXP.CC","Number of states of the artifact authored by the author of the target state");
   var CCR = addAttribute("EXP.CCR","Ratio of states authored by the developer to states authored by everyone");
   var ACCR = addAttribute("EXP.ACCR","1 / EXP.CC");
+  var CF = addAttribute("EXP.CF","Developer contribution focus (EXP.CC/EXP.NOA)");
+  var CL = addAttribute("EXP.CL","Developer contributed LOC");
+  var CR = addAttribute("EXP.CR","Developer contributed LOC ratio");
+
+  //TODO: consider also adding fractals or variance over contributions in a state and overall
+  var OCL = addAttribute("Agent.EXP.OCL","Overall developer contributed LOC");
+  var OCR = addAttribute("Agent.EXP.OCR","Overall developer contributed LOC ratio");
+
+
+  var LinesPostAttribute = "VCS.LinesPost".getAttribute();
+  var HitsPostAttribute = "HITS.LinesPostHits".getAttribute();
 
 
 var nestedAnonymousClassFilter = "\"[\\w]+\\$[\\d]+.*\"";
 
-addArtifactExperience();
 
 addActivityCounts(null);
 addTypedActivityCounts();
 
 addActivityDeltas(null);
 addTypedActivityDeltas();
+
+addArtifactExperience();
 
 var end = Native("java.lang.System").currentTimeMillis();
 var duration = end - start;
@@ -55,16 +61,36 @@ operation addArtifactExperience() {
 	var artifacts = DECENT!Artifact.allInstances().select(x|not x.name.matches(nestedAnonymousClassFilter)).sortBy(x|x.name);
 	for (a in artifacts) {
 		("Processing ["+a.type.name+"] "+a.name).log(2);
+		var HA = HitsPostAttribute;
+		if (a.isMGType()) {
+			HA = LinesPostAttribute;
+		}
+		for (agent in DECENT!Agent.allInstances()) {
+			agent.~cloc = 0;
+		}
+		var tcloc = 0;
 		var states = a.states.select(x|x.isHit()).sortBy(x|x.ID);
 		for (s in states) {
 			var agent = s.fromActivity.first().agentState.agent;
-		
+			
 			var authorExperience = states.select(x|x.fromActivity.first().agentState.agent = agent and x.ID <= s.ID).size();
 			s.addValue(CC, authorExperience.asDouble());
 			var statesSoFar = states.select(x|x.ID <= s.ID).size();		
 			s.addValue(CCR, authorExperience.asDouble()/statesSoFar.asDouble());
 			var collaboratorCount = states.select(x|x.ID <= s.ID).collect(x|x.fromActivity.first().agentState.agent).asSet().size();
 			s.addValue(ACCR, 1.asDouble()/collaboratorCount.asDouble());
+			var NOAt = (NOA.name+"."+a.type.name).getAttribute();
+			var cf = authorExperience.asDouble()/s.fromActivity.first().agentState.getValue(NOAt).content;
+			s.addValue(CF, cf);
+			
+			var hits = s.getValue(HA).content.size();
+			agent.~cloc = agent.~cloc+hits;
+			tcloc = tcloc+hits;
+			s.addValue(CL, agent.~cloc.asDouble());
+			s.addValue(CR, agent.~cloc.asDouble()/tcloc.asDouble());
+
+			var aState = s.fromActivity.first().agentState;
+			aState.~cloc = aState.~cloc+hits; 
 		}
 	}
 }
@@ -76,6 +102,8 @@ operation addActivityDeltas(type : DECENT!ArtifactType) {
 	var RKAt = RKA;
 	var ROFt = ROF;
 	var ROAt = ROA;
+	var OCLt = OCL;
+	var OCRt = OCR;
 	if (not type.isUndefined()) {
 		("+++++++++++ "+type.name + " ++++++++++++++").log(3);
 		NOAt = addAttribute(NOA.name+"."+type.name,NOA.description+" ("+type.name+")");
@@ -84,6 +112,9 @@ operation addActivityDeltas(type : DECENT!ArtifactType) {
 		RKAt = addAttribute(RKA.name+"."+type.name,RKA.description+" ("+type.name+")");
 		ROFt = addAttribute(ROF.name+"."+type.name,ROF.description+" ("+type.name+")");
 		ROAt = addAttribute(ROA.name+"."+type.name,ROA.description+" ("+type.name+")");
+		OCLt = addAttribute(OCL.name+"."+type.name,OCL.description+" ("+type.name+")");
+		OCRt = addAttribute(OCR.name+"."+type.name,OCR.description+" ("+type.name+")");
+		
 	}
 	for (a in DECENT!Agent.allInstances()) {
 		for (s in a.states) {
@@ -93,6 +124,8 @@ operation addActivityDeltas(type : DECENT!ArtifactType) {
 			s.fromWorkload.addDelta(RKAt);
 			s.fromWorkload.addDelta(ROFt);
 			s.fromWorkload.addDelta(ROAt);
+			s.fromWorkload.addDelta(OCLt);
+			s.fromWorkload.addDelta(OCRt);
 		}
 	}
 }
@@ -105,6 +138,8 @@ operation addActivityCounts(type : DECENT!ArtifactType) {
 	var RKAt = RKA;
 	var ROFt = ROF;
 	var ROAt = ROA;
+	var OCLt = OCL;
+	var OCRt = OCR;
 	if (not type.isUndefined()) {
 		("+++++++++++ "+type.name + " ++++++++++++++").log(3);
 		NOAt = addAttribute(NOA.name+"."+type.name,NOA.description+" ("+type.name+")");
@@ -113,11 +148,19 @@ operation addActivityCounts(type : DECENT!ArtifactType) {
 		RKAt = addAttribute(RKA.name+"."+type.name,RKA.description+" ("+type.name+")");
 		ROFt = addAttribute(ROF.name+"."+type.name,ROF.description+" ("+type.name+")");
 		ROAt = addAttribute(ROA.name+"."+type.name,ROA.description+" ("+type.name+")");
+		OCLt = addAttribute(OCL.name+"."+type.name,OCL.description+" ("+type.name+")");
+		OCRt = addAttribute(OCR.name+"."+type.name,OCR.description+" ("+type.name+")");
 	}
 	
 	var counts = new Map();
 	var total = 0;
 	var allArtifacts = new Set();
+	var tcl = 0.asDouble();
+	for (agent in DECENT!Agent.allInstances()) {
+		agent.~ocl = 0.asDouble();
+	}
+	
+	
 	for (s in DECENT!AgentState.allInstances().sortBy(x|x.date.time)) {
 		(s.agent.name +" : " + s.ID + " : " + s.date).log(3);
 		var activities = s.activities.select(a|a.targetState.isHit());
@@ -168,7 +211,25 @@ operation addActivityCounts(type : DECENT!ArtifactType) {
 		} else {
 			s.addValue(RKAt, counts.get(s.agent).get(NKAt).size().asDouble());
 		}
-
+		
+		
+		var ocl = 0.asDouble();
+		var ocr = 0.asDouble();
+		for (ax in activities) {
+			var ts = ax.targetState;
+			var artifact = ts.artifact;
+			var HA = HitsPostAttribute;
+			if (artifact.isMGType()) {
+				HA = LinesPostAttribute;
+			}
+			var hits = ts.getValue(HA).content.size();
+			ocl = ocl+hits;
+		}
+		tcl = tcl + ocl;
+		s.agent.~ocl = s.agent.~ocl+ocl; 
+		ocr = s.agent.~ocl/tcl;
+		s.addValue(OCLt, s.agent.~ocl);
+		s.addValue(OCRt, ocr);
 	}
 }
 
