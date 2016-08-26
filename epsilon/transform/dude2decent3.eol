@@ -4,27 +4,30 @@ import "../libraries/decent/logging.eol";
 var step = "dude2decent3"; 
 ("Running "+step).log(1);
 var start = Native("java.lang.System").currentTimeMillis();
-//TODO: could also be integrated back into famix2decent as inline checking 
-//to further filter out unchanged elements 
 
 var Model = DECENT!Model.allInstances().first();
 
-var ClonedLinesPostAttribute = addAttribute("ClonedLinesPost","Cloned lines within artifact in resulting state");
-var ClonedFragmentsPostAttribute = addAttribute("ClonedFragmentsPost","Cloned fragments in resulting state");
-var ClonedLinesPerFragmentPostAttribute = addAttribute("ClonedLinesPerFragmentPost","Cloned lines per fragment in resulting state");
+
+//TODO: relevant?
 var ClonedPairsPostAttribute = addAttribute("ClonedPairsPost","Cloned pairs for cloned fragments in resulting state");
 var ClonedPairsPerFragmentPostAttribute = addAttribute("ClonedPairsPerFragmentPost","Cloned pairs per fragment in resulting state");
 
-var ClassArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "Class").first();
-var MethodArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "Method").first();
-var FunctionArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "Function").first();
-var ModuleArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "Module").first();
+var ClonedLinesPostAttribute = addAttribute("DD.ClonedLinesPost","Cloned lines within artifact in resulting state");
+var NCL = addAttribute("DD.NCL","Number of cloned lines within artifact in resulting state");
+var NCF = addAttribute("DD.NCF","Number of cloned fragments in resulting state");
+var RCL = addAttribute("DD.RCL","Ratio of cloned lines within artifact in resulting state");
+var RCF = addAttribute("DD.RCF","Ratio of cloned fragments in resulting state");
+var VCL = addAttribute("DD.VCL","Variance of cloned lines within artifact in resulting state");
+var ALPF = addAttribute("DD.ALPF","Cloned lines per fragment in resulting state");
+//what is this!?!?
+var CDR = addAttribute("DD.CDR","Clone dispersion ratio");
 
-var StartLineAttribute = "StartLine".getAttribute();
-var EndLineAttribute = "EndLine".getAttribute();
-var LinesPreAttribute = "LinesPre".getAttribute();
-var LinesPostAttribute = "LinesPost".getAttribute();
-var FilePathAttribute = "FilePath".getAttribute();
+var StartLineAttribute = "MX.StartLine".getAttribute();
+var EndLineAttribute = "MX.EndLine".getAttribute();
+var LinesPreAttribute = "VCS.LinesPre".getAttribute();
+var LinesPostAttribute = "VCS.LinesPost".getAttribute();
+var FilePathAttribute = "VCS.FilePath".getAttribute();
+var FileSizeAttribute = "VCS.FileSize".getAttribute();
 
 
 //TODO: work topdown: Agent State -> State -> Children States
@@ -33,35 +36,45 @@ var FilePathAttribute = "FilePath".getAttribute();
 
 //TODO: add cleanup before start, including deltas?
 //TODO: add deltas or in a separate transformation
+//TODO: aggregate values for developer states?
 var states = DECENT!AgentState.allInstances();
 
 for (s in states) {
 	var run = DUDE!Run.allInstances().select(r|r.commit_id = s.ID).first();
-	var count = 0;
-	for (a in s.activities.select(x|x.targetState.artifact.isMGType())) {
+	for (a in s.activities.select(x|x.targetState.isHit())) {
+		var count = 0;
 		var content = new OrderedSet();
-		if (a.targetState.getValue(ClonedLinesPostAttribute).isDefined()) {
-			a.targetState.addIntegerCollectionValue(ClonedLinesPostAttribute, content);
-		}
-		for (f in run.fragments.select(x|x.file_name = "/"+a.targetState.getValue(FilePathAttribute).content)) {
-			var clonedLines = f.start_line.to(f.end_line);
-			content.addAll(clonedLines);
-			
-			count = count + 1;
-		}
-		a.targetState.addIntegerCollectionValue(ClonedLinesPostAttribute, content);
-		a.targetState.addValue(ClonedFragmentsPostAttribute, count);
-		
-		for (c in a.targetState.artifact.children) {
-			for (cs in c.states.select(x|x.ID = s.ID)) {
-				var startLine = cs.getValue(StartLineAttribute).content;
-				var endLine = cs.getValue(EndLineAttribute).content;
-				var csClonedLines = content.select(l|l >= startLine and l <= endLine);
-				c.targetState.addIntegerCollectionValue(ClonedLinesPostAttribute, csClonedLines);
-				
-				//TODO: add fragments and other attributes
+		var size = 0;
+		var anchor = "";
+		var ts = a.targetState;
+		if (ts.artifact.isMGType()) {
+			anchor = "/"+ts.getValue(FilePathAttribute).content;
+			size = ts.getValue(FileSizeAttribute).content;
+			for (f in run.fragments.select(x|x.file_name = anchor)) {
+				var clonedLines = f.start_line.to(f.end_line);
+				content.addAll(clonedLines);
+				count = count + 1;
 			}
-		}	  	
+		} else {
+			anchor = "/"+ts.parent.getValue(FilePathAttribute).content;
+			for (f in run.fragments.select(x|x.file_name = anchor)) {
+				var sl = ts.getValue(StartLineAttribute).content;
+				var el = ts.getValue(EndLineAttribute).content;
+				size = el-sl+1;
+				var clonedLines = f.start_line.max(sl).to(f.end_line.min(el));
+				//var csClonedLines = content.select(l|l >= startLine and l <= endLine);
+				content.addAll(clonedLines);
+				count = count + 1;
+			}
+		}
+		(ts.artifact.name + " @ " + ts.ID +  " : " + content.size() + " / " + count).log(3);
+		ts.addIntegerCollectionValue(ClonedLinesPostAttribute, content);
+		ts.addValue(NCL, content.size());
+		ts.addValue(NCF, count);
+		ts.addValue(RCF, content.size().asDouble()/size);
+		ts.addValue(RCL, count.asDouble()/size);
+		ts.addValue(VCL, content.getVariance());
+		ts.addValue(ALPF, count.asDouble()/size);
 	}
 }
 
