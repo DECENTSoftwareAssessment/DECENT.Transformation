@@ -28,7 +28,7 @@ pre {
 
   var StartLineAttribute = addAttribute("MX.StartLine", "Artifact start line");
   var EndLineAttribute = addAttribute("MX.EndLine", "Artifact end line");
-  var FileAnchorAttribute = addAttribute("FAMIX.FileAnchor", "File anchor summary");
+  var FileAnchorAttribute = addAttribute("MX.FileAnchor", "File anchor summary");
   
   var FilePathAttribute = "VCS.FilePath".getAttribute();
   
