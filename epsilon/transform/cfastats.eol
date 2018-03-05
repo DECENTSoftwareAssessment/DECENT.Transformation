@@ -1,0 +1,434 @@
+import "../libraries/cfa/common.eol";
+import "../libraries/decent/common.eol";
+import "../libraries/decent/logging.eol";
+
+//Some initialization
+var step = "cfastats"; 
+("Running "+step).log(1);
+var start = Native("java.lang.System").currentTimeMillis();
+
+var modelFile = new Native("java.io.File") (CFA.getModelImpl().getURI().toString().replaceAll("^file:",""));
+
+var BugFixFactor = CFA!Factor.allInstances().select(a|a.name = "BugFix").first();
+var DefaultFactor = CFA!Factor.allInstances().select(a|a.name = "Default").first();
+var FixFactor = CFA!Factor.allInstances().select(a|a.name = "Fix").first();
+var SZZFactor = CFA!Factor.allInstances().select(a|a.name = "SZZ").first();
+var IssueCountFactor = CFA!Factor.allInstances().select(a|a.name = "IssueCount").first();
+var RefactoringFactor = CFA!Factor.allInstances().select(a|a.name = "Refactoring").first();
+
+var BugFixSharedFactor = CFA!Factor.allInstances().select(a|a.name = "BugFix.Shared").first();
+var BugFixSharedCodeFactor = CFA!Factor.allInstances().select(a|a.name = "BugFix.Shared.Code").first();
+
+var BugFixChurnCodeFactor = CFA!Factor.allInstances().select(a|a.name = "BugFix.Churn.Code").first();
+var BugFixSizeCodeFactor = CFA!Factor.allInstances().select(a|a.name = "BugFix.Size.Code").first();
+
+
+var CFAWeightFactor = "WeightFactor".getCFAAttribute();
+var CFAAverageWeight = "AverageWeight".getCFAAttribute();
+var CFATotalWeight = "TotalWeight".getCFAAttribute();
+
+var sBuffer = "";
+var aggregate = new Sequence();
+var maxBuffer = 0;
+
+("Available Factors:").println();
+for (f in CFA!Factor.allInstances()) {
+	("  "+f.name).println();
+}
+
+var folds = Native("java.lang.System").getProperty("epsilon.transformation.cfastats.folds");
+var selectedFactors = Native("java.lang.System").getProperty("epsilon.transformation.cfastats.factor");
+var detailed = Native("java.lang.System").getProperty("epsilon.transformation.cfastats.detailed");
+
+
+var atLeastOneFactor = false;
+for (factor in selectedFactors.split(",")) {
+	var selectedFactor = CFA!Factor.allInstances().select(a|a.name = factor).first();
+	if (selectedFactor.isDefined()) {
+		atLeastOneFactor=true;
+		for (fold in folds.split(",")) {
+			getFullStats(fold.asInteger(), 3, selectedFactor);
+		}
+	}
+}
+
+if (not atLeastOneFactor) {
+	for (f in CFA!Factor.allInstances()) {
+		var selectedFactor = f;
+		for (fold in folds.split(",")) {
+			getFullStats(fold.asInteger(), 3, selectedFactor);
+		}
+	}
+} 
+
+if (detailed.equals("true")) {
+	detailedBreakdown();
+}
+
+branchFileBreakdown();
+
+//dumpAggregate();
+
+
+
+//getProjectLayerStats(selectedFactor);
+//getFileLayerStats(selectedFactor);
+//getLogicalLayerStats(selectedFactor, "Class");
+//getLogicalLayerStats(selectedFactor, "Method");
+
+//selectedFactor = SZZFactor;
+//getProjectLayerStats(selectedFactor);
+//getFileLayerStats(selectedFactor);
+
+/*
+getFileLayerStats(FixFactor);
+getFileLayerStats(RefactoringFactor);
+getFileLayerStats(BugFixSharedFactor);
+getFileLayerStats(BugFixSharedCodeFactor);
+getFileLayerStats(BugFixChurnCodeFactor);
+getFileLayerStats(BugFixSizeCodeFactor);
+*/
+
+
+var end = Native("java.lang.System").currentTimeMillis();
+var duration = end - start;
+//Model.content.add(step);
+//Model.addStep(step,duration.toMinutes().round(5));
+("Duration: "+duration.toMinutes().round(5)).log(1);
+
+
+operation String printlnx() {
+	self.println();
+	//sBuffer = sBuffer.concat(self+"\n");
+}
+
+operation Sequence exportStateBreakdown(filename : String) {
+	var file = new Native("java.io.File") (filename);
+	var writer = new Native("java.io.FileWriter") (file);
+	
+
+	var atLeastOneFactor = false;
+	var head = "State";
+	
+	for (factor in selectedFactors.split(",")) {
+		var selectedFactor = CFA!Factor.allInstances().select(a|a.name = factor).first();
+		if (selectedFactor.isDefined()) {
+			atLeastOneFactor=true;
+			head = head+"\t"+selectedFactor.name;
+		}
+	}
+	
+	if (not atLeastOneFactor) {
+		for (f in CFA!Factor.allInstances().sortBy(x|x.name)) {
+			var selectedFactor = f;
+			head = head+"\t"+selectedFactor.name;
+		}	
+	}
+	head.printlno(writer);
+	
+	for (s in self) {
+		var row = ""+s.ID;
+		if (atLeastOneFactor) {
+			for (factor in selectedFactors.split(",")) {
+				var selectedFactor = CFA!Factor.allInstances().select(a|a.name = factor).first();
+				if (selectedFactor.isDefined()) {
+					row = row+"\t"+s.factors.get(selectedFactor).get(CFAAverageWeight);
+				}
+			}
+		} else {
+			for (f in CFA!Factor.allInstances().sortBy(x|x.name)) {
+				var selectedFactor = f;
+				row = row+"\t"+s.factors.get(selectedFactor).get(CFAAverageWeight);
+			}
+		}
+		row.printlno(writer);
+	}
+	
+	writer.close();
+	
+}
+
+operation Any branchFileBreakdown() {
+	var fStates = CFA!ArtifactState.allInstances();
+	fStates = fStates.select(s|s.action.file.file_type = "code");
+	
+	var branches = fStates.collect(s|s.action.branch).asOrderedSet();
+	("Branches: "+branches.size()).printlnx();
+	for (b in branches) {
+		var branchFileCodeStates = fStates.select(s|s.action.branch = b).size();
+		("  Branch: "+b.name+" :: "+branchFileCodeStates).log(1);
+	}
+	
+	var lStates = CFA!LogicalState.allInstances();
+	var totalLogicalStates = lStates.size();
+	
+	var mStates = lStates.select(s|s.artifact.type.name = "Method");
+	var totalLogicalMethodStates = mStates.size();
+
+	var mmStates = mStates.select(s|s.state.previous.isDefined());
+	var modifiedTotalLogicalMethodStates = mmStates.size();
+	("Logical: "+totalLogicalMethodStates+" "+modifiedTotalLogicalMethodStates).printlnx();
+	
+	
+}
+
+operation Any detailedBreakdown() {
+	("Detailed Breakdown..").log(2);
+	
+	var pStates = CFA!GlobalState.allInstances();
+	pStates = pStates.select(s|s.artifactStates.select(a|a.action.file.file_type = "code").size()>0);
+	var fStates = CFA!ArtifactState.allInstances().select(a|a.action.file.file_type = "code");
+	var cStates = CFA!LogicalState.allInstances().select(a|a.artifact.type.name = "Class");
+	var mStates = CFA!LogicalState.allInstances().select(a|a.artifact.type.name = "Method");
+
+	var parent = modelFile.getParent()+"/cfa-";
+
+	("Project Layer (code)..").log(2);
+	pStates.exportStateBreakdown(parent+"project.csv");
+	("File Layer (code)..").log(2);
+	fStates.exportStateBreakdown(parent+"file-code.csv");
+	("Logical Layer (Class)..").log(2);
+	cStates.exportStateBreakdown(parent+"logical-class.csv");
+	("Logical Layer (Method)..").log(2);
+	mStates.exportStateBreakdown(parent+"logical-method.csv");
+}
+
+
+operation Any aggregateBuffer() {
+	("Aggregating..").log(3);
+	var lines = sBuffer.split("\n");
+	sBuffer = "";
+	maxBuffer = maxBuffer.max(lines.size());
+	aggregate.add(lines);
+}
+
+operation dumpAggregate() {
+	var s = "\t";
+	for (l in 0.to(maxBuffer)) {
+		var line = "";
+		for (a in aggregate) {
+			if (l < a.size()) {
+				line = line + s + a.get(l); 		
+			}
+		}
+		line.println();
+	}
+}
+
+operation Any getFullStats(folds : Integer, round : Integer, f : CFA!Factor) {
+	("Factor:"+f.name).log(3);
+	var pStates = CFA!GlobalState.allInstances();
+	var totalProjectStates = pStates.size();
+	pStates = pStates.select(s|s.artifactStates.select(a|a.action.file.file_type = "code").size()>0);
+	var totalProjectCodeStates = pStates.size();
+
+	var projectStateFreq = pStates.getFrequencies(folds, round, f);
+	var fileCodeStateFreqProjected = pStates.getProjectedFileFrequencies(folds, round, f, "code");
+	var classStateFreqProjected = pStates.getProjectedLogicalFrequencies(folds, round, f, "Class");
+	var methodStateFreqProjected = pStates.getProjectedLogicalFrequencies(folds, round, f, "Method");
+
+	var fStates = CFA!ArtifactState.allInstances();
+	var totalFileStates = fStates.size();
+	fStates = fStates.select(s|s.action.file.file_type = "code");
+	var totalFileCodeStates = fStates.size();
+	var fileStateFreq = fStates.getFrequencies(folds, round, f);
+
+	var lStates = CFA!LogicalState.allInstances();
+	var totalLogicalStates = lStates.size();
+	var cStates = lStates.select(s|s.artifact.type.name = "Class");
+	var totalLogicalClassStates = cStates.size();
+	var logicalClassStateFreq = cStates.getFrequencies(folds, round, f);
+	
+	var mStates = lStates.select(s|s.artifact.type.name = "Method");
+	var totalLogicalMethodStates = mStates.size();
+	var logicalMethodStateFreq = mStates.getFrequencies(folds, round, f);
+	
+	var s = "\t";
+	("Factor:"+f.name+s).printlnx();
+	("Project States (total)"+s+totalProjectStates).printlnx();
+	("Project States (code)"+s+totalProjectCodeStates).printlnx();
+	("Project States ("+(folds+1)+"-fold)"+s+totalProjectCodeStates).printlnx();
+	for (k in projectStateFreq.keySet().sortBy(x|x)) {
+		("--weight ("+k+")"+s+projectStateFreq.get(k)).printlnx();
+	}
+	
+	
+	("File States (total)"+s+totalFileStates).printlnx();
+	("File States (code)"+s+totalFileCodeStates).printlnx();
+	for (k in fileStateFreq.keySet().sortBy(x|x)) {
+		("--weight ("+k+")"+s+fileStateFreq.get(k)).printlnx();
+	}
+	
+	("Projected States (code)"+s+totalFileCodeStates).printlnx();
+	for (k in fileCodeStateFreqProjected.keySet().sortBy(x|x)) {
+		("--weight ("+k+")"+s+fileCodeStateFreqProjected.get(k)).printlnx();
+	}
+
+	
+	("Logical States (total)"+s+totalLogicalStates).printlnx();
+	("Logical States (Class)"+s+totalLogicalClassStates).printlnx();
+	for (k in logicalClassStateFreq.keySet().sortBy(x|x)) {
+		("--weight ("+k+")"+s+logicalClassStateFreq.get(k)).printlnx();
+	}
+
+	("Projected States (Class)"+s+totalLogicalClassStates).printlnx();
+	for (k in classStateFreqProjected.keySet().sortBy(x|x)) {
+		("--weight ("+k+")"+s+classStateFreqProjected.get(k)).printlnx();
+	}
+
+	("Logical States (Method)"+s+totalLogicalMethodStates).printlnx();
+	for (k in logicalMethodStateFreq.keySet().sortBy(x|x)) {
+		("--weight ("+k+")"+s+logicalMethodStateFreq.get(k)).printlnx();
+	}
+
+	("Projected States (Method)"+s+totalLogicalMethodStates).printlnx();
+	for (k in methodStateFreqProjected.keySet().sortBy(x|x)) {
+		("--weight ("+k+")"+s+methodStateFreqProjected.get(k)).printlnx();
+	}
+	//aggregateBuffer();
+	
+}
+
+operation Any getProjectLayerStats(f : CFA!Factor) {
+	("Factor:"+f.name).log(3);
+	var states = CFA!GlobalState.allInstances();
+	("Project Layer States (total):"+states.size()).log(3);
+	states = states.select(s|s.artifactStates.select(a|a.action.file.file_type = "code").size()>0);
+	("Project Layer States (with code):"+states.size()).log(3);
+	//("States:"+states.size()).log(1);
+	//for (s in states) {
+		//var aw = s.factors.get(f).get(CFAAverageWeight);
+		//(s.ID +" : "+f.name+".AW = "+aw).log(1);
+	//}
+	
+	var aws=states.collect(s|s.factors.get(f).get(CFAAverageWeight));
+	//(aws.getFrequencies(10, 1)).println();
+	//(aws.getFrequencies(8, 3)).println();
+	(aws.getFrequencies(4, 3)).println();
+	(aws.getFrequencies(1, 3)).println();
+	//horribly inefficient?
+	("Projected File Layer:").println();
+	(states.getProjectedFileFrequencies(4, 3, f, "code")).println();
+	(states.getProjectedFileFrequencies(1, 3, f, "code")).println();
+	("Projected Logical Layer (Class, Method):").println();
+	(states.getProjectedLogicalFrequencies(4, 3, f, "Class")).println();
+	(states.getProjectedLogicalFrequencies(1, 3, f, "Class")).println();
+	(states.getProjectedLogicalFrequencies(4, 3, f, "Method")).println();
+	(states.getProjectedLogicalFrequencies(1, 3, f, "Method")).println();
+	
+}
+
+operation Any getLogicalLayerStats(f : CFA!Factor, type : String) {
+	("Factor:"+f.name).log(1);
+	var states = CFA!LogicalState.allInstances();
+	("Logical Layer States (total):"+states.size()).log(1);
+	states = states.select(s|s.artifact.type.name = type);
+	("Logical Layer States ("+type+"):"+states.size()).log(1);
+	//states = CFA!GlobalState.allInstances();
+	//("States:"+states.size()).log(1);
+	for (s in states) {
+		var aw = s.factors.get(f).get(CFAAverageWeight);
+		//(s.ID +" : "+f.name+".AW = "+aw).log(1);
+	}
+	
+	var aws=states.collect(s|s.factors.get(f).get(CFAAverageWeight));
+	//(aws.getFrequencies(10, 1)).println();
+	//(aws.getFrequencies(8, 3)).println();
+	(aws.getFrequencies(4, 3)).println();
+	(aws.getFrequencies(1, 3)).println();
+}
+
+
+operation Any getFileLayerStats(f : CFA!Factor) {
+	("Factor:"+f.name).log(1);
+	var states = CFA!ArtifactState.allInstances();
+	("File Layer States (total):"+states.size()).log(1);
+	states = states.select(s|s.action.file.file_type = "code");
+	("File Layer States (code):"+states.size()).log(1);
+	//states = CFA!GlobalState.allInstances();
+	//("States:"+states.size()).log(1);
+	for (s in states) {
+		var aw = s.factors.get(f).get(CFAAverageWeight);
+		//(s.ID +" : "+f.name+".AW = "+aw).log(1);
+	}
+	
+	var aws=states.collect(s|s.factors.get(f).get(CFAAverageWeight));
+	//(aws.getFrequencies(10, 1)).println();
+	//(aws.getFrequencies(8, 3)).println();
+	(aws.getFrequencies(4, 3)).println();
+	(aws.getFrequencies(1, 3)).println();
+}
+
+operation CFA!GlobalState getArtifactStateCount(type : String) : Integer {
+	return self.artifactStates.select(a|a.action.file.file_type = type).size();
+}
+
+operation CFA!GlobalState getLogicalStateCount(type : String) : Integer {
+	return self.logicalStates.select(a|a.artifact.type.name = type).size();
+}
+
+
+operation Collection getProjectedFileFrequencies(folds : Real, round : Real, factor : CFA!Factor, type : String) : Any {
+	var f = new Native("java.util.LinkedHashMap");
+	var aws=self.collect(s|s.factors.get(factor).get(CFAAverageWeight));
+	var step = (aws.getMax()-aws.getMin()).asDouble()/folds;
+	var	offset = aws.getMin();
+	var limit = offset+step;
+	
+	f.put(offset.round(1),self.select(e|
+		e.factors.get(factor).get(CFAAverageWeight) = offset)
+			.collect(s|s.getArtifactStateCount(type)).sum());
+	while (limit <= aws.getMax() and aws.getMax() > 0) {
+		var ffreq = self.select(e|
+			e.factors.get(factor).get(CFAAverageWeight) > offset 
+		and e.factors.get(factor).get(CFAAverageWeight) <= limit.round(round))
+				.collect(s|s.getArtifactStateCount(type)).sum();
+		f.put(limit.round(round),ffreq);
+		offset = offset+step;
+		limit = offset+step;
+	}
+	return f;
+}
+
+operation Collection getProjectedLogicalFrequencies(folds : Real, round : Real, factor : CFA!Factor, type : String) : Any {
+	var f = new Native("java.util.LinkedHashMap");
+	var aws=self.collect(s|s.factors.get(factor).get(CFAAverageWeight));
+	var step = (aws.getMax()-aws.getMin()).asDouble()/folds;
+	var	offset = aws.getMin();
+	var limit = offset+step;
+	
+	f.put(offset.round(1),self.select(e|
+		e.factors.get(factor).get(CFAAverageWeight) = offset)
+			.collect(s|s.getLogicalStateCount(type)).sum());
+	while (limit <= aws.getMax() and aws.getMax() > 0) {
+		var ffreq = self.select(e|
+			e.factors.get(factor).get(CFAAverageWeight) > offset 
+		and e.factors.get(factor).get(CFAAverageWeight) <= limit.round(round))
+				.collect(s|s.getLogicalStateCount(type)).sum();
+		f.put(limit.round(round),ffreq);
+		offset = offset+step;
+		limit = offset+step;
+	}
+	return f;
+}
+
+operation Collection getFrequencies(folds : Real, round : Real, factor : CFA!Factor) : Any {
+	var aws=self.collect(s|s.factors.get(factor).get(CFAAverageWeight));
+	return aws.getFrequencies(folds, round);
+}
+
+
+operation Collection getFrequencies(folds : Real, round : Real) : Any {
+	var f = new Native("java.util.LinkedHashMap");
+	var step = (self.getMax()-self.getMin()).asDouble()/folds;
+	var	offset = self.getMin();
+	var limit = offset+step;
+	f.put(offset.round(1),self.select(e|e = offset).size());
+	while (limit <= self.getMax() and self.getMax() > 0) {
+		var ffreq = self.select(e|e > offset and e <= limit.round(round)).size();
+		f.put(limit.round(round),ffreq);
+		offset = offset+step;
+		limit = offset+step;
+	}
+	return f;
+}
