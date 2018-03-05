@@ -8,26 +8,39 @@ import "../libraries/decent/logging.eol";
 
   var Model = DECENT!Model.allInstances().first();
 
+  var resolution = Native("java.lang.System").getProperty("epsilon.transformation.temporals.resolution").asDouble();
+  var attributeGroups = Native("java.lang.System").getProperty("epsilon.transformation.temporals.groups").split(",");
+  
+  //Sets
   var AbsoluteTimeAttribute = addAttribute("AbsoluteTime","Set of distances to the beginning of time");
   var RelativeTimeAttribute = addAttribute("RelativeTime","Set of distances to the first state");
   var DistanceTimeAttribute = addAttribute("DistanceTime","Set of distances to previous states");
 
-  var AbsoluteTimeVarianceAttribute = addAttribute("AbsoluteTimeVariance","Variance of distances to the beginning of time");
-  var RelativeTimeVarianceAttribute = addAttribute("RelativeTimeVariance","Variance of distances to the first state");
-  var DistanceTimeVarianceAttribute = addAttribute("DistanceTimeVariance","Variance of distances to previous states");
-
-  var RevisionsAttribute = addAttribute("Revisions","Current number of revisions");
-  var LifespanAttribute = addAttribute("Lifespan","Lifespan of artifact");
-  var AgeAttribute = addAttribute("Age","Age of artifact in state");
-  var DistanceAttribute = addAttribute("Distance","Distance to previous state");
-
-  var DistanceAverageAttribute = addAttribute("DistanceAverage","Average distance between states");
-  var DistanceRunningAverageAttribute = addAttribute("DistanceRunningAverage","Running average distance between states");
+  //Variances
+  var AbsoluteTimeVarianceAttribute = addAttribute("TM.VAGEx","Variance of distances to the beginning of time"); // AbsoluteTimeVariance / Discard
+  var RelativeTimeVarianceAttribute = addAttribute("TM.VAGE","Variance of distances to the first state"); // RelativeTimeVariance
+  var DistanceTimeVarianceAttribute = addAttribute("TM.VDIST","Variance of distances to previous states"); // DistanceTimeVariance
   
-  var FrequencyAttribute = addAttribute("Frequency","Frequency of changes (=Revisions-1/Age)");
-  var FrequencyAverageAttribute = addAttribute("FrequencyAverage","Frequency average (=All Revisions-1/Lifespan)");
-  var FrequencyDistanceToAverageAttribute = addAttribute("FrequencyDistanceToAverage","Frequency distance to average (=Frequency-FrequencyAverage)");
+  //Basic
+  var RevisionsAttribute = addAttribute("TM.NOS","Current number of revisions");//TM.NOS / Revisions
+  var LifespanAttribute = addAttribute("TM.LS","Lifespan of artifact");//Discard? / TM.LS / Lifespan
+  var AgeAttribute = addAttribute("TM.AGE","Age of artifact in state");//TM.AGE / Age
+  var DistanceAttribute = addAttribute("TM.DIST","Distance to previous state");//TM.DIST, TM.AGE.delta / Distance
+  var ProjectAgeAttribute = addAttribute("TM.PAGE","Age of artifact in state with regard to project start");//TM.PAGE / Age
 
+  var DistanceAverageAttribute = addAttribute("TM.TADIST","Average distance between states"); //TM.TADIST / DistanceAverage - Discard, based on lifetime?
+  var DistanceRunningAverageAttribute = addAttribute("TM.ADIST","Running average distance between states"); // TM.RADIST DistanceRunningAverage
+  
+  //Frequencies
+  var FrequencyAttribute = addAttribute("TM.FREQ","Frequency of changes (=Revisions-1/Age)"); //Frequency / TM.FREQ
+  var FrequencyAverageAttribute = addAttribute("TM.TAFREQ","Frequency average (=All Revisions-1/Lifespan)"); //Discard? FrequencyAverage / TM.TAFREQ 
+  var FrequencyDistanceToAverageAttribute = addAttribute("TM.FDAF","Frequency distance to average (=Frequency-FrequencyAverage)"); //Discard? / FrequencyDistanceToAverage / TM.FDAF
+
+  var firstStates = DECENT!AgentState.allInstances().select(s|s.previous.isUndefined()).sortBy(s|s.date.time);
+  for (s in firstStates) {
+  	(s.agent.name + " @ " + s.ID + " "+ s.date).log(3);
+  }  
+  var projectStart = firstStates.first().date.time;
 
   //TODO: other temporal dimensions such as cause-fix time, agent time, bug lifetime vs fragment lifetime, etc.
   ("Adding temporal characteristics...").log(2);
@@ -42,17 +55,17 @@ import "../libraries/decent/logging.eol";
   	//thus temporal ordering causes inconsistencies with the rest 
   	//var sortedStates = a.states.sortBy(s|s.fromActivity.first().date.time);
   	var sortedStates = a.states; 
-  	sortedStates.addArtifactTemporalCharacteristics();
+  	sortedStates.addTemporalCharacteristics();
   }
 
 
   //temporal characteristics for agents
   //clean up  
-  for (a in DECENT!Agent.allInstances()) {
+  for (a in DECENT!Agent.allInstances().select(a|a.states.size > 0)) {
   	("  Agent: "+a.name).log(3);
   	
   	var sortedStates = a.states; 
-  	sortedStates.addAgentTemporalCharacteristics();
+  	sortedStates.addTemporalCharacteristics();
   }
   
 
@@ -63,16 +76,14 @@ import "../libraries/decent/logging.eol";
   ("Duration: "+duration.toMinutes().round(5)).log(1);
 
 
-operation OrderedSet addAgentTemporalCharacteristics() {
-  	var timeCreated = self.first().date.time;
-  	var lifespan =  self.last().date.time - timeCreated;
+operation OrderedSet addTemporalCharacteristics() {
+  	var timeCreated = self.first().getTime();
+  	var lifespan =  self.last().getTime() - timeCreated;
   	var revisions = 0;
   	var previousStateTime = timeCreated;
   	var absoluteTime = new Sequence;
   	var relativeTime = new Sequence;
   	var distanceTime = new Sequence;
-  	var resolution = 24*60*60*1000;//days*hours*minutes*seconds
-  	//resolution = 60*1000;//minutes*seconds
 
   	//TODO: filter hits only 
   	//TODO: navigate via previous/next
@@ -88,104 +99,51 @@ operation OrderedSet addAgentTemporalCharacteristics() {
   		//      given the logic behind agent states
   		//TODO: other characteristics may need to be adjusted as well
   		revisions = revisions + 1;
-  		s.addValue(RevisionsAttribute, revisions.asDouble());
-  		s.addValue(LifespanAttribute, lifespan.asDouble()/resolution);
-
-  		var age = (s.date.time - timeCreated).asDouble()/resolution;
-  		s.addValue(AgeAttribute, age);
-  		
-  		var distance = (s.date.time - previousStateTime).asDouble()/resolution;
-  		s.addValue(DistanceAttribute, distance);
-
+  		var page = (s.getTime() - projectStart).asDouble()/resolution;
+  		var age = (s.getTime() - timeCreated).asDouble()/resolution;
+  		var distance = (s.getTime() - previousStateTime).asDouble()/resolution;
   		var distanceAverage = (lifespan/(self.size().asDouble()-1)).asDouble();
-  		s.addValue(DistanceAverageAttribute, distanceAverage);
-
   		var distanceRunningAverage = (age/revisions).asDouble();
-  		s.addValue(DistanceRunningAverageAttribute, distanceRunningAverage);
 
+		if (attributeGroups.contains("Basic")) {
+	  		s.addValue(RevisionsAttribute, revisions.asDouble());
+	  		s.addValue(LifespanAttribute, lifespan.asDouble()/resolution);
+	  		s.addValue(AgeAttribute, age);
+	  		s.addValue(DistanceAttribute, distance);
+	  		s.addValue(ProjectAgeAttribute, page);
+	
+	  		s.addValue(DistanceAverageAttribute, distanceAverage);
+	  		s.addValue(DistanceRunningAverageAttribute, distanceRunningAverage);
+		}
+		
 		var frequency = ((revisions.asDouble()-1)/(age)).asDouble();
-  		s.addValue(FrequencyAttribute, frequency);
-  		
   		var frequencyAverage = ((self.size().asDouble()-1)/(lifespan.asDouble()/resolution)).asDouble();
-  		s.addValue(FrequencyAverageAttribute, frequencyAverage);
 
-  		s.addValue(FrequencyDistanceToAverageAttribute, frequency-frequencyAverage);
-  		
-  		absoluteTime.add(s.date.time.asDouble()/resolution);
-  		s.addDoubleCollectionValue(AbsoluteTimeAttribute, absoluteTime);
-  		s.addValue(AbsoluteTimeVarianceAttribute, absoluteTime.getVariance());
-
-		relativeTime.add((s.date.time - timeCreated).asDouble()/resolution);
-  		s.addDoubleCollectionValue(RelativeTimeAttribute, relativeTime);
-		s.addValue(RelativeTimeVarianceAttribute, relativeTime.getVariance());
+		if (attributeGroups.contains("Frequencies")) {
+	  		s.addValue(FrequencyAttribute, frequency);
+	  		s.addValue(FrequencyAverageAttribute, frequencyAverage);
+	  		s.addValue(FrequencyDistanceToAverageAttribute, frequency-frequencyAverage);
+		}
 		
-		distanceTime.add((s.date.time - previousStateTime).asDouble()/resolution);
-  		s.addDoubleCollectionValue(DistanceTimeAttribute, distanceTime);
-		s.addValue(DistanceTimeVarianceAttribute, distanceTime.getVariance());		
-  		
-  		previousStateTime = s.date.time;
+		if (attributeGroups.contains("Sets") or attributeGroups.contains("Variances")) {
+	  		absoluteTime.add(s.getTime().asDouble()/resolution);
+	  		//age
+			relativeTime.add((s.getTime() - timeCreated).asDouble()/resolution);
+			//distance
+			distanceTime.add((s.getTime() - previousStateTime).asDouble()/resolution);
+		}
+				
+		if (attributeGroups.contains("Sets")) {
+	  		s.addDoubleCollectionValue(AbsoluteTimeAttribute, absoluteTime);
+	  		s.addDoubleCollectionValue(RelativeTimeAttribute, relativeTime);
+	  		s.addDoubleCollectionValue(DistanceTimeAttribute, distanceTime);
+		}
+		
+		if (attributeGroups.contains("Variances")) {
+	  		s.addValue(AbsoluteTimeVarianceAttribute, absoluteTime.getVariance());
+			s.addValue(RelativeTimeVarianceAttribute, relativeTime.getVariance());
+			s.addValue(DistanceTimeVarianceAttribute, distanceTime.getVariance());		
+		}  		
+  		previousStateTime = s.getTime();
 	}
-}
-
-//TODO: add date to states
-//TODO: move deltas outside
-//TODO: unify with agent states
-operation OrderedSet addArtifactTemporalCharacteristics() {
-  	var timeCreated = self.first().fromActivity.first().date.time;
-  	var lifespan =  self.last().fromActivity.first().date.time - timeCreated;
-  	var revisions = 0;
-  	var previousStateTime = timeCreated;
-  	var absoluteTime = new Sequence;
-  	var relativeTime = new Sequence;
-  	var distanceTime = new Sequence;
-  	var resolution = 24*60*60*1000;//days*hours*minutes*seconds
-  	//resolution = 60*1000;//minutes*seconds
-
-  	//TODO: filter hits only 
-  	//TODO: navigate via previous/next
-  	for (s in self) {
-  		//TODO: technically lifespan does not need to be included
-  		//TODO: difference can also be inferred from age delta
-  		//TODO: the interesting part would be the deltas in the 
-  		//      frequency as shifting gears between faster and 
-  		//      slower speed occurs
-  		//TODO: keep in mind that changes in temporal order due to branching may create artifacts
-  		revisions = revisions + 1;
-  		s.addValue(RevisionsAttribute, revisions.asDouble());
-  		s.addValue(LifespanAttribute, lifespan.asDouble()/resolution);
-
-  		var age = (s.fromActivity.first().date.time - timeCreated).asDouble()/resolution;
-  		s.addValue(AgeAttribute, age);
-  		
-  		var distance = (s.fromActivity.first().date.time - previousStateTime).asDouble()/resolution;
-  		s.addValue(DistanceAttribute, distance);
-
-  		var distanceAverage = (lifespan/(self.size().asDouble()-1)).asDouble();
-  		s.addValue(DistanceAverageAttribute, distanceAverage);
-
-  		var distanceRunningAverage = (age/revisions).asDouble();
-  		s.addValue(DistanceRunningAverageAttribute, distanceRunningAverage);
-
-		var frequency = ((revisions.asDouble()-1)/age).asDouble();
-  		s.addValue(FrequencyAttribute, frequency);
-  		
-  		var frequencyAverage = ((self.size().asDouble()-1)/(lifespan.asDouble()/resolution)).asDouble();
-  		s.addValue(FrequencyAverageAttribute, frequencyAverage);
-
-  		s.addValue(FrequencyDistanceToAverageAttribute, frequency-frequencyAverage);
-  		
-  		absoluteTime.add(s.fromActivity.first().date.time.asDouble()/resolution);
-  		s.addDoubleCollectionValue(AbsoluteTimeAttribute, absoluteTime);
-  		s.addValue(AbsoluteTimeVarianceAttribute, absoluteTime.getVariance());
-
-		relativeTime.add((s.fromActivity.first().date.time - timeCreated).asDouble()/resolution);
-  		s.addDoubleCollectionValue(RelativeTimeAttribute, relativeTime);
-		s.addValue(RelativeTimeVarianceAttribute, relativeTime.getVariance());
-		
-		distanceTime.add((s.fromActivity.first().date.time - previousStateTime).asDouble()/resolution);
-  		s.addDoubleCollectionValue(DistanceTimeAttribute, distanceTime);
-		s.addValue(DistanceTimeVarianceAttribute, distanceTime.getVariance());
-		
-  		previousStateTime = s.fromActivity.first().date.time;
-  	}
 }
