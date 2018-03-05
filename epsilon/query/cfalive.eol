@@ -1,0 +1,54 @@
+import "../libraries/cfa/common.eol";
+import "../libraries/decent/common.eol";
+import "../libraries/decent/logging.eol";
+  
+("Executing CFA live").println();
+	//TODO: move to separated modules
+	//Stepwise filtering
+	//Exclude first states (no previous) -> biggest chunk
+	//Exclude nested anonymous classes
+	//Exclude targets that are not hit
+	//Later in decent: Exclude when previous hit state not defined
+ 	var fStates = CFA!CFA::ArtifactState.allInstances();
+	fStates = fStates.select(s|s.action.file.file_type = "code");
+	  
+	var branches = fStates.collect(s|s.action.branch).asOrderedSet();
+	("Branches: "+branches.size()).println(); 
+	for (b in branches) {    
+		var branchFileCodeStates = fStates.select(s|s.action.branch = b).size();
+		("  Branch: "+b.name+" :: "+branchFileCodeStates).println();
+	}
+ 
+ 
+	var lStates = CFA!CFA::LogicalState.allInstances();
+	var totalLogicalStates = lStates.size();
+	
+	var mStates = lStates.select(s|s.artifact.type.name = "Method");
+	var totalLogicalMethodStates = mStates.size();
+
+	var nestedAnonymousClassFilter = "\"[\\w]+\\$[\\d]+.*\"";
+
+	("Logical::Method: "+totalLogicalMethodStates+" ").println();
+
+	var f = 0;
+	var nacf = 0;
+	var h = 0;
+	var first = 0; 
+	for (s in mStates) {
+		//(s.artifact.parent.name+" :: "+s.artifact.name).println();
+		//s.state.ID.println();
+		var a = s.state.fromActivity.first();  
+		if (a.state.isDefined()) {
+			f = f + 1;
+			if (not a.state.artifact.name.matches(nestedAnonymousClassFilter)) {
+				nacf = nacf + 1;
+				if (a.targetState.isHit()) {
+					h = h + 1;
+				}
+			} 
+		} else {
+			//s.state.previous.println();
+			first = first + 1;
+		}
+	}
+	("Logical::Method: " + first + " " + f + " " + nacf + " " + h + " ").println();    
