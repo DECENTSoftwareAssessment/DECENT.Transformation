@@ -1,0 +1,189 @@
+import "../libraries/cfa/common.eol";
+import "../libraries/decent/common.eol";
+import "../libraries/decent/logging.eol";
+
+"Running SZZ".log(1);
+var start = Native("java.lang.System").currentTimeMillis();
+
+//TODO: Extract as Options
+var commentPattern = "(?m).*(revision|rev|commit)\\s([\\d]+)[^\\d].*";
+var searchBack = false; 
+
+//mapIssuesToRevisionsSZZ();
+mapIssuesToRevisions(commentPattern);
+//compareMappings();
+
+
+var end = Native("java.lang.System").currentTimeMillis();
+var duration = end - start;
+("Duration: "+duration.toMinutes().round(5)).log(1);
+
+//SZZ approach
+operation Any mapIssuesToRevisionsSZZ() {
+	for (r in MG!Revision.allInstances()) {
+		var relatedIssues = new OrderedSet();
+		
+		//bug[# \t]*[0-9]+
+		//pr[# \t]*[0-9]+
+		//show\_bug\.cgi\?id=[0-9]+
+		//\[[0-9]+\]
+	
+		//numbers
+		var p0 = Native("java.util.regex.Pattern").compile("[0-9]+");
+		//bug numbers
+		var p1 = Native("java.util.regex.Pattern").compile("(?i)bug[# \t:]*[0-9]+");
+		var p2 = Native("java.util.regex.Pattern").compile("(?i)pr[# \t:]*[0-9]+");
+		var p3 = Native("java.util.regex.Pattern").compile("(?i)show\\_bug\\.cgi\\?id=[0-9]+");
+		var p4 = Native("java.util.regex.Pattern").compile("\\[[0-9]+\\]");
+		//keywords
+		var p5 = Native("java.util.regex.Pattern").compile("(?i)fix(e[ds])?|bugs?|defects?|patch");
+		var synWeight = 0;
+		var id = 0;
+		if  (p0.matcher(r.message).find()) {
+			if  (p1.matcher(r.message).find() or 
+				p2.matcher(r.message).find() or 
+				p3.matcher(r.message).find() or 
+				p4.matcher(r.message).find()) {
+				synWeight = synWeight+1;
+				//("BUG NUMBER found in:\n\n"+r.message).log(1);
+			}
+			if (p5.matcher(r.message).find()) {
+				//("KEYWORD ONLY found in:\n\n"+r.message).log(1);
+				synWeight = synWeight+1;
+			} else if (p1.matcher(r.message).matches() or
+					p2.matcher(r.message).matches() or
+					p3.matcher(r.message).matches() or
+					p4.matcher(r.message).matches()) {
+				//("BUG NUMBER ONLY found in:\n\n"+r.message).log(1);
+				synWeight = synWeight+1;
+			} else if (p0.matcher(r.message).matches()) {
+				//("NUMBER ONLY found in:\n\n"+r.message).log(1);
+				synWeight = synWeight+1;
+			}
+			if (synWeight>-1) {
+				//assumed for synWeight>1 all collected numbers are 
+				//to be checked against the issue ids
+				var numbers = new Sequence();
+				var m = p0.matcher(r.message); 
+				while (m.find()) {
+					if (m.group(0).length < 12) {
+						numbers.add(m.group(0).asInteger());
+					}
+				}  
+				("Numbers found:"+numbers).log(4);
+				var semWeight = 0;
+				for (i in BZ!BZIssue.allInstances().select(i|numbers.contains(i.issueId))) {
+					("Matched Issue:"+i.issueId).log(4);
+					if (i.status.contains("FIXED")) {
+						("Matched Issue [FIXED]:"+i.issueId).log(5);
+						semWeight = semWeight+1;
+					} else {
+						("Matched Issue [NOT FIXED?]:"+i.issueId).log(5);
+					}
+					if (r.message.contains(i.issueTitle)) {
+						("Matched Issue Description:"+i.issueId).log(5);
+						semWeight = semWeight+1;
+					}
+					//trivial matching, more adequate approaches may need to be added
+					if (matchAuthorToAssignee(i.assignedTo, r.author.name)) {
+						("Matched Author and Assignee:"+i.issueId).log(5);	
+						semWeight = semWeight+1;
+					}
+					//no attachment information is collected 
+					//so weight information for this is not included
+					
+					("WEIGHTS : "+semWeight +" :: " + synWeight).log(5);
+					if (semWeight > 1 or (semWeight = 1 and synWeight > 0)) {
+						relatedIssues.add(i);
+					} 
+				}
+			}
+		}
+		for (i in relatedIssues) {
+			("Issue "+i.issueId+" ("+i.status+") mapped to revision "+r.commit_id+".").log(3);
+			var t = new TRACE!Trace;
+			t.source = i;
+			t.target = r;
+		}
+	}
+}
+
+operation Any matchAuthorToAssignee(assignee : String, author : String) : Boolean {
+	//TODO: oversimplified, may need further refinement and normalisation
+	var a = assignee.replaceAll("\\.|_"," ");
+	var b = author.replaceAll("\\.|_"," ");
+	return a.equals(b);
+}
+
+
+//new approach
+//covers some additional corner cases e.g. 
+//"The aim is to address and eventually close bug report 217925 
+//and its duplicates 228614 and 237262" which depending on the selection of 
+//the semantic and syntactic weights may be left out..
+operation Any mapIssuesToRevisions(pattern : String) {  
+	
+  	var p = Native("java.util.regex.Pattern").compile(pattern);
+	var unmappedCount = 0;
+	for (i in BZ!BZIssue.allInstances()) {
+		//select candidate revisions whose message contains the issue ID
+		var relatedRevisions = MG!Revision.allInstances().select(r|r.message.contains(""+i.issueId));
+
+		//check issues for which there are no candidate revisions 
+		if (relatedRevisions.size() == 0) {
+			//check if issue has been marked as fixed 
+			//attempt to find references to candidate revisions in issue comments 
+			if (i.status.contains("FIXED")) {
+				(" -- Fixed Issue "+i.issueId+" ("+i.status+") cannot be mapped. "+i.issueTitle).log(3);
+				for (c in i.comments) {
+					("    + Comment text: \n"+c.commentText).log(4);
+					if (c.commentText.contains("SVN rev") or c.commentText.contains("SVN commit")) {
+						("      Comment text: \n"+c.commentText).log(4);
+						var m = p.matcher(c.commentText);
+						if (m.find()) {
+					  		var rev = m.group(2);  
+							("   -- Attempting match for SVN revision "+rev+"...").log(4);
+							relatedRevisions.addAll(MG!Revision.allInstances().select(r|r.message.contains(""+rev)));
+							("     -- "+relatedRevisions.size()+" matches found...").log(4);
+						}
+					}
+				}
+				if (searchBack) {
+					//look for references to revision id in the comments of the issue
+					//likely not the case, if anything the reverse shall be more likely
+					for (r in MG!Revision.allInstances()) {
+						for (c in i.comments) {
+							if (c.commentText.contains(""+r.rev)) {
+								("   -- Found backlink for issue "+i.issueId+" ("+i.status+") in comments, mapped to revision "+r.commit_id).log(4);
+								relatedRevisions.add(r);
+							}
+						}
+					}
+				}
+				if (relatedRevisions.size() == 0) {
+					unmappedCount = unmappedCount + 1;
+				}
+			} else {
+				(" -- Issue "+i.issueId+" ("+i.status+") cannot be mapped.").log(3);
+			}
+		}
+		
+		for (r in relatedRevisions) {
+			("Issue "+i.issueId+" ("+i.status+") mapped to revision "+r.commit_id+".").log(3);
+			var t = new TRACE!Trace;
+			t.source = i;
+			t.target = r;
+		}
+	
+	}
+	(unmappedCount+" reportedly fixed issues could not be mapped").log(2);
+}
+
+operation Any compareMappings() {
+	for (t in TRACE!Trace.allInstances()) {
+		("Occurrences: "+t.source.issueId+" :: "+TRACE!Trace.allInstances().select(x|
+			x.source.issueId = t.source.issueId and
+			x.target.rev = t.target.rev
+			).size()).log(3);
+	}
+}
