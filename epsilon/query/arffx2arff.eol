@@ -2,96 +2,171 @@ import "../libraries/arff/common.eol";
 import "../libraries/decent/common.eol";
 import "../libraries/decent/logging.eol";
 
-"Running arffx2csv".log(1);
-var start = Native("java.lang.System").currentTimeMillis();
+	"Running arffx2csv".log(1);
+	var start = Native("java.lang.System").currentTimeMillis();
+	
+	
+	var s = ",";
+	var targetAttributes = new Map;
+	//TODO: export options
+	//targetAttributes.put("Artifact.Target.BugFix.AverageWeight.Local",0.1);
+	//targetAttributes.put("Artifact.Target.Refactoring.AverageWeight.Local",0.1);
+	//targetAttributes.put("Artifact.Target.Fix.AverageWeight.Local",0.1);
+	//targetAttributes.put("Artifact.Target.IssueCount.AverageWeight.Local",0.1);
+	//targetAttributes.put("Artifact.Target.IssueReference.AverageWeight.Local",0.1);
+	//targetAttributes.put("Artifact.Target.UsersPerIssue.AverageWeight.Local",0.1);
+	//targetAttributes.put("Artifact.Target.CommentsPerIssue.AverageWeight.Local",0.1);
+	
+	targetAttributes.put("Artifact.Target.CFA.BugFix.AverageWeight",0.001);
+	targetAttributes.put("Artifact.Target.CFA.Refactoring.AverageWeight",0.001);
+	targetAttributes.put("Artifact.Target.CFA.Fix.AverageWeight",0.001);
+	targetAttributes.put("Artifact.Target.CFA.IssueCount.AverageWeight",0.1);
+	targetAttributes.put("Artifact.Target.CFA.IssueReference.AverageWeight",0.1);
+	targetAttributes.put("Artifact.Target.CFA.UsersPerIssue.AverageWeight",0.1);
+	targetAttributes.put("Artifact.Target.CFA.CommentsPerIssue.AverageWeight",0.1);
+	
+	targetAttributes.put("Artifact.Target.CFA.BugFix.Shared.AverageWeight",0.001);
+	targetAttributes.put("Artifact.Target.CFA.Refactoring.Shared.AverageWeight",0.1);
+	targetAttributes.put("Artifact.Target.CFA.Fix.Shared.AverageWeight",0.1);
+	targetAttributes.put("Artifact.Target.CFA.IssueReference.Shared.AverageWeight",0.1);
+	
+	targetAttributes.put("Artifact.Target.CFA.BugFix.Churn.AverageWeight",0.1);
+	targetAttributes.put("Artifact.Target.CFA.Refactoring.Churn.AverageWeight",0.1);
+	targetAttributes.put("Artifact.Target.CFA.Fix.Churn.AverageWeight",0.1);
+	targetAttributes.put("Artifact.Target.CFA.IssueReference.Churn.AverageWeight",0.1);
+	
+	targetAttributes.put("Artifact.Target.CFA.BugFix.Size.AverageWeight",0.1);
+	targetAttributes.put("Artifact.Target.CFA.Refactoring.Size.AverageWeight",0.1);
+	targetAttributes.put("Artifact.Target.CFA.Fix.Size.AverageWeight",0.1);
+	targetAttributes.put("Artifact.Target.CFA.IssueReference.Size.AverageWeight",0.1);
+	
+	
+	var ConfidenceWindowAttribute = "CFA.Project.ConfidenceWindow";
+	var confidenceWindowFilter = Native("java.lang.System").getProperty("epsilon.transformation.arffx.confidenceWindowFilter");
+	var smallContributorThreshold = Native("java.lang.System").getProperty("epsilon.transformation.arffx.smallContributorActivityCount").asDouble();
+	var useFilter = Native("java.lang.System").getProperty("epsilon.transformation.arffx.useFilter").asBoolean();
 
+	
+	
+	//does not work with binary resources
+	//var modelFile = new Native("java.io.File") (ARFFx.getModelFile());
+	var modelFile = new Native("java.io.File") (ARFFx.getModelImpl().getURI().toString().replaceAll("^file:",""));
+	
+	//var CONFIDENCE = "CONFIDENCE".getARFFAttribute();
+	//var LABEL = "LABEL".getARFFAttribute();
+	
+	//TODO: move to common
+	//TODO: remove once established at earlier steps
+	var nestedAnonymousClassFilter = "\"[\\w]+\\$[\\d]+.*\"";
+	
+	
+	//ARTIFACTS
+	ARFFx!Model.allInstances().select(m|m.data.size()>0 and m.meta.get("ARFFx.Type") = "agent");
+	if (false) {
+		exportArtifacts();
+		exportSmallContributors();	
+		exportAllContributors();	
+	}
+	
+	var end = Native("java.lang.System").currentTimeMillis();
+	var duration = end - start;
+	("Duration: "+duration.toMinutes().round(5)).log(1);
+	
+	//validateFAMIXCoverage(CodeArtifactType);
 
-var s = ",";
-var targetAttributes = new Map;
-//TODO: export options
-//targetAttributes.put("Artifact.Target.BugFix.AverageWeight.Local",0.1);
-//targetAttributes.put("Artifact.Target.Refactoring.AverageWeight.Local",0.1);
-//targetAttributes.put("Artifact.Target.Fix.AverageWeight.Local",0.1);
-//targetAttributes.put("Artifact.Target.IssueCount.AverageWeight.Local",0.1);
-//targetAttributes.put("Artifact.Target.IssueReference.AverageWeight.Local",0.1);
-//targetAttributes.put("Artifact.Target.UsersPerIssue.AverageWeight.Local",0.1);
-//targetAttributes.put("Artifact.Target.CommentsPerIssue.AverageWeight.Local",0.1);
+operation exportAllContributors() {
+	var bag = new OrderedSet();
+	var types = new OrderedSet(); 
+	bag = ARFFx!Model.allInstances().select(x|x.data.size() > 0 and x.meta.get("ARFFx.Type") = "agent").asOrderedSet();
+	types = bag.collect(x|x.meta.get("DECENT.ArtifactType")).asOrderedSet();
+	exportBag(types, bag, "all contributors");
+}
 
-targetAttributes.put("Artifact.Target.BugFix.AverageWeight",0.1);
-targetAttributes.put("Artifact.Target.Refactoring.AverageWeight",0.1);
-targetAttributes.put("Artifact.Target.Fix.AverageWeight",0.1);
-targetAttributes.put("Artifact.Target.IssueCount.AverageWeight",0.1);
-targetAttributes.put("Artifact.Target.IssueReference.AverageWeight",0.1);
-targetAttributes.put("Artifact.Target.UsersPerIssue.AverageWeight",0.1);
-targetAttributes.put("Artifact.Target.CommentsPerIssue.AverageWeight",0.1);
+operation exportSmallContributors() {
+	var bag = new OrderedSet();
+	var types = new OrderedSet(); 
+	
+	bag = ARFFx!Model.allInstances().select(x|
+		x.data.size() > 0 and 
+		x.data.select(y|
+			not confidenceWindowFilter.equals("true") or 
+			y.getValue(ConfidenceWindowAttribute.getARFFAttribute(x)).equals("true")).size() < smallContributorThreshold and 
+		x.meta.get("ARFFx.Type") = "agent").asOrderedSet();
+	types = bag.collect(x|x.meta.get("DECENT.ArtifactType")).asOrderedSet();
+	exportBag(types, bag, "small contributors");
+}
 
-targetAttributes.put("Artifact.Target.BugFix.Shared.AverageWeight",0.1);
-targetAttributes.put("Artifact.Target.Refactoring.Shared.AverageWeight",0.1);
-targetAttributes.put("Artifact.Target.Fix.Shared.AverageWeight",0.1);
-targetAttributes.put("Artifact.Target.IssueReference.Shared.AverageWeight",0.1);
+operation ARFFx!Model getTemporalClassStats() {
+	if (not confidenceWindowFilter.equals("true")) {
+		return;
+	}
 
-targetAttributes.put("Artifact.Target.BugFix.Churn.AverageWeight",0.1);
-targetAttributes.put("Artifact.Target.Refactoring.Churn.AverageWeight",0.1);
-targetAttributes.put("Artifact.Target.Fix.Churn.AverageWeight",0.1);
-targetAttributes.put("Artifact.Target.IssueReference.Churn.AverageWeight",0.1);
+	var condfident = self.data.select(i|i.getValue(ConfidenceWindowAttribute.getARFFAttribute(self)).equals("true"));
+	(self.name + " : Confident/Total : " + condfident.size()+"/"+self.data.size()).log(1);
+}
 
-targetAttributes.put("Artifact.Target.BugFix.Size.AverageWeight",0.1);
-targetAttributes.put("Artifact.Target.Refactoring.Size.AverageWeight",0.1);
-targetAttributes.put("Artifact.Target.Fix.Size.AverageWeight",0.1);
-targetAttributes.put("Artifact.Target.IssueReference.Size.AverageWeight",0.1);
-
-//does not work with binary resources
-//var modelFile = new Native("java.io.File") (ARFFx.getModelFile());
-var modelFile = new Native("java.io.File") (ARFFx.getModelImpl().getURI().toString().replaceAll("^file:",""));
-
-//var CONFIDENCE = "CONFIDENCE".getARFFAttribute();
-//var LABEL = "LABEL".getARFFAttribute();
-
-//TODO: move to common
-//TODO: remove once established at earlier steps
-var nestedAnonymousClassFilter = "\"[\\w]+\\$[\\d]+.*\"";
-
-var threshold = 100;
-
-//ARTIFACTS
-for (arffx in ARFFx!Model.allInstances().select(x|x.data.size() > 0)) {
-	arffx.checkTargetAttributes(targetAttributes);
-	arffx.checkForCompleteness();
-	//arffx.name.println();
-	//these will be recalculated for the bags..
-	arffx.setConfidenceThresholds(targetAttributes);
-	arffx.assignClassAndConfidence(targetAttributes);
-	//"  outside".println();
-	//("    "+targetAttributes).println(); 
-	if (arffx.data.size() > threshold or arffx.meta.get("ARFFx.Type") = "artifact") {
-		//temporary workaround
-		arffx.name=arffx.name.replace("-1",arffx.meta.get("DECENT.Agent.Name"));
-		
-		var filename = modelFile.getParent()+"/"+arffx.name+".csv";
-		//note that this is about 30%+ slower
-		//arffx.exportAll(filename+".all.csv",s);
-		var filter = "filters/custom-current";
-		arffx.exportAttributes(filter+"-"+arffx.meta.get("ARFFx.Type")+"-"+arffx.meta.get("DECENT.ArtifactType")+"-last");
-		arffx.exportFiltered(filename,filter,targetAttributes,s);
+operation ARFFx!Model assignTemporalClasses() {
+	if (not confidenceWindowFilter.equals("true")) {
+		return;
+	}
+	//TODO: add other layers?
+	//TODO: specialise for agents and differet types?
+	//TODO: make threshold configurable (mean vs mean+dev)
+	//TODO: validate that Age is present
+	//TODO: validate that CFA temporals are present
+	//TODO: export both with and without filtering and compare results?
+	var maxAge = self.meta.get("CFA.Project.MaxAge").asDouble().round(3);
+	var mean = self.meta.get("CFA.Project.BugFix.Mean").asDouble().round(3);
+	var dev = self.meta.get("CFA.Project.BugFix.Deviation").asDouble().round(3);
+	("MaxAge : " + maxAge + ", Mean : " + mean + ", Dev : "+dev).log(1);
+	for (i in self.data) {
+		//DONE: THIS IS WRONG! TM.AGE is relative to the creation of the artifact, not of the project, use PAGE
+		var age = i.getValue("Artifact.Target.TM.PAGE".getARFFAttribute(self)).asDouble().round(3);
+		//debug
+		var name = i.getValue("Artifact.Name".getARFFAttribute(self));
+		var stateId = i.getValue("Artifact.Target.StateID".getARFFAttribute(self));
+		/*
+		(name + " @ " + stateId + " : "  
+		  + age + " <= " + maxAge + " - (" + mean + " + " + dev +")" 
+		  + " := "
+		  + (age <= (maxAge - (mean + dev)))).println();
+		*/
+		var threshold = maxAge - (mean + dev);
+		var label = (age <= threshold).asString();
+		i.updateValue(label, ConfidenceWindowAttribute);
 	}
 }
 
-var bag = new OrderedSet();
-var types = new OrderedSet(); 
+operation exportArtifacts() {
+	for (arffx in ARFFx!Model.allInstances().select(x|x.data.size() > 0)) {
+		arffx.checkTargetAttributes(targetAttributes);
+		arffx.checkForCompleteness();
+		arffx.assignTemporalClasses();
+		arffx.getTemporalClassStats();
+		//arffx.name.println();
+		//these will be recalculated for the bags..
+		//TODO: make optional, use baseline of 0.0
+		arffx.setConfidenceThresholds(targetAttributes);
+		arffx.assignClassAndConfidence(targetAttributes);
+		//"  outside".println();
+		//("    "+targetAttributes).println(); 
+		if (arffx.data.size() > smallContributorThreshold or arffx.meta.get("ARFFx.Type") = "artifact") {
+			//temporary workaround
+			arffx.name=arffx.name.replace("-1",arffx.meta.get("DECENT.Agent.Name"));
+			
+			var filename = modelFile.getParent()+"/"+arffx.name+".csv";
+			//note that this is about 30%+ slower
+			//arffx.exportAll(filename+".all.csv",s);
+			var filter;
+			if (useFilter) {
+				filter = "filters/custom-current";
+			}
+			arffx.exportAttributes(filter+"-"+arffx.meta.get("ARFFx.Type")+"-"+arffx.meta.get("DECENT.ArtifactType")+"-last");
+			arffx.exportFiltered(filename,filter,targetAttributes,s);
+		}
+	}
+}
 
-bag = ARFFx!Model.allInstances().select(x|x.data.size() > 0 and x.data.size() < threshold and x.meta.get("ARFFx.Type") = "agent").asOrderedSet();
-types = bag.collect(x|x.meta.get("DECENT.ArtifactType")).asOrderedSet();
-exportBag(types, bag, "small contributors");
-
-bag = ARFFx!Model.allInstances().select(x|x.data.size() > 0 and x.meta.get("ARFFx.Type") = "agent").asOrderedSet();
-types = bag.collect(x|x.meta.get("DECENT.ArtifactType")).asOrderedSet();
-exportBag(types, bag, "all contributors");
-
-var end = Native("java.lang.System").currentTimeMillis();
-var duration = end - start;
-("Duration: "+duration.toMinutes().round(5)).log(1);
-
-//validateFAMIXCoverage(CodeArtifactType);
 
 //for ALL and SMALL contributors
 //Cheap workaround... quite slow too?
@@ -103,12 +178,29 @@ operation exportBag(types : OrderedSet, bag : OrderedSet, bagName : String) {
 		var filename = modelFile.getParent()+"/"+modelName+"-agents-"+bagName+"-"+type+".csv";
 		var file = new Native("java.io.File") (filename);
 		var writer = new Native("java.io.FileWriter") (file);
-		var filter = "filters/custom-current";
+		var filter;
+		if (useFilter) {
+			filter = "filters/custom-current";
+		}
 		var h = false;
 
 		var bagOfType = bag.select(x|x.meta.get("ARFFx.Type") = "agent" and x.meta.get("DECENT.ArtifactType") = type);
 		//recalculate confidence thresholds and labels
 		bagOfType.setConfidenceThresholds(targetAttributes);
+		
+		//CW export
+		var preCWWriter;		
+		var postCWWriter;		
+		if (confidenceWindowFilter.equals("true")) {
+			var targetFile = new Native("java.io.File") (filename);
+			var name = targetFile.getName();
+			new Native("java.io.File") (targetFile.getParent()+"/pre-cw/").mkDirs();
+			new Native("java.io.File") (targetFile.getParent()+"/post-cw/").mkDirs();
+			var precwFile = new Native("java.io.File") (targetFile.getParent()+"/pre-cw/"+name);
+			var postcwFile = new Native("java.io.File") (targetFile.getParent()+"/post-cw/"+name);
+		 	preCWWriter = new Native("java.io.FileWriter") (precwFile);
+		 	postCWWriter = new Native("java.io.FileWriter") (postcwFile);
+		}		
 		
 		for (a in bagOfType) {
 			a.assignClassAndConfidence(targetAttributes);
@@ -125,20 +217,42 @@ operation exportBag(types : OrderedSet, bag : OrderedSet, bagName : String) {
 				attributes = attributes.select(x|selected.contains(x.name));
 			}
 			if (not h) {
+				//add headers
 				attributes.collect(x|x.name).concat(s).printlno(writer);
 				h = true;
+				if (confidenceWindowFilter.equals("true")) {
+					attributes.collect(x|x.name).concat(s).printlno(preCWWriter);
+					attributes.collect(x|x.name).concat(s).printlno(postCWWriter);
+				}
 			} 
 	
-			var NameAttribute = "Artifact.Name".getARFFAttribute(a);		
+			var NameAttribute = "Artifact.Name".getARFFAttribute(a);
+			var CWAttribute = ConfidenceWindowAttribute.getARFFAttribute(a);		
 			for (i in a.data.select(x|not x.getValue(NameAttribute).matches(nestedAnonymousClassFilter))) {
-			//for (i in a.data) {
 				//Note: See above on why attributes rather than selected is used 
 				i.getFilteredValues(s,attributes).printlno(writer);
 				//TODO: order seems to be ensured anyways
 				//i.getSafeOrderValues(s, attributes).printlno();
 			}
+			
+			
+			if (confidenceWindowFilter.equals("true")) {
+				for (i in a.data.select(x|not x.getValue(NameAttribute).matches(nestedAnonymousClassFilter))) {
+					if (i.getValue(CWAttribute).equals("true")) {
+						i.getFilteredValues(s,attributes).printlno(preCWWriter);
+					} else {
+						i.getFilteredValues(s,attributes).printlno(postCWWriter);
+					}
+				}
+			}
+			
 		}
 		writer.close();
+		if (confidenceWindowFilter.equals("true")) {
+			preCWWriter.close();
+			postCWWriter.close();
+		}
+				
 	}
 }
 
@@ -166,7 +280,11 @@ operation ARFFx!Model exportAll(filename : String, s : String) {
 	self.attributes.collect(x|x.name).concat(s).printlno(writer);
 
 	var NameAttribute = "Artifact.Name".getARFFAttribute(self);		
-	for (i in self.data.select(x|not x.getValue(NameAttribute).matches(nestedAnonymousClassFilter))) {
+	var CWAttribute = ConfidenceWindowAttribute.getARFFAttribute(self);		
+	for (i in self.data.select(x|
+		not x.getValue(NameAttribute).matches(nestedAnonymousClassFilter)
+		)) {
+	//for (i in self.data.select(x|not x.getValue(NameAttribute).matches(nestedAnonymousClassFilter))) {
 //	for (i in self.data) {
 		i.getValues(s).substring(1).printlno(writer);
 		//TODO: order seems to be ensured anyways
@@ -174,6 +292,9 @@ operation ARFFx!Model exportAll(filename : String, s : String) {
 	}
 	
 	writer.close();
+	//not sure this actually works.. 
+	self.exportCW(filename, self.attributes);
+	
 }
 
 //slow? 
@@ -283,15 +404,43 @@ operation ARFFx!Model exportFiltered(filename : String, filter : String, targetA
 	attributes.collect(x|x.name).concat(s).printlno(writer);
 	
 	var NameAttribute = "Artifact.Name".getARFFAttribute(self);		
+	var CWAttribute = ConfidenceWindowAttribute.getARFFAttribute(self);		
 	for (i in self.data.select(x|not x.getValue(NameAttribute).matches(nestedAnonymousClassFilter))) {
-	//for (i in self.data) {
-		//Note: See above on why attributes rather than selected is used 
 		i.getFilteredValues(s,attributes).printlno(writer);
 		//TODO: order seems to be ensured anyways
 		//i.getSafeOrderValues(s, attributes).printlno();
 	}
-	
 	writer.close();
+	
+	self.exportCW(filename, attributes);
+}
+
+operation ARFFx!Model exportCW(filename : String, attributes : Any) {
+	//export instances beyond window	
+	if (confidenceWindowFilter.equals("true")) {
+		var NameAttribute = "Artifact.Name".getARFFAttribute(self);		
+		var CWAttribute = ConfidenceWindowAttribute.getARFFAttribute(self);		
+		var targetFile = new Native("java.io.File") (filename);
+		var name = targetFile.getName();
+		new Native("java.io.File") (targetFile.getParent()+"/pre-cw/").mkDirs();
+		new Native("java.io.File") (targetFile.getParent()+"/post-cw/").mkDirs();
+		var precwFile = new Native("java.io.File") (targetFile.getParent()+"/pre-cw/"+name);
+		var preCWWriter = new Native("java.io.FileWriter") (precwFile);
+		var postcwFile = new Native("java.io.File") (targetFile.getParent()+"/post-cw/"+name);
+		var postCWWriter = new Native("java.io.FileWriter") (postcwFile);
+		attributes.collect(x|x.name).concat(s).printlno(preCWWriter);
+		attributes.collect(x|x.name).concat(s).printlno(postCWWriter);
+		for (i in self.data.select(x|not x.getValue(NameAttribute).matches(nestedAnonymousClassFilter))) {
+			if (i.getValue(CWAttribute).equals("true")) {
+				i.getFilteredValues(s,attributes).printlno(preCWWriter);
+			} else {
+				i.getFilteredValues(s,attributes).printlno(postCWWriter);
+			}
+		}
+		preCWWriter.close();
+		postCWWriter.close();
+	}
+
 }
 
 operation ARFFx!Instance assignClassAndConfidence(baseAttribute : String, threshold : Real) : OrderedSet {
@@ -302,6 +451,7 @@ operation ARFFx!Instance assignClassAndConfidence(baseAttribute : String, thresh
 	var base = self.getValue(baseAttribute.getARFFAttribute(self.eContainer()));
 	var label = "false";
 	var confidence = "high";
+	//TODO: needs to be refined
 	if (base.asDouble() > threshold) {
 		label = "true";
 	}
