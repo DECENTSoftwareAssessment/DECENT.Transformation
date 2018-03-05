@@ -2,20 +2,19 @@ import "../libraries/arff/common.eol";
 import "../libraries/decent/common.eol";
 import "../libraries/decent/logging.eol";
 
-var selectedType = Native("java.lang.System").getProperty("epsilon.transformation.decent2arffx.type");
+var selectedTypes = Native("java.lang.System").getProperty("epsilon.transformation.decent2arffx.types");
 var skipSource = Native("java.lang.System").getProperty("epsilon.transformation.decent2arffx.skipSource").asBoolean();
+var skipArtifacts = Native("java.lang.System").getProperty("epsilon.transformation.decent2arffx.skipArtifacts").asBoolean();
 
-var Type = DECENT!ArtifactType.allInstances().select(a|a.name = selectedType).first();
-if (Type.isUndefined()) {
-	//handle wrong arguments here ?
-}
+var resolution = Native("java.lang.System").getProperty("epsilon.transformation.temporals.resolution").asDouble();
 
 var types = new OrderedSet();
-types.add("code");
-types.add("Class");
-types.add("Method");
-types.add("Function");
-types.add("Module");
+types.addAll(selectedTypes.split(","));
+//types.add("code");
+//types.add("Class");
+//types.add("Method");
+//types.add("Function");
+//types.add("Module");
 
 //TODO: move to common, use for tagging states?
 var nestedAnonymousClassFilter = "\"[\\w]+\\$[\\d]+.*\"";
@@ -45,10 +44,12 @@ var start = Native("java.lang.System").currentTimeMillis();
 
 for (type in types) {
 	("Processing type "+type).log(2);
-	processArtifacts(type);
+	if (not skipArtifacts) {
+		processArtifacts(type);
+	}
 	//processActivities(type);
 	processAgents(type);
-
+	processProject(type);
 }
 
 
@@ -187,10 +188,33 @@ operation processAgents (typeName:String) {
 		//                LinesPreHits.content > 0 or 
 		//                LinesPostHits.content > 0
 
+		//TODO: switch to agent states
         for (ax in a.activities.select(a|a.state.isDefined() and a.state.artifact.type = type and not a.state.artifact.name.matches(nestedAnonymousClassFilter) and a.targetState.isHit())) {
 			ax.targetState.processTargetState(arffx);
         }
     }
+    
+}
+
+operation processProject (typeName:String) {
+	var type = DECENT!ArtifactType.allInstances().select(t|t.name = typeName).first();
+	if (type.isUndefined()) {
+		//TODO: check that type is set
+		//handle wrong arguments here ?
+		return;
+	}
+	var sortedAgentStates = DECENT!AgentState.allInstances().sortBy(s|s.getTime());
+	var start = sortedAgentStates.first().getTime();
+	var end = sortedAgentStates.last().getTime();
+	var maxAge = (end - start)/resolution;
+	
+	("Processing project ...").log(2);
+	for (arffx in ARFFx!Model.allInstances()) {
+		for (v in DECENT!Project.allInstances().first().values) {
+			arffx.meta.put(v.ofAttribute.name, v.content.asString());
+		}
+		arffx.meta.put("CFA.Project.MaxAge", maxAge.asString());
+	}	
 }
 
 operation DECENT!Activity dumpNonZeroDeltas() : String {
