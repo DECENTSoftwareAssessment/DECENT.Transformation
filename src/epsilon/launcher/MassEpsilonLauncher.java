@@ -22,6 +22,7 @@ import java.util.TimerTask;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.eclipse.emf.common.util.URI;
 import org.eclipse.emf.ecore.EObject;
@@ -58,6 +59,7 @@ public class MassEpsilonLauncher {
 	private Properties properties = new Properties();
 	private DECENTEpsilonModelHandler modelHandler = new DECENTEpsilonModelHandler();
 	protected boolean finished = false;
+	private boolean singleRun = false;
 	
 	public static void main(String[] args) throws Exception {
 		MassEpsilonLauncher launcher = new MassEpsilonLauncher();
@@ -106,9 +108,8 @@ public class MassEpsilonLauncher {
 	}
 	
 	public void close() {
-	
-		Socket s;
 		try {
+			Socket s;
 			s = new Socket("localhost", 9090);
 			try {
 				PrintWriter out = new PrintWriter(s.getOutputStream(), true);
@@ -137,8 +138,10 @@ public class MassEpsilonLauncher {
 		String propertiesFilename = arguments[0];
 		properties.load(new FileInputStream(propertiesFilename));
 		modelHandler.setUseDECENTBinary(Boolean.parseBoolean(properties.getProperty("useDECENTBinary","false")));
+		modelHandler.setUseCFABinary(Boolean.parseBoolean(properties.getProperty("useCFABinary","false")));
 		modelHandler.setUseARFFxBinary(Boolean.parseBoolean(properties.getProperty("useARFFxBinary","false")));
 		modelHandler.setUseDECENTDB(Boolean.parseBoolean(properties.getProperty("useDECENTDB","false")));
+		modelHandler.setUseNeoDECENT(Boolean.parseBoolean(properties.getProperty("useNeoDECENT","false")));
 		modelHandler.setUseMGBinary(Boolean.parseBoolean(properties.getProperty("useMGBinary","false")));
 		if (arguments.length > 1) {
 			properties.setProperty("steps", arguments[1]);
@@ -151,31 +154,69 @@ public class MassEpsilonLauncher {
 			//TODO: check supported types
 			properties.setProperty("project", arguments[3]);
 		}
-
+		
+		//TODO: extract and generalize steps as configuration files or models
+		//with description, source, required models, required steps, accepted arguments, dependencies, etc.
+		System.setProperty("epsilon.logLevel", properties.getProperty("logLevel", "1"));
+		System.setProperty("epsilon.logToFile", properties.getProperty("logToFile", "false"));
+		System.setProperty("epsilon.logFileAvailable", "false");
+		System.setProperty("epsilon.transformation.extra2cfa.factor", properties.getProperty("extra2cfa.factor", "Fix"));
+		System.setProperty("epsilon.transformation.trace2cfa.factor", properties.getProperty("trace2cfa.factor", "SZZ,IssueCount,UsersPerIssue,CommentsPerIssue"));
+		System.setProperty("epsilon.transformation.shared2cfa.strategy", properties.getProperty("shared2cfa.strategy", "Shared"));
+		System.setProperty("epsilon.transformation.cfastats.factor", properties.getProperty("cfastats.factor", "BugFix,BugFix.Shared,Fix,Fix.Shared"));
+		System.setProperty("epsilon.transformation.cfastats.folds", properties.getProperty("cfastats.folds", "1,4,10"));
+		System.setProperty("epsilon.transformation.cfastats.detailed", properties.getProperty("cfastats.detailed", "true"));
+		System.setProperty("epsilon.transformation.temporals.resolution", properties.getProperty("temporals.resolution", "86400000"));
+//		System.setProperty("epsilon.transformation.temporals.groups", properties.getProperty("temporals.groups", "Basic,Frequencies,Variances,Sets,CFA.Variances,CFA.Sets"));
+		System.setProperty("epsilon.transformation.temporals.groups", properties.getProperty("temporals.groups", "Basic,Frequencies,Variances,CFA.Variances"));
+//		System.setProperty("epsilon.transformation.cfa2decent.factor", properties.getProperty("cfa2decent.factor", "BugFix,BugFix.Shared,Fix,Fix.Shared"));
+		System.setProperty("epsilon.transformation.cfa2decent.factor", properties.getProperty("cfa2decent.factor", "BugFix"));
+		System.setProperty("epsilon.transformation.arffx.smallContributorActivityCount", properties.getProperty("arffx.smallContributorActivityCount", "100"));
+		System.setProperty("epsilon.transformation.arffx.confidenceWindowFilter", properties.getProperty("arffx.confidenceWindowFilter", "true"));
+		System.setProperty("epsilon.transformation.arffx.useFilter", properties.getProperty("arffx.useFilter", "false"));
+		System.setProperty("epsilon.transformation.defaultBranch", properties.getProperty("defaultBranch", "master"));
+		System.setProperty("epsilon.transformation.decent2arffx.skipSource", properties.getProperty("decent2arffx.skipSource", "false"));
+		System.setProperty("epsilon.transformation.decent2arffx.types", properties.getProperty("decent2arffx.types", "code,Class,Method,Function,Module"));
+		System.setProperty("epsilon.transformation.decent2arffx.skipArtifacts", properties.getProperty("decent2arffx.skipArtifacts", "true"));
+		System.setProperty("epsilon.transformation.temporals.twostagecfa", properties.getProperty("temporals.twostagecfa", "true"));
+		singleRun = Boolean.parseBoolean(properties.getProperty("temporals.twostagecfa.singlerun", "false"));
+		
 	}
 
 	public void executeSteps() throws Exception {
 		String dataLocation = properties.getProperty("dataLocation");
 		String project = properties.getProperty("project");
 		String location = dataLocation+project;
-		for (String step : properties.getProperty("steps").split(",")) {
-			executeTransformation(step.replace("steps/", ""), location);
+		
+		String phases = properties.getProperty("phases", "");
+		if (phases.length() < 1) {
+			System.out.println("Executing steps: "+properties.getProperty("steps")+"...");
+			for (String step : properties.getProperty("steps").split(",")) {
+				System.out.println("  "+step);
+				executeTransformation(step.replace("steps/", ""), location);
+			}
+		} else {
+			System.out.println("Executing phases: "+phases+"...");
+			for (String phase : phases.split(",")) {
+				String p = properties.getProperty("P"+phase, "");
+				if (p.length()<1) {
+					System.out.println("ERROR: Unknown phase P"+phase+"; Skipping...");
+				} else {
+					for (String step : p.split(",")) {
+						executeTransformation(step.replace("steps/", ""), location);
+					}
+				}
+			}
 		}
+		
 	}	
 	public void executeTransformation(String step, String location) {
-		//TODO: extract and generalize steps as configuration files or models
-		//with description, source, required models, required steps, accepted arguments, dependencies, etc.
-		System.setProperty("epsilon.logLevel", properties.getProperty("logLevel", "1"));
-		System.setProperty("epsilon.logToFile", properties.getProperty("logToFile", "false"));
-		System.setProperty("epsilon.logFileAvailable", "false");
-
 		try {
 			switch (step) {
 			case "MG2NORMALIZEDHUNKS":
 				executeMG2NORMALIZEDHUNKS(location);
 				break;
 			case "MG2DECENT":
-				System.setProperty("epsilon.transformation.defaultBranch", properties.getProperty("defaultBranch", "master"));
 				executeMG2DECENT(location);
 				break;
 			case "MG2CFA":
@@ -202,6 +243,12 @@ public class MassEpsilonLauncher {
 			case "CFATEMPORALS2DECENT":
 				executeCFATEMPORALS2DECENT(location);
 				break;
+			case "CFATEMPORALS2DECENTS1":
+				executeCFATEMPORALS2DECENTS1(location);
+				break;
+			case "CFATEMPORALS2DECENTS2":
+				executeCFATEMPORALS2DECENTS2(location);
+				break;
 			case "DAG2DECENT":
 				executeDAG2DECENT(location);
 				break;
@@ -213,6 +260,12 @@ public class MassEpsilonLauncher {
 				break;
 			case "TEMPORAL2DECENT":
 				executeTEMPORAL2DECENT(location);
+				break;
+			case "UPDATEATTRIBUTES":
+				executeUPDATEATTRIBUTES(location);
+				break;
+			case "CFASTATS":
+				executeCFASTATS(location);
 				break;
 			case "DELTA2DECENT":
 				executeDELTA2DECENT(location);
@@ -238,16 +291,15 @@ public class MassEpsilonLauncher {
 				executeHITS2DECENT(location);
 				break;
 			case "DECENT2ARFFx":
-				System.setProperty("epsilon.transformation.decent2arffx.skipSource", properties.getProperty("decent2arffx.skipSource", "false"));
-				System.setProperty("epsilon.transformation.decent2arffx.type", properties.getProperty("decent2arffx.type", "code"));
 				executeDECENT2ARFFx(location);
 				break;
 			case "ARFFx2ARFF":
 				executeARFFx2ARFF(location);
 				break;
+			case "SZZ":
+				executeSZZ(location);
+				break;
 			case "binDECENT2ARFFx":
-				System.setProperty("epsilon.transformation.decent2arffx.skipSource", properties.getProperty("decent2arffx.skipSource", "false"));
-				System.setProperty("epsilon.transformation.decent2arffx.type", properties.getProperty("decent2arffx.type", "code"));
 				modelHandler.setUseDECENTBinary(true);
 				modelHandler.setUseARFFxBinary(true);
 				executeDECENT2ARFFx(location);
@@ -266,8 +318,20 @@ public class MassEpsilonLauncher {
 			case "FIX":
 				executeFIX(location);
 				break;
-			case "LIVE":
-				executeLIVE(location);
+			case "BACKUP":
+				executeBACKUP(location);
+				break;
+			case "ROLLBACK":
+				executeROLLBACK(location);
+				break;
+			case "DECENTLIVE":
+				executeDECENTLIVE(location);
+				break;
+			case "CFALIVE":
+				executeCFALIVE(location);
+				break;
+			case "ARFFxLIVE":
+				executeARFFxLIVE(location);
 				break;
 			case "BIN2DECENT":
 				//duplicates RT functionality
@@ -307,10 +371,11 @@ public class MassEpsilonLauncher {
 					"\n\tReason: "+e.getReason()+
 					"\n\tWhere:  "+e.getAst().getUri()+" at "+e.getLine() + " : "+e.getColumn() +
 					"\n\tLink:   ("+path.substring(path.lastIndexOf("/")+1)+":"+e.getLine()+")");
-			//e.printStackTrace();
+//			e.printStackTrace();
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+			close();
 		}
 	}
 	
@@ -391,6 +456,25 @@ public class MassEpsilonLauncher {
 		module.reset();
 	}
 
+	private void executeSZZ(String location) throws Exception, URISyntaxException,
+			EolModelLoadingException, EolRuntimeException {
+		String source = "epsilon/transform/szz.eol";
+		IEolExecutableModule module = loadModule(source);
+		IModel mgModel = modelHandler.getMGModel(location, true, false);
+		IModel bzModel = modelHandler.getBZModel(location);
+		IModel traceModel = modelHandler.getTRACEModel(location, false, true);
+		module.getContext().getModelRepository().addModel(mgModel);
+		module.getContext().getModelRepository().addModel(bzModel);
+		module.getContext().getModelRepository().addModel(traceModel);
+		execute(module, location);
+		bzModel.dispose();
+		mgModel.dispose();
+		//can be stored and retained alternatively
+		traceModel.dispose();
+		module.reset();
+	}
+
+	
 	private void executeDAG2DECENT(String location) throws Exception,
 			URISyntaxException, EolModelLoadingException, EolRuntimeException {
 		String source = "epsilon/transform/dag2decent3.etl";
@@ -440,6 +524,12 @@ public class MassEpsilonLauncher {
 
 	private void executeCFA2DECENTSimple(String location) throws Exception,
 			URISyntaxException, EolModelLoadingException, EolRuntimeException {
+
+		boolean binary = modelHandler.isUseDECENTBinary();
+		if (binary) {
+			modelHandler.convertDECENTModelToXMI(location);
+			modelHandler.setUseDECENTBinary(false);
+		}
 		String source = "epsilon/transform/cfa2decent3simple.etl";
 		IEolExecutableModule module = loadModule(source);
 		IModel cfaModel = modelHandler.getCFAModel(location, true, false);
@@ -453,15 +543,76 @@ public class MassEpsilonLauncher {
 		// can be stored and retained alternatively
 		decentModel.dispose();
 		module.reset();
+		if (binary) {
+			modelHandler.convertDECENTModelToBinary(location);
+			modelHandler.setUseDECENTBinary(binary);
+		}
 	}
 
-	private void executeCFATEMPORALS2DECENT(String location) throws Exception, URISyntaxException,
-			EolModelLoadingException, EolRuntimeException {
-		String source = "epsilon/transform/cfa_temporals2decent3.etl";
+	private void executeCFATEMPORALS2DECENTS2(String location) throws Exception, URISyntaxException,
+		EolModelLoadingException, EolRuntimeException {
+		//TODO: force Binary or other
+		//TODO: make configurable?
+		boolean binary = modelHandler.isUseDECENTBinary();
+		if (!binary) {
+			modelHandler.convertDECENTModelToBinary(location);
+			modelHandler.setUseDECENTBinary(true);
+		}
+		String source = "epsilon/transform/cfa_temporals2decent3stage2.eol";
 		IEolExecutableModule module = loadModule(source);
 		IModel decentModel = modelHandler.getDECENTModel(location, true, true);
-		//TODO: consider removing reliance on MG especially if it is only needed in one line
+		module.getContext().getModelRepository().addModel(decentModel);
+		execute(module, location);
+		decentModel.dispose();
+		module.reset();
+		if (!binary) {
+			modelHandler.convertDECENTModelToXMI(location);
+			modelHandler.setUseDECENTBinary(binary);
+		}
+
+	}
+
+	
+	private void executeCFATEMPORALS2DECENTS1(String location) throws Exception, URISyntaxException,
+			EolModelLoadingException, EolRuntimeException {
+		//TODO: spaghetti monster..
+		//TODO: force XMI
+		boolean binary = modelHandler.isUseDECENTBinary();
+		//stage 1
+		if (binary) {
+			modelHandler.convertDECENTModelToXMI(location);
+			modelHandler.setUseDECENTBinary(false);
+		}
+		String source = "epsilon/transform/cfa_temporals2decent3.etl";
+		IEolExecutableModule module = loadModule(source);
 		IModel cfaModel = modelHandler.getCFAModel(location, true, false);
+		IModel decentModel = modelHandler.getDECENTModel(location, true, false);
+		module.getContext().getModelRepository().addModel(cfaModel);
+		module.getContext().getModelRepository().addModel(decentModel);
+		execute(module, location);
+		cfaModel.dispose();
+		if (singleRun) {
+			decentModel.dispose();
+		}
+		module.reset();
+//		if (binary) {
+//			modelHandler.convertDECENTModelToBinary(location);
+//		}
+		modelHandler.setUseDECENTBinary(binary);
+	}
+
+	
+	private void executeCFATEMPORALS2DECENT(String location) throws Exception, URISyntaxException,
+		EolModelLoadingException, EolRuntimeException {
+		boolean binary = modelHandler.isUseDECENTBinary();
+		if (binary) {
+			modelHandler.convertDECENTModelToXMI(location);
+			modelHandler.setUseDECENTBinary(false);
+		}
+		String source = "epsilon/transform/cfa_temporals2decent3.etl";
+		IEolExecutableModule module = loadModule(source);
+		IModel cfaModel = modelHandler.getCFAModel(location, true, false);
+		IModel decentModel = modelHandler.getDECENTModel(location, true, true);
 		module.getContext().getModelRepository().addModel(cfaModel);
 		module.getContext().getModelRepository().addModel(decentModel);
 		execute(module, location);
@@ -469,10 +620,19 @@ public class MassEpsilonLauncher {
 		//can be stored and retained alternatively
 		decentModel.dispose();
 		module.reset();
+		if (binary) {
+			modelHandler.convertDECENTModelToBinary(location);
+			modelHandler.setUseDECENTBinary(binary);
+		}
 	}
 
 	private void executeDECENT2CFA(String location) throws Exception,
 			URISyntaxException, EolModelLoadingException, EolRuntimeException {
+		boolean binary = modelHandler.isUseDECENTBinary();
+		if (binary) {
+			modelHandler.convertDECENTModelToXMI(location);
+			modelHandler.setUseDECENTBinary(false);
+		}
 		String source = "epsilon/transform/decent2cfa.etl";
 		IEolExecutableModule module = loadModule(source);
 		IModel cfaModel = modelHandler.getCFAModel(location, true, true);
@@ -486,6 +646,10 @@ public class MassEpsilonLauncher {
 		// can be stored and retained alternatively
 		decentModel.dispose();
 		module.reset();
+		if (binary) {
+			modelHandler.convertDECENTModelToBinary(location);
+			modelHandler.setUseDECENTBinary(binary);
+		}
 	}
 
 	private void getProfilingSummary() {
@@ -532,6 +696,19 @@ public class MassEpsilonLauncher {
 		logModel.dispose();
 	}
 
+	private void executeCFASTATS(String location) throws Exception, URISyntaxException,
+	EolModelLoadingException, EolRuntimeException {
+		String source = "epsilon/transform/cfastats.eol";
+		IEolExecutableModule module = loadModule(source);
+		IModel cfaModel = modelHandler.getCFAModel(location, true, false);
+		module.getContext().getModelRepository().addModel(cfaModel);
+		execute(module, location);
+		//can be stored and retained alternatively
+//		cfaModel.dispose();
+		module.reset();
+	}
+
+	
 	private void executeTRACE2CFA(String location) throws Exception, URISyntaxException,
 			EolModelLoadingException, EolRuntimeException {
 		String source = "epsilon/transform/trace2cfa.eol";
@@ -561,6 +738,11 @@ public class MassEpsilonLauncher {
 
 	private void executeSHARED2CFA(String location) throws Exception,
 		URISyntaxException, EolModelLoadingException, EolRuntimeException {
+		boolean binary = modelHandler.isUseDECENTBinary();
+		if (binary) {
+			modelHandler.convertDECENTModelToXMI(location);
+			modelHandler.setUseDECENTBinary(false);
+		}
 		String source = "epsilon/transform/shared2cfa.eol";
 		IEolExecutableModule module = loadModule(source);
 		IModel cfaModel = modelHandler.getCFAModel(location, true, true);
@@ -570,7 +752,12 @@ public class MassEpsilonLauncher {
 		execute(module, location);
 		// can be stored and retained alternatively
 		cfaModel.dispose();
+		decentModel.dispose();
 		module.reset();
+		if (binary) {
+			modelHandler.convertDECENTModelToBinary(location);
+			modelHandler.setUseDECENTBinary(binary);
+		}
 	}
 
 	
@@ -593,6 +780,11 @@ public class MassEpsilonLauncher {
 	private void executeTEMPORAL2DECENT(String location) throws Exception, URISyntaxException,
 			EolModelLoadingException, EolRuntimeException {
 		String source = "epsilon/transform/temporal2decent3.eol";
+		executeDECENTinPalace(location, source, true, true);
+	}
+	private void executeUPDATEATTRIBUTES(String location) throws Exception, URISyntaxException,
+			EolModelLoadingException, EolRuntimeException {
+		String source = "epsilon/transform/updateAttributes.eol";
 		executeDECENTinPalace(location, source, true, true);
 	}
 	private void executeDELTA2DECENT(String location) throws Exception, URISyntaxException,
@@ -629,25 +821,123 @@ public class MassEpsilonLauncher {
 		executeDECENTinPalace(location, source, true, true);
 	}
 
+	private void executeBACKUP(String location) throws Exception,
+			URISyntaxException, EolModelLoadingException, EolRuntimeException {
+		File backup = new File(location+"/backup");
+		backup.mkdirs();
+		File decent = new File(location+"/model.decent");
+		File cfa = new File(location+"/model.cfa");
+		if (decent.exists()) {
+			FileUtils.copyFileToDirectory(decent, backup);
+		}
+		if (cfa.exists()) {
+			FileUtils.copyFileToDirectory(cfa, backup);
+		}
+	}
+
+	private void executeROLLBACK(String location) throws Exception,
+			URISyntaxException, EolModelLoadingException, EolRuntimeException {
+		File backup = new File(location+"/backup");
+		if (backup.exists()) {
+			File project = new File(location);
+			File decent = new File(backup.getAbsolutePath()+"/model.decent");
+			File cfa = new File(backup.getAbsolutePath()+"/model.cfa");
+			if (decent.exists()) {
+				FileUtils.copyFileToDirectory(decent, project);
+			}
+			if (cfa.exists()) {
+				FileUtils.copyFileToDirectory(cfa, project);
+			}
+			
+		}
+	}
+
+	
+	
 	private void executeSTATS(String location) throws Exception,
 			URISyntaxException, EolModelLoadingException, EolRuntimeException {
 		String source = "epsilon/query/stats.eol";
 		executeDECENTinPalace(location, source, true, false);
 	}
 
-	private void executeLIVE(final String location)  {
+	private void executeARFFxLIVE(final String location)  {
+		final String source = "epsilon/query/arffxlive.eol";
+		try {
+			final IModel model = modelHandler.getARFFxModel(location, true, false);
+			model.load();
+
+			executeLIVE(location, source, model);
+
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
+	private void executeLIVE(final String location, final String source,
+			final IModel model) {
+		TimerTask task = new FileWatcher(new File(source)) {
+			protected void onChange(File file) {
+				try {
+					IEolExecutableModule module = loadModule(source);
+					module.getContext().getModelRepository().addModel(model);
+					execute(module, location);
+					module.reset();
+				} catch (URISyntaxException e) {
+				} catch (EolRuntimeException e) {
+					String path = e.getAst().getUri().getPath();
+					System.out.println("  Epsilon Runtime Exception:" +
+							"\n\tReason: "+e.getReason()+
+							"\n\tWhere:  "+e.getAst().getUri()+" at "+e.getLine() + " : "+e.getColumn() +
+							"\n\tLink:   ("+path.substring(path.lastIndexOf("/")+1)+":"+e.getLine()+")");
+
+				} catch (Exception e) {
+					
+				}
+			}
+		};
+
+		Timer timer = new Timer();
+		// repeat the check every second
+		timer.schedule(task, new Date(), 1000);
+	}
+
+	
+	private void executeDECENTLIVE(final String location)  {
 		final String source = "epsilon/query/live.eol";
 		try {
+			final IModel model = modelHandler.getDECENTModel(location, true, false);
+			model.load();
+			executeLIVE(location, source, model);
+
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
+	private void executeCFALIVE(final String location)  {
+		final String source = "epsilon/query/cfalive.eol";
+
+		try {
+			final IModel cfaModel = modelHandler.getCFAModel(location, true, false);
 			final IModel decentModel = modelHandler.getDECENTModel(location, true, false);
+			final IModel mgModel = modelHandler.getMGModel(location, true, false);
 			decentModel.load();
+			mgModel.load();
+			cfaModel.load();
 
 			TimerTask task = new FileWatcher(new File(source)) {
 				protected void onChange(File file) {
 					try {
-						IEolExecutableModule module = loadModule(source);
+						final IEolExecutableModule module = loadModule(source);
+						module.getContext().getModelRepository().addModel(mgModel);
 						module.getContext().getModelRepository().addModel(decentModel);
+						module.getContext().getModelRepository().addModel(cfaModel);
+
 						execute(module, location);
 						module.reset();
+
 					} catch (URISyntaxException e) {
 					} catch (EolRuntimeException e) {
 						String path = e.getAst().getUri().getPath();
@@ -666,11 +956,13 @@ public class MassEpsilonLauncher {
 			// repeat the check every second
 			timer.schedule(task, new Date(), 1000);
 
+			
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
+
 	
 	private void executeARFFx2ARFF(String location) throws Exception,
 			URISyntaxException, EolModelLoadingException, EolRuntimeException {
@@ -693,8 +985,8 @@ public class MassEpsilonLauncher {
 		module.getContext().getModelRepository().addModel(decentModel);
 		module.getContext().getModelRepository().addModel(arffxModel);
 		execute(module, location);
-		decentModel.dispose();
 		arffxModel.dispose();
+//		decentModel.dispose();
 		// can be stored and retained alternatively
 		module.reset();
 	}
@@ -732,7 +1024,15 @@ public class MassEpsilonLauncher {
 		String source = "epsilon/transform/famix2decent3.etl";
 		IEolExecutableModule module = loadModule(source);
 		
-		//TODO: add option "use binary"
+		//DONE: add option "use binary"
+		//CAUTION: it will overwrite any existing binary model
+		boolean forceFAMIX2DECENTBinary = Boolean.parseBoolean(properties.getProperty("forceFAMIX2DECENTBinary","true"));
+		boolean binary = modelHandler.isUseDECENTBinary();
+		if (forceFAMIX2DECENTBinary && !binary) {
+			modelHandler.setUseDECENTBinary(true);
+			modelHandler.convertDECENTModelToBinary(location);
+		}
+		
 		IModel decentModel = modelHandler.getDECENTModel(location, true, true);
 		//module.getContext().getModelRepository().addModel(decentModel);
 		
@@ -741,7 +1041,6 @@ public class MassEpsilonLauncher {
 		if (commits.length>0 && 0>=(Integer.parseInt(upperBound))) {
 			upperBound=commits[commits.length-1];
 		}
-
 		String storageStrategy = properties.getProperty("storageStrategy", "safe");
 		ArrayList<Double> factors = new ArrayList<>();
 		int windowSize = 1;
@@ -815,6 +1114,12 @@ public class MassEpsilonLauncher {
 			remainingCount--;
 		}
 		decentModel.dispose();
+		
+		if (forceFAMIX2DECENTBinary && !binary) {
+			modelHandler.setUseDECENTBinary(false);
+			modelHandler.convertDECENTModelToXMI(location);
+		}
+
 	}
 
 	private IEolExecutableModule loadModule(String source) throws Exception,
