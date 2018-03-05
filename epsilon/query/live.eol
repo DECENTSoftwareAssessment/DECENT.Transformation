@@ -13,22 +13,98 @@ var ModuleArtifactType = DECENT!ArtifactType.allInstances().select(t|t.name = "M
 
 //filter.getSelectedAttributes();
 
-for (x in DECENT!ArtifactType.allInstances()) {
-	x.name.println();
+checkArtifacts();
+
+operation checkArtifacts() {
+	//TODO: move to separated modules
+	//provides some statistics for DECENT2ARFFx transformation
+	var typeName = "Method";
+	var nestedAnonymousClassFilter = "\"[\\w]+\\$[\\d]+.*\"";
+	
+	var type = DECENT!ArtifactType.allInstances().select(t|t.name = typeName).first();
+
+	var aCount = 0;
+	var tCount = 0;
+	var ttCount = 0;
+	var nexCount = 0;
+	var mCount = 0;
+	var hCount = 0;
+	
+	var s = 0;
+
+    for (a in Agent.allInstances()) {
+		var u = 0;
+
+		//logic summary:
+		//- exclude first activity (state is undefined)
+		//- select activities resulting in hit states on artifacts of desired type only 
+		//  - where hit = MGType or 
+		//                LinesPreHits.content > 0 or 
+		//                LinesPostHits.content > 0
+
+		//TODO: switch to agent states
+		var selectedActivities = a.activities.select(a|
+        		a.state.isDefined() 
+        		and a.state.artifact.type = type 
+        		and not a.state.artifact.name.matches(nestedAnonymousClassFilter) 
+        		and a.targetState.isHit());
+        for (ax in selectedActivities) {
+			//ax.targetState.processTargetState(arffx);
+
+			var p = ax.targetState.previous.first();
+			while (p.isDefined() and not p.isHit()) {
+				//TODO: what if more than one?
+				p = p.previous.first();
+			}
+			if (not p.isDefined()){
+				u = u + 1;	
+			}
+        }
+
+
+
+		("  Agent " +a.name + "\t"+selectedActivities.size() + "\t-"+u).println();
+		s = s + selectedActivities.size() - u;
+
+        var allActivities = a.activities;
+        var modActivities = allActivities.select(a|a.state.isDefined());
+        var targetTypeActivities = allActivities.select(a|a.targetState.artifact.type = type);
+        var typeActivities = modActivities.select(a|a.state.artifact.type = type);
+        var nonExternalActivities = typeActivities.select(a|not a.state.artifact.name.matches(nestedAnonymousClassFilter));
+        var hitActivities = nonExternalActivities.select(a|a.targetState.isHit());
+
+		aCount = aCount + allActivities.size();
+		mCount = mCount + modActivities.size();
+		ttCount = ttCount + targetTypeActivities.size();
+		tCount = tCount + typeActivities.size();
+		nexCount = nexCount + nonExternalActivities.size();
+		hCount = hCount + hitActivities.size();
+    }
+    (typeName + " " + aCount + " " + mCount + " " + ttCount + " " + tCount + " " + nexCount + " " + hCount).log(1);
+    (typeName + " " + s).println();
 }
 
-for (a in DECENT!Artifact.all().select(x|x.name = "PageIterator.java")) {
-	("Artifact: "+a.name).println();
-	for (s in a.states) {
-		var tags = s.getValue("Tags".getAttribute()).content;
-		("  State: "+ s.ID + " Tags: "+tags.size()).println();
-		for (t in tags) {
-		("  	Tag: "+ t + " ").println();
-		}	
+
+operation showArtifactTypes() {
+	for (x in DECENT!ArtifactType.allInstances()) {
+		x.name.println();
 	}
-	for (c in a.children) {
-		("  "+ c.name + " / " + c.type.name).println();
-		for (s in c.states) {
+}
+
+operation custom() {
+	for (a in DECENT!Artifact.all().select(x|x.name = "PageIterator.java")) {
+		("Artifact: "+a.name).println();
+		for (s in a.states) {
+			var tags = s.getValue("Tags".getAttribute()).content;
+			("  State: "+ s.ID + " Tags: "+tags.size()).println();
+			for (t in tags) {
+			("  	Tag: "+ t + " ").println();
+			}	
+		}
+		for (c in a.children) {
+			("  "+ c.name + " / " + c.type.name).println();
+			for (s in c.states) {
+			}
 		}
 	}
 }
