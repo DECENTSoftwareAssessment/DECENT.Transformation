@@ -229,7 +229,7 @@ rule Class2State
 
     s.mapAnchoredElement(c, ClassArtifactType, c.name);
     c.~done = true;
-    (FAMIX!Class.allInstances().select(c|c.~done == true).size()+"/"+potentiallyAffectedClasses.size() + " done").log(1);
+    //(FAMIX!Class.allInstances().select(c|c.~done == true).size()+"/"+potentiallyAffectedClasses.size() + " done").log(3);
 
 }
 
@@ -305,6 +305,6 @@ rule Method2State
     s.mapAnchoredElement(m, MethodArtifactType, m.parentType_IN_Class.first().name+"::"+m.signature);
 
     m.~done = true;
-    (FAMIX!Method.allInstances().select(m|m.~done == true).size()+"/"+potentiallyAffectedMethods.size() + " done").log(1);   
+    //(FAMIX!Method.allInstances().select(m|m.~done == true).size()+"/"+potentiallyAffectedMethods.size() + " done").log(3);   
 }
 
