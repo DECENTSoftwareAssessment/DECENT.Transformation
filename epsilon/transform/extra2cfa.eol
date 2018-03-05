@@ -12,11 +12,18 @@ import "../libraries/decent/logging.eol";
   	var WeightFactorAttribute = "WeightFactor".getCFAAttribute();
   	var TotalWeightAttribute = "TotalWeight".getCFAAttribute();
   	var AverageWeightAttribute = "AverageWeight".getCFAAttribute();
+	
+	var selectedFactors = Native("java.lang.System").getProperty("epsilon.transformation.extra2cfa.factor");
 
   	var factors = new Map;
-  	factors.put("Refactoring","Based on commit messages, regex:.+(factored|factoring).*");
-  	factors.put("Fix","Based on commit messages, regex:.*(fix|bug|bug:).*");
-  	factors.put("IssueReference","Based on commit messages, regex:.*(bug\\s*:\\s*\\d+).*");
+  	for (factor in selectedFactors.split(",")) {
+  		switch(factor){
+  		case "Refactoring": factors.put("Refactoring","Based on commit messages, regex:.+(factored|factoring).*");
+  		case "Fix": factors.put("Fix","Based on commit messages, regex:.*(fix|bug|bug:).*");
+  		case "IssueReference": factors.put("IssueReference","Based on commit messages, regex:.*(bug\\s*:\\s*\\d+).*");
+  		default: ("ERROR: Unknown factor: "+factor).log(1);
+  		}
+  	}
   	
   	cfn.addFactors(factors);
 

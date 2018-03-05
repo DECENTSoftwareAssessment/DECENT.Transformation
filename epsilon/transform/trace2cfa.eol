@@ -11,43 +11,158 @@ import "../libraries/decent/logging.eol";
   	var TotalWeightAttribute = "TotalWeight".getCFAAttribute();
   	var AverageWeightAttribute = "AverageWeight".getCFAAttribute();
 
+	var selectedFactors = Native("java.lang.System").getProperty("epsilon.transformation.trace2cfa.factor");
+
   	var factors = new Map;
-  	factors.put("IssueCount","Related issues count");
-  	factors.put("CommentsPerIssue","Average comments per related issues count");
-  	factors.put("UsersPerIssue","Average users per related issues count");
+  	for (factor in selectedFactors.split(",")) {
+  		switch(factor){
+			case "IssueCount" : factors.put("IssueCount","Related issues count");
+		  	case "CommentsPerIssue" : factors.put("CommentsPerIssue","Average comments per related issues count");
+		  	case "UsersPerIssue" : factors.put("UsersPerIssue","Average users per related issues count");
+		  	case "SZZ" : factors.put("SZZ","SZZ weights");
+  		}
+  	}
+  	
+  	//TODO: Extract as Option
+  	var addPartialFix = true;
   	
 	var cfn = CFA!CFN.allInstances().first();
   	
   	cfn.addFactors(factors);
   	
+/*
   	var IssueCountFactor = CFA!Factor.allInstances().select(a|a.name = "IssueCount").first();
   	var CommentsPerIssueFactor = CFA!Factor.allInstances().select(a|a.name = "CommentsPerIssue").first();
   	var UsersPerIssueFactor = CFA!Factor.allInstances().select(a|a.name = "UsersPerIssue").first();
+  	var SZZFactor = CFA!Factor.allInstances().select(a|a.name = "SZZ").first();
 
 	addFactors();
 	resetTotalWeights(IssueCountFactor);
 	resetTotalWeights(CommentsPerIssueFactor);
 	resetTotalWeights(UsersPerIssueFactor);
+	resetTotalWeights(SZZFactor);
 	calculateTotalFactorWeights(IssueCountFactor);
 	calculateTotalFactorWeights(CommentsPerIssueFactor);
 	calculateTotalFactorWeights(UsersPerIssueFactor);
+	calculateTotalFactorWeightsSZZ(SZZFactor);
 	calculateAverageFactorWeights();
+*/	
+
+	//alternative approach (in progress)
+
+
+	for (s in CFA!CFAState.allInstances) {
+		for (f in factors.keySet()) {
+			var selectedFactor = CFA!Factor.allInstances().select(a|a.name = f).first();
+			var weight = s.ID.getWeight(selectedFactor);
+			
+			s.addFactor(selectedFactor, weight);
+			s.resetTotalWeights(selectedFactor);
+			if (f = "SZZ") {
+				s.calculateTotalFactorWeightsSZZ(selectedFactor);
+			} else {
+				s.calculateTotalFactorWeights(selectedFactor);
+			}
+			s.calculateAverageFactorWeights(selectedFactor);
+		}
+	}
 
 
     var end = Native("java.lang.System").currentTimeMillis();
     var duration = end - start;
     ("Duration: "+duration.toMinutes().round(5)).log(1);
-
+    
 operation addFactors() {
 	for (s in CFA!CFAState.allInstances) {
 		s.addFactor(IssueCountFactor, s.ID.getBZReferenceWeight());
 		s.addFactor(CommentsPerIssueFactor, s.ID.getBZCommentsWeight());
 		s.addFactor(UsersPerIssueFactor, s.ID.getBZUsersWeight());
+		s.addFactor(SZZFactor, s.ID.getSZZWeight());
 	}
 }
-	
+
+operation Integer getWeight(selectedFactor : CFA!Factor) : Real {
+	var weight = 0.asDouble();
+	switch (selectedFactor.name) {
+		case "IssueCount" : weight = s.ID.getBZReferenceWeight();
+		case "CommentsPerIssue" : weight = s.ID.getBZCommentsWeight();
+		case "UsersPerIssue" : weight = s.ID.getBZUsersWeight();
+		case "SZZ" : weight = s.ID.getSZZWeight();
+		default : ("ERROR: Unknown Factor: " + selectedFactor).log(1);
+	}
+	return weight;
+}
+
+//note that SZZ partial fixes and weak suspects are reflected in the assigned weights 
+//and not explicitly designated as such since m:n relationships between causes and fixes
+//will make such composing such labeling difficult as it only focuses on relationships with
+//respect to a single fix, rather than the overall likelihood of a state being defective,
+//that is a cause may be a partial fix for one fix and weak suspect for another 
+//(especially considering differences between CVS/SVN/Git) 
+
+//the SZZ authors originally noted that "a revision r is fix-inducing if there exists a pair 
+//(r,rx) in S which is not a hard suspect" and that "a transaction t is fix-inducing 
+//if one of its revisions is fix-inducing" this effectively translates to a threshold for average 
+//weights > 0 
+
+operation CFA!CFAState calculateTotalFactorWeightsSZZ(selectedFactor : CFA!Factor) {
+	var filteredFixes = self.fixes;
+	//what if more than 1? => take the last one as in the paper (usually duplicates)
+	//TODO: consider alternative approaches, e.g. calculating individually 
+	var t = TRACE!Trace.allInstances().select(x|x.target.commit_id = self.ID).sortBy(x|x.source.reportedOn).last();
+	if (t.isDefined()){
+		//consider "partial fixes", that is if the cause itself has a weight factor > 0
+		if (addPartialFix) {
+			filteredFixes = filteredFixes.select(f|
+				f.getDate().before(t.source.reportedOn) or 
+				f.factors.get(selectedFactor).get(WeightFactorAttribute) > 0);
+		} else {
+			filteredFixes = filteredFixes.select(f|f.getDate().before(t.source.reportedOn));
+		}
+		//weak suspects not handled here, they will receive their weight from 
+		//other fixes correspondingly 
+		
+    	//("Matching Issues: "+TRACE!Trace.allInstances().select(x|x.target.commit_id = s.ID).size()).log(4);
+    	("FIXES: "+self.ID+" => "+self.fixes.size() +" vs "+filteredFixes.size()).log(4);
+    	//for (f in s.fixes) {
+    		//("    "+f.getDate()+" vs "+t.source.reportedOn + " :: "+(f.getDate().before(t.source.reportedOn))).log(5);
+    	//}
+	}
+	var fixes = filteredFixes.size().asDouble();
+	if (fixes = 0) {
+		fixes = 1.asDouble();
+	}
+    for (f in filteredFixes) {
+    	var value; 
+    	var factor = f.factors.get(selectedFactor);
+    	value = factor.get(TotalWeightAttribute) + self.factors.get(selectedFactor).get(WeightFactorAttribute) * (1/fixes);
+    	factor.put(TotalWeightAttribute,value);
+    }
+}
+
+operation calculateTotalFactorWeightsSZZ(selectedFactor : CFA!Factor) {
+    for (s in CFA!CFAState.allInstances()) {
+    	s.calculateTotalFactorWeightsSZZ(selectedFactor);
+	}
+}
+
 operation Integer getBZReferenceWeight() : Real {
 	return TRACE!Trace.allInstances().select(x|x.target.commit_id = self).size().asDouble();
+}
+operation Integer getSZZWeight() : Real {
+	return TRACE!Trace.allInstances().select(x|x.target.commit_id = self).size().asDouble();
+}
+
+operation GlobalState getDate() : Any {
+	return self.revision.author_date;
+}
+
+operation ArtifactState getDate() : Any {
+	return self.globalState.getDate();
+}
+
+operation LogicalState getDate() : Any {
+	return self.globalState.getDate();
 }
 
 operation Integer getBZCommentsWeight() : Real {

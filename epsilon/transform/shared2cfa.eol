@@ -14,13 +14,21 @@ import "../libraries/decent/logging.eol";
   	var TotalWeightAttribute = "TotalWeight".getCFAAttribute();
   	var AverageWeightAttribute = "AverageWeight".getCFAAttribute();
 
+	var selectedStrategies = Native("java.lang.System").getProperty("epsilon.transformation.shared2cfa.strategy");
+
 	var strategies = new Native("java.util.LinkedHashMap");
-	strategies.put(".Shared","Equal split");
-	//strategies.put(".Shared.Code","Equal split (code type only)");
-	strategies.put(".Churn","Based on the amount of change");
-	//strategies.put(".Churn.Code","Based on the amount of change (code type only)");
-	strategies.put(".Size","Based on the size of the artifacts");
-	//strategies.put(".Size.Code","Based on the size of the artifacts (code type only)");
+	
+	for (strategy in selectedStrategies.split(",")) {
+  		switch(strategy){
+			case "Shared" : strategies.put(".Shared","Equal split");
+			case "Shared.Code" : strategies.put(".Shared.Code","Equal split (code type only)");
+			case "Churn" : strategies.put(".Churn","Based on the amount of change");
+			case "Churn.Code" : strategies.put(".Churn.Code","Based on the amount of change (code type only)");
+			case "Size" : strategies.put(".Size","Based on the size of the artifacts");
+			case "Size.Code" : strategies.put(".Size.Code","Based on the size of the artifacts (code type only)");
+  			default: ("ERROR: Unknown strategy: "+strategy).log(1);
+  		}
+  	}	
 	
 	var baseFactors = cfn.factors.select(f|strategies.keySet().forAll(s|not f.name.endsWith(s)));
 	//for (f in baseFactors) {
@@ -210,7 +218,7 @@ operation CFA!LogicalState getTypeSizesSum() : Real {
 
 @cached
 operation CFA!LogicalState getSizesSum() : Real {
-	var size = self.state.getValue("EndLine").content - self.state.getValue("StartLine").content + 1; 
+	var size = self.state.getValue("MX.EndLine").content - self.state.getValue("MX.StartLine").content + 1; 
 	return size.asDouble();
 }
 
@@ -237,8 +245,8 @@ operation CFA!LogicalState getTypePatchLinesSum() : Real {
 
 @cached
 operation CFA!LogicalState getPatchLinesSum() : Real {
-	var post = self.state.getValue("LinesPostHits").content.size();
-	var pre = self.state.getValue("LinesPreHits").content.size();
+	var post = self.state.getValue("HITS.LinesPostHits").content.size();
+	var pre = self.state.getValue("HITS.LinesPreHits").content.size();
 	return (pre+post).asDouble();
 }
 
