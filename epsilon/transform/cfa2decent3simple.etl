@@ -19,12 +19,15 @@ pre {
   var Model = DECENT!DECENT::Model.allInstances().first();	
 
 
+  var selectedFactors = Native("java.lang.System").getProperty("epsilon.transformation.cfa2decent.factor").split(",");
+
+
   ("Initializing CFA definitions").log(2);
   //This should only run once!!!
   
   var attributes = new Map;
   
-  for (f in CFA!Factor.allInstances()) {
+  for (f in CFA!Factor.allInstances().select(x|selectedFactors.contains(x.name))) {
   	//TODO: add dimension
   	for (a in CFA!CFAAttribute.allInstances()) {
   		//TODO: assign dimensions
@@ -103,7 +106,7 @@ operation transformArtifactStates() {
 	  	} else {
 	  		var state = matchedStates.first();
 			//TODO: add proper backout  		
-	  		for (f in s.factors.keySet()) {
+	  		for (f in s.factors.keySet().select(x|selectedFactors.contains(x.name))) {
 			  	var factorValues = s.factors.get(f);
 			  	for (a in factorValues.keySet()) {
 		  			var LocalAttribute = ("CFA."+f.name+"."+a.name).getAttribute();
@@ -132,8 +135,10 @@ operation transformLogicalStates() {
   ("...transforming logical states...").log(2);
   for (g in CFA!GlobalState.allInstances()) {
 	for (s in g.logicalStates) {
+		("  " + s.state.artifact.name + " @ "+s.ID).log(3);
+		
 		//TODO: add proper backout  		
-  		for (f in s.factors.keySet()) {
+  		for (f in s.factors.keySet().select(x|selectedFactors.contains(x.name))) {
 		  	var factorValues = s.factors.get(f);
 		  	for (a in factorValues.keySet()) {
 	  			var LocalAttribute = ("CFA."+f.name+"."+a.name).getAttribute();
@@ -164,21 +169,25 @@ operation transformLogicalStates() {
 operation addCarriedWeights() {
   ("...adding carried weights...").log(2);
 
-  	for (f in CFA!Factor.allInstances()) {
+  	for (f in CFA!Factor.allInstances().select(x|selectedFactors.contains(x.name))) {
 		var CarriedWeightAttribute = ("CFA."+f.name+".CarriedWeight").getAttribute();
 		var TotalWeightAttribute = ("CFA."+f.name+".TotalWeight").getAttribute();
 	  	var ClearedWeightAttribute = ("CFA."+f.name+".ClearedWeight").getAttribute();
-
 
 		//TODO: check for negatives
 	    for (a in DECENT!Artifact.allInstances()) {
 		  	var lastWeight = 0.asDouble();
 	  		for (s in a.states.select(x|x.isHit())) {
-	  			var totalWeight = s.getValue(TotalWeightAttribute).content;
-		  		lastWeight = lastWeight + totalWeight;
-	  			var clearedWeight = s.getValue(ClearedWeightAttribute).content;
-		  		lastWeight = lastWeight - clearedWeight;
-	  			s.addValue(CarriedWeightAttribute, lastWeight);
+	  			if (s.getValue(TotalWeightAttribute).isDefined()) {
+		  			var totalWeight = s.getValue(TotalWeightAttribute).content;
+			  		lastWeight = lastWeight + totalWeight;
+		  			var clearedWeight = s.getValue(ClearedWeightAttribute).content;
+			  		lastWeight = lastWeight - clearedWeight;
+		  			s.addValue(CarriedWeightAttribute, lastWeight);
+	  			} else {
+					//(" "+a.name+" ["+a.type.name+"]"+" @ "+s.ID+" ->Looking for "+TotalWeightAttribute.name).log(3);	  		
+	  				(" "+a.name+" ["+a.type.name+"]"+" @ "+s.ID+" -> Value for "+TotalWeightAttribute.name + " not found!").log(1);
+	  			}
 	  		}
 	  	}
 	    for (a in DECENT!Agent.allInstances()) {
@@ -201,8 +210,8 @@ operation transformAgentStates() {
   ("...adding agent state values...").log(2);
   
   for (s in CFA!GlobalState.allInstances()) {
-	("  " + " @ "+s.ID).log(3);
   	var authorName = s.revision.author.name;
+	("  " +authorName+ " @ "+s.ID).log(3);
   	var matchedStates = DECENT!AgentState.allInstances().select(m|m.ID = s.ID);
   	var size = matchedStates.size();
 	//check if correct matches can be found 
@@ -212,7 +221,7 @@ operation transformAgentStates() {
   		var state = matchedStates.first();
   		//TODO: add appropriate backout  		
 
-  		for (f in s.factors.keySet()) {
+  		for (f in s.factors.keySet().select(x|selectedFactors.contains(x.name))) {
 		  	var factorValues = s.factors.get(f);
 		  	for (a in factorValues.keySet()) {
 	  			var LocalAttribute = ("CFA."+f.name+"."+a.name).getAttribute();
