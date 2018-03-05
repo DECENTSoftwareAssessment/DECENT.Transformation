@@ -19,11 +19,12 @@ Require-Bundle: org.eclipse.core.runtime,
  org.eclipse.epsilon.egl.engine,
  org.eclipse.epsilon.eol.tools,
  org.eclipse.epsilon.profiling,
- org.apache.commons.io,
  DECENT.ResourceTools,
  emf.resource.tools,
  DECENT,
  MG,
  DECENT.Utils,
- ARFFx
+ ARFFx,
+ org.apache.commons.io,
+ CFA
 Bundle-ActivationPolicy: lazy
