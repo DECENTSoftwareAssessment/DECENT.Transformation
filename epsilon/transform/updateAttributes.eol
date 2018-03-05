@@ -1,0 +1,54 @@
+import "../libraries/decent/common.eol";
+import "../libraries/decent/logging.eol";
+
+var step = "updateAttributes"; 
+("Running "+step).log(1);
+var start = Native("java.lang.System").currentTimeMillis();
+
+var Model = DECENT!Model.allInstances().first();
+
+var mapping = "mapping/attributes";
+var oldToNew = mapping.getOldToNewMapping();
+var newToOld = mapping.getNewToOldMapping();
+
+for (a in DECENT!Attribute.allInstances().select(x|oldToNew.containsKey(x.name))) {
+	var newName = oldToNew.get(a.name);
+	if (newName.isDefined()) {
+		a.name = newName;
+	}
+}
+
+var end = Native("java.lang.System").currentTimeMillis();
+var duration = end - start;
+Model.content.add(step);
+Model.addStep(step,duration.toMinutes().round(5));
+("Duration: "+duration.toMinutes().round(5)).log(1);
+
+
+operation String getNewToOldMapping() : Map {
+	var file = new Native("java.io.File")(self);
+	var content = Native("org.apache.commons.io.FileUtils").readLines(file);
+	content = content.select(x|not x.startsWith("#")).closure(x|x.trim());
+	
+	var attributeMap = new Map();
+	for (line in content) {
+		var s = line.split("=");
+		attributeMap.put(s.get(0),s.get(1)); 
+	}
+	
+	return attributeMap;
+}
+
+operation String getOldToNewMapping() : Map {
+	var file = new Native("java.io.File")(self);
+	var content = Native("org.apache.commons.io.FileUtils").readLines(file);
+	content = content.select(x|not x.startsWith("#")).closure(x|x.trim());
+	
+	var attributeMap = new Map();
+	for (line in content) {
+		var s = line.split("=");
+		attributeMap.put(s.get(1),s.get(0)); 
+	}
+	
+	return attributeMap;
+}
