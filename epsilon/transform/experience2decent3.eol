@@ -52,10 +52,6 @@ Model.addStep(step,duration.toMinutes().round(5));
 
 ("Duration: "+duration.toMinutes().round(5)).log(1);
 
-//TODO: MOVE TO A SEPARATE MODULE
-var tool = new Native("epsilon.tools.Bridge");
-tool.run(Model.agentPool.agents);
-
 
 operation addArtifactExperience() {
 	var artifacts = DECENT!Artifact.allInstances().select(x|not x.name.matches(nestedAnonymousClassFilter)).sortBy(x|x.name);
