@@ -1,0 +1,106 @@
+import "../libraries/arff/common.eol";
+import "../libraries/decent/logging.eol";
+
+("Executing ARFFx live").println();
+
+	//TODO: move to separated modules
+	//Approximation of CFA stats based on ARFFx
+	//- can be useful for further description of data sets
+	//- also for benefits of layered approach 
+	var models = ARFFx!Model.allInstances().select(m|m.data.size()>0 and m.meta.get("ARFFx.Type") = "agent");
+
+	var mModels = models.select(m|m.name.endsWith("Method"));
+
+	var s = 0;
+
+	for (m in mModels) {
+		//(m.name+"\t"+m.data.size()).println();
+		s = s+m.data.size();
+	}
+	("Totals: "+s).println();
+	
+	var targetAttribute = "Artifact.Target.CFA.BugFix.AverageWeight";
+ 
+	var m = getCodeMap(); 
+	//("++"+m.keySet()).println();
+	
+	var p = 0;
+	var n = 0; 
+	var pp = 0;
+	var pn = 0; 
+	var mismatchP = 0;
+	var mismatchN = 0;
+	var type = "code";
+	type = "Method";
+	var bag = new OrderedSet();
+	var types = new OrderedSet(); 
+	bag = ARFFx!Model.allInstances().select(x|x.data.size() > 0 and x.meta.get("ARFFx.Type") = "agent").asOrderedSet();
+	var bagOfType = bag.select(x|x.meta.get("ARFFx.Type") = "agent" and x.meta.get("DECENT.ArtifactType") = type);
+	var allData = new OrderedSet();
+	for (b in bagOfType) {
+		allData.addAll(b.data);
+		var stateAttribute = "Artifact.Target.StateID";
+		
+		for (i in b.data) {
+			var sid = i.getValue(stateAttribute.getARFFAttribute(b));
+			var v = i.getValue(targetAttribute.getARFFAttribute(b)).asDouble();
+			if (v > 0.asDouble()) {
+				p = p + 1;
+			} else {
+				n = n + 1;	
+			}
+
+			if (m.get(sid)) {
+				pp = pp + 1;
+			} else {
+				pn = pn + 1;
+			}
+
+			
+			var l = false;
+			if (v > 0.asDouble()) {
+				l = true;
+			}
+			
+			if (m.get(sid) <> l) {
+				//(m.get(sid) + " vs " + l).println();
+				if (l) {
+					mismatchP = mismatchP + 1;
+				} else {
+					mismatchN = mismatchN + 1;
+				}
+			}
+			
+		}
+	}
+	("Layered " + type + ":\t\t"+allData.size() + "\t" + p + "\t" + n).println();
+	("Projected " + type + ":\t"+allData.size() + "\t" + pp + "\t" + pn).println();
+	("Mismatched " + type + ":\t"+allData.size() + "\t" + mismatchP + "\t" + mismatchN).println();
+	
+	
+operation Any getCodeMap() : Map {
+	var stateAttribute = "Artifact.Target.StateID";
+	
+	var m = new Map;
+	var type = "code";
+	var bag = ARFFx!Model.allInstances().select(x|x.data.size() > 0 and x.meta.get("ARFFx.Type") = "agent").asOrderedSet();
+	var bagOfType = bag.select(x|x.meta.get("ARFFx.Type") = "agent" and x.meta.get("DECENT.ArtifactType") = type);
+	var allData = new OrderedSet();
+	for (b in bagOfType) {
+		for (i in b.data) {
+			var sid = i.getValue(stateAttribute.getARFFAttribute(b));
+			var v = i.getValue(targetAttribute.getARFFAttribute(b)).asDouble();
+			//(sid + " -> " + v).println();
+			var l = false;
+			if (v > 0.asDouble()) {
+				l = true;
+			}
+			
+			if (not m.containsKey(sid) or (not m.get(sid) and l)) {
+				m.put(sid,l);
+			}
+		}	
+	}
+	return m;
+}
+ 
