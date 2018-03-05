@@ -71,6 +71,16 @@ pre mgInitPre {
   var filterBranches = new Set(); 
   filterBranches.add("master");
   filterBranches.add(defaultBranch);
+  
+  /*
+  for (f in MG!File.allInstances().select(x|x.file_type == "directory")) {
+  	("  "+f.file_name+" : "+f.file_type+"").println();
+  	for (l in f.childrenLinks) {
+	  	("    ->"+l.child.file_name+" : "+l.child.file_type+" @ "+l.revision.commit_id).println();
+  	}
+  	("    "+f.getBranch().name+"").println();
+  }
+  */
 }
 
 post mgInitPost{
