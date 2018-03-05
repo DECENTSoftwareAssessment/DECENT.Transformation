@@ -4,7 +4,6 @@ import java.io.File;
 import java.net.URISyntaxException;
 import java.util.HashMap;
 
-import org.apache.commons.io.FileUtils;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EPackage;
 import org.eclipse.emf.ecore.resource.Resource;
@@ -16,9 +15,11 @@ import org.eclipse.epsilon.eol.models.CachedModel;
 import org.eclipse.epsilon.eol.models.IModel;
 
 import resource.tools.ARFFxResourceTool;
+import resource.tools.CFAResourceTool;
 import resource.tools.DECENTResourceTool;
 import resource.tools.MGResourceTool;
 import ARFFx.ARFFxPackage;
+import CFA.CFAPackage;
 import DECENT.DECENTPackage;
 import MG.MGPackage;
 
@@ -26,8 +27,10 @@ public class DECENTEpsilonModelHandler {
 	private HashMap<String, Object> metaModelCache = new HashMap<>();
 	private boolean useARFFxBinary = false;
 	private boolean useDECENTBinary = false;
+	private boolean useCFABinary = false;
 	private boolean useDECENTDB = false;
 	private boolean useMGBinary = false;
+	private boolean useNeoDECENT = false;
 
 	public IModel getDECENTModel(String location, boolean read, boolean write) throws Exception {
 		String resourceLocation = location+"/model.decent";
@@ -94,7 +97,35 @@ public class DECENTEpsilonModelHandler {
 			model.setStoredOnDisposal(write);
 			model.setReadOnLoad(read);
 			model.setCachingEnabled(true);
+		
 			
+//		} else if (isUseNeoDECENT()) {
+//			unregisterMetaModels("");
+//			DECENTResourceTool tool = new DECENTResourceTool();
+//			if (!read) {
+//				new File(location+"/model.decent").delete();
+//				new File(location+"/model.decentneo").delete();
+//			}
+//			if (new File(location+"/model.decent").exists() && !new File(location+"/model.decent"+"neo").exists()) {
+//				Resource resource = tool.loadResourceFromXMI(location+"/model.decent","decent", DECENTPackage.eINSTANCE);
+//				tool.storeResourceInNeo(resource.getContents(), location+"/model.decent"+"neo");
+//			}
+//			//TODO: get newer version or check why this doesn't work, perhaps a matter of URI?
+//			//f.getFile(location);
+//			Resource resourceBin = tool.loadResourceFromNeo(resourceLocation+"neo");
+//			//alternative pattern
+////			model = createInMemoryEmfModel("DECENT", resourceLocation, "../DECENT.Meta/model/DECENTv3.ecore", read, write, resourceBin, DECENTPackage.eINSTANCE);
+////			restoreMetaModels();
+//			restoreMetaModels();	
+//			System.out.println(resourceBin.getContents().get(0).eClass());
+//			
+//
+//			//NOTE: Adding the package is essential as otherwise epsilon breaks
+//			model = new InMemoryEmfModel("DECENT", resourceBin, DECENTPackage.eINSTANCE);
+//			model.setStoredOnDisposal(write);
+//			model.setReadOnLoad(read);
+//			model.setCachingEnabled(true);
+//
 		} else {
 			model = createEmfModel("DECENT", resourceLocation, "../DECENT.Meta/model/DECENTv3.ecore", read, write);
 		}
@@ -196,7 +227,34 @@ public class DECENTEpsilonModelHandler {
 	
 	public IModel getCFAModel(String location, boolean read, boolean write) throws Exception {
 		String resourceLocation = location+"/model.cfa";
-		IModel model = createEmfModel("CFA", resourceLocation, "../DECENT.Meta/model/CFA.ecore", read, write);
+		EmfModel model;
+		
+		if (isUseCFABinary()) {
+			unregisterMetaModels("");
+			if (!read) {
+				new File(location+"/model.cfa").delete();
+				new File(location+"/model.cfabin").delete();
+			}
+			CFAResourceTool tool = new CFAResourceTool();
+			if (new File(location+"/model.cfa").exists() && !new File(location+"/model.cfa"+"bin").exists()) {
+				Resource resource = tool.loadResourceFromXMI(location+"/model.cfa","cfa", CFAPackage.eINSTANCE);
+				tool.storeBinaryResourceContents(resource.getContents(), location+"/model.decent"+"bin", "decentbin");
+			}
+			
+			Resource resourceBin = tool.loadResourceFromBinary(resourceLocation+"bin","cfabin", CFAPackage.eINSTANCE);
+			//alternative pattern
+//			model = createInMemoryEmfModel("DECENT", resourceLocation, "../DECENT.Meta/model/DECENTv3.ecore", read, write, resourceBin, DECENTPackage.eINSTANCE);
+//			restoreMetaModels();
+
+			//NOTE: Adding the package is essential as otherwise epsilon breaks
+			model = new InMemoryEmfModel("CFA", resourceBin, CFAPackage.eINSTANCE);
+			model.setStoredOnDisposal(write);
+			model.setReadOnLoad(read);
+			model.setCachingEnabled(true);
+			restoreMetaModels();		
+		} else {
+			model = createEmfModel("CFA", resourceLocation, "../DECENT.Meta/model/CFA.ecore", read, write);
+		}
 		return model;
 	}
 
@@ -395,6 +453,22 @@ public class DECENTEpsilonModelHandler {
 
 	public void setUseARFFxBinary(boolean useARFFxBinary) {
 		this.useARFFxBinary = useARFFxBinary;
+	}
+
+	public boolean isUseNeoDECENT() {
+		return useNeoDECENT;
+	}
+
+	public void setUseNeoDECENT(boolean useNeoDECENT) {
+		this.useNeoDECENT = useNeoDECENT;
+	}
+
+	public boolean isUseCFABinary() {
+		return useCFABinary;
+	}
+
+	public void setUseCFABinary(boolean useCFABinary) {
+		this.useCFABinary = useCFABinary;
 	}
 
 }
