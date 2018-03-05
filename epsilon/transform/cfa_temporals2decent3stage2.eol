@@ -1,0 +1,31 @@
+//import "cfa-init.etl";
+import "../libraries/cfa/common.eol";
+import "../libraries/decent/common.eol";
+import "../libraries/decent/logging.eol";
+
+  //Some initialization
+  var step = "cfa_temporals2decent3stage2"; 
+  ("Running "+step).log(1);
+  var start = Native("java.lang.System").currentTimeMillis();
+  
+  var twostage = Native("java.lang.System").getProperty("epsilon.transformation.temporals.twostagecfa").asBoolean();
+  
+  var Model = DECENT!Model.allInstances().first();
+  if (twostage) {
+  	var targetFilename = DECENT.getModelImpl().getURI().toString().replaceAll("^file:","").replaceAll("decentbin$","cfa.temporals");
+  	var targetFile = new Native("java.io.File") (targetFilename);
+    var content = Native("org.apache.commons.io.FileUtils").readLines(targetFile);
+    var project = DECENT!Project.allInstances().first();
+    
+    for (line in content) {
+    	var entry = line.split("=");
+    	project.addValue(addAttribute(entry.get(0)),entry.get(1).asDouble());
+    }
+  	
+  }
+  
+  var end = Native("java.lang.System").currentTimeMillis();
+  var duration = end - start;
+  Model.content.add(step);
+  Model.addStep(step,duration.toMinutes().round(5));
+  ("Duration: "+duration.toMinutes().round(5)).log(1);
