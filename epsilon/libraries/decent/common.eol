@@ -373,10 +373,16 @@ operation Real getSqrt() : Real {
 }
 
 operation Collection getMin() : Any {
+	if (self.size()==0) {
+		return 0.asDouble();
+	}
 	return Native("java.util.Collections").min(self);
 }
 
 operation Collection getMax() : Any {
+	if (self.size()==0) {
+		return 0.asDouble();
+	}
 	return Native("java.util.Collections").max(self);
 }
 
@@ -430,4 +436,13 @@ operation Any typeFilter(type : String) : Boolean {
 	}
 	return false;
 }
+
+operation DECENT!AgentState getTime() : Any {
+	return self.date.time;
+}
+
+operation DECENT!State getTime() : Any {
+	return self.fromActivity.first().date.time;
+}
+
 

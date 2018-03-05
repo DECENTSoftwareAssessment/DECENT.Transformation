@@ -14,7 +14,11 @@ operation dumpFileCopies() {
 @cached
 operation MG!File getBranch() : MG!Branch {
 	if (self.file_type = "directory") {
-		return self.childrenLinks.first().revision.getBranch();
+		if (self.childrenLinks.size()>0) {
+			return self.childrenLinks.first().revision.getBranch();
+		} else {
+			return self.parentLinks.first().parent.getBranch();	
+		}
 	} else {
 		return self.actions.first().branch;
 	}

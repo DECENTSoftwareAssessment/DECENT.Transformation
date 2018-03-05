@@ -19,65 +19,101 @@ operation CFA!CFN addFactors(factors : Map) {
   	}
 }
 
-operation calculateTotalFactorWeights(selectedFactor : CFA!Factor) {
-    for (s in CFA!CFAState.allInstances()) {
-    	var fixes = s.fixes.size().asDouble();
-    	if (fixes = 0) {
-    		fixes = 1.asDouble();
-    	}
-        for (f in s.fixes) {
-        	var value; 
-        	var factor = f.factors.get(selectedFactor);
-        	value = factor.get(TotalWeightAttribute) + s.factors.get(selectedFactor).get(WeightFactorAttribute) * (1/fixes);
-        	factor.put(TotalWeightAttribute,value);
-        }
+operation CFA!CFAState calculateTotalFactorWeights(selectedFactor : CFA!Factor) {
+	var fixes = self.fixes.size().asDouble();
+	if (fixes = 0) {
+		fixes = 1.asDouble();
+	}
+    for (f in self.fixes) {
+    	var value; 
+    	var factor = f.factors.get(selectedFactor);
+    	value = factor.get(TotalWeightAttribute) + self.factors.get(selectedFactor).get(WeightFactorAttribute) * (1/fixes);
+    	factor.put(TotalWeightAttribute,value);
     }
 }
 
-operation resetTotalWeights(selectedFactor : CFA!Factor) {
-    var defaultValue = 0.asDouble();
+operation calculateTotalFactorWeights(selectedFactor : CFA!Factor) {
     for (s in CFA!CFAState.allInstances()) {
-    	var factor = s.factors.get(selectedFactor);
-		factor.put(TotalWeightAttribute,defaultValue);
+    	s.calculateTotalFactorWeights(selectedFactor);
     }
 }
+
+operation CFA!CFAState resetTotalWeights(selectedFactor : CFA!Factor) {
+    var defaultValue = 0.asDouble();
+	var factor = self.factors.get(selectedFactor);
+	factor.put(TotalWeightAttribute,defaultValue);
+}
+
+
+operation resetTotalWeights(selectedFactor : CFA!Factor) {
+    for (s in CFA!CFAState.allInstances()) {
+    	s.resetTotalWeights(selectedFactor);
+    }
+}
+
+operation CFA!CFAState resetTotalWeights() {
+    var defaultValue = 0.asDouble();
+	for (factor in self.factors) {
+		factor.value.put(TotalWeightAttribute,defaultValue);
+	}
+}
+
 
 operation resetTotalWeights() {
     var defaultValue = 0.asDouble();
     for (s in CFA!CFAState.allInstances()) {
-    	for (factor in s.factors) {
-    		factor.value.put(TotalWeightAttribute,defaultValue);
+    	s.resetTotalWeights();
+    }
+}
+
+
+operation CFA!CFAState calculateTotalFactorWeights() {
+	var fixes = self.fixes.size().asDouble();
+	if (fixes = 0) {
+		fixes = 1.asDouble();
+	}
+    for (f in self.fixes) {
+    	var value; 
+    	for (factor in f.factors) {
+    		value = factor.value.get(TotalWeightAttribute) + self.factors.get(factor.key).get(WeightFactorAttribute) * (1/fixes);
+    		factor.value.put(TotalWeightAttribute,value);
     	}
     }
 }
 
 operation calculateTotalFactorWeights() {
     for (s in CFA!CFAState.allInstances()) {
-    	var fixes = s.fixes.size().asDouble();
-    	if (fixes = 0) {
-    		fixes = 1.asDouble();
-    	}
-        for (f in s.fixes) {
-        	var value; 
-        	for (factor in f.factors) {
-        		value = factor.value.get(TotalWeightAttribute) + s.factors.get(factor.key).get(WeightFactorAttribute) * (1/fixes);
-        		factor.value.put(TotalWeightAttribute,value);
-        	}
-        }
+    	s.calculateTotalFactorWeights();
     }
 }
 
+operation CFA!CFAState calculateAverageFactorWeights(selectedFactor : CFA!Factor) {
+	var causes = self.causes.size().asDouble();
+	if (causes = 0) {
+		causes = 1.asDouble();
+	}
+	var factor = self.factors.get(selectedFactor);
+	var value = factor.get(TotalWeightAttribute) / causes;
+	factor.put(AverageWeightAttribute,value);
+}
+
+
+operation CFA!CFAState calculateAverageFactorWeights() {
+	var causes = self.causes.size().asDouble();
+	if (causes = 0) {
+		causes = 1.asDouble();
+	}
+	var value; 
+	for (factor in self.factors.values) {
+		value = factor.get(TotalWeightAttribute) / causes;
+		factor.put(AverageWeightAttribute,value);
+	}
+}
+
+
 operation calculateAverageFactorWeights() {
     for (s in CFA!CFAState.allInstances()) {
-    	var causes = s.causes.size().asDouble();
-    	if (causes = 0) {
-    		causes = 1.asDouble();
-    	}
-    	var value; 
-    	for (factor in s.factors.values) {
-    		value = factor.get(TotalWeightAttribute) / causes;
-    		factor.put(AverageWeightAttribute,value);
-    	}
+    	s.calculateAverageFactorWeights();
     }
 }
 //State needs to be renamed to CFAState to avoid ambiguity due to DECENT import
