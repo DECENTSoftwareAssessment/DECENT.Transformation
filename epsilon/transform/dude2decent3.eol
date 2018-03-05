@@ -34,9 +34,9 @@ var FileSizeAttribute = "VCS.FileSize".getAttribute();
 //                    iterate over runs and fragments
 //                    add pair counts within artifact and outside
 
-//TODO: add cleanup before start, including deltas?
 //TODO: add deltas or in a separate transformation
-//TODO: aggregate values for developer states?
+
+//TODO: aggregate values for developer states? Also combine contribution/churn with clones?
 var states = DECENT!AgentState.allInstances();
 
 for (s in states) {
