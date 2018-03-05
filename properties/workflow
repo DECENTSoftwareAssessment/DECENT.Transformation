@@ -1,0 +1,30 @@
+#Transformation Tools Configuration
+#XX
+#DEPLOYMENT WORKFLOW FOR CFA STATS
+steps=MG2DECENT,FAMIX2DECENT,HITS2DECENT,DAG2DECENT
+steps=MG2CFA,DECENT2CFA
+#BACKUP
+steps=EXTRA2CFA
+steps=BZ2TRACE,TRACE2CFA
+#BACKUP
+steps=SHARED2CFA
+steps=CFASTATS
+#XX
+
+
+logLevel=5
+logToFile=true
+storageStrategy=dynamic-window
+#storageStrategy=safe
+#storageStrategy=fixed-window
+#storageWindow=4
+famixUpper=0
+famixLower=0
+useDECENTBinary=false
+useNeoDECENT=false
+useARFFxBinary=false
+useDECENTDB=false
+useMGBinary=false
+project=auto_decent_sample_w
+project=ksudoku-latest
+dataLocation=/Users/philip-iii/Dev/workspaces/emf/DECENT.Data/input-latest/
