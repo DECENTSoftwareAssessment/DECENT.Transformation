@@ -35,11 +35,6 @@ Model.addStep(step,duration.toMinutes().round(5));
 
 ("Duration: "+duration.toMinutes().round(5)).log(1);
 
-//TODO: MOVE TO A SEPARATE MODULE
-var tool = new Native("epsilon.tools.Bridge");
-tool.run(Model.agentPool.agents);
-
-
 operation calculateModifiedHausdorffDistance() {
 	var type = "";
 	for (a in DECENT!Artifact.allInstances().select(x|x.~timeStamps.size() > 1 and x.typeFilter(type))) {
